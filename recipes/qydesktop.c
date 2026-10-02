@@ -18,7 +18,7 @@ typedef struct {
 } AppEntry;
 
 static AppEntry apps[] = {
-    { "文件管理器", "🗂", "qyfiles",         0 },
+    { "文件管理器", "▤", "qyfiles",         0 },
     { "终端",       ">_", "weston-terminal", 0 },
     { "系统设置",   "⚙",  "qysettings",      0 },
 };
@@ -124,10 +124,13 @@ static void build_app_menu(void) {
 }
 
 static void toggle_menu(GtkWidget *btn, gpointer ud) {
-    if (!gtk_widget_get_visible(app_menu)) {
-        gtk_window_move(GTK_WINDOW(app_menu), 6, 32);
-        gtk_widget_show_all(app_menu);
-    } else gtk_widget_hide(app_menu);
+    /* 开始菜单 = 独立进程 qyappmenu (ArcMenu 风格: 搜索+固定网格+常用+用户区) */
+    GError *e = NULL;
+    gchar **argv = NULL;
+    if (g_shell_parse_argv("qyappmenu", NULL, &argv, &e))
+        g_spawn_async(NULL, argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, &e);
+    if (e) { g_printerr("appmenu: %s\n", e->message); g_error_free(e); }
+    g_strfreev(argv);
 }
 
 /* ---------- 壁纸 ---------- */
