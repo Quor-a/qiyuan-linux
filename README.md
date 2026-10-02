@@ -319,3 +319,23 @@ qiyuan/
 1. **远程源码必须锁 sha256**，本地源码目录可以留空。没有校验和就没有可复现。
 2. **构建默认断网**。构建期偷偷联网的包，结果不可复现，也不安全。
 3. **先保可复现，再谈功能**。构建流水线死了，进度就归零。
+
+---
+
+## 七、桌面环境进展（2026-10 实测）
+
+**ISO v0.9 已在 QEMU 实测达成桌面闭环**：
+
+- **内核**：linux 6.16.1（defconfig 基底 + DRM_BOCHS/DRM_VIRTIO_GPU/SQUASHFS/USB_HID/fbcon 等）
+- **显示**：bochs-drm 加载 → seatd 会话 → udevd 设备枚举 → weston 14.0.2 DRM backend (pixman) 真上屏
+- **桌面 qydesktop**（GTK3，`recipes/qydesktop.c`）：
+  - 品牌壁纸（cairo + gdk-pixbuf 铺满，PIL 程序化生成）
+  - 桌面图标（终端/文件/设置，点击 g_spawn 拉起）
+  - 应用启动器窗口、顶栏（全宽 + 时钟）
+- **文件管理器 qyfiles**（`recipes/qyfiles.c`）：目录导航、类型列、位置状态栏
+- **中文渲染**：DejaVu + Noto Sans CJK（145 号包，Ubuntu pool 源 + sha256 锁定）
+- **自研 init qyinit**：unit 依赖编排 + /dev/shm tmpfs + 崩溃重启
+
+关键坑位记录（详见 git log）：grub-mkrescue 必须重跑（只 mksquashfs 不生效）、
+udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂不生效需 sleep 兜底、
+系统无字体时 Pango 会把窗口算成 65535px 高。
