@@ -326,6 +326,9 @@ qiyuan/
 
 **ISO v0.9 已在 QEMU 实测达成桌面闭环**：
 
+![桌面](docs/screenshots/wallpaper.png)
+![图标](docs/screenshots/icons.png) ![启动器](docs/screenshots/launcher.png)
+
 - **内核**：linux 6.16.1（defconfig 基底 + DRM_BOCHS/DRM_VIRTIO_GPU/SQUASHFS/USB_HID/fbcon 等）
 - **显示**：bochs-drm 加载 → seatd 会话 → udevd 设备枚举 → weston 14.0.2 DRM backend (pixman) 真上屏
 - **桌面 qydesktop**（GTK3，`recipes/qydesktop.c`）：
