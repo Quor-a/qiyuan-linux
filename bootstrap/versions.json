@@ -1,0 +1,22 @@
+{
+  "_说明": "版本基线以 Linux From Scratch 当前稳定版为准。binutils/gcc/glibc/linux 四项已按 LFS 12.4（2025-09-01）核对；其余条目为占位，开工当天请从 LFS 官方书填充实际版本号，切勿沿用过期值。sha256 同理，首次下载后填入即可锁定。",
+  "versions": {
+    "binutils": "2.45",
+    "gcc": "15.2.0",
+    "glibc": "2.42",
+    "linux": "6.16.1",
+    "gmp": "TODO",
+    "mpfr": "TODO",
+    "mpc": "TODO"
+  },
+  "sources": {
+    "binutils": "https://sourceware.org/pub/binutils/releases/binutils-{version}.tar.xz",
+    "gcc": "https://ftp.gnu.org/gnu/gcc/gcc-{version}/gcc-{version}.tar.xz",
+    "glibc": "https://ftp.gnu.org/gnu/glibc/glibc-{version}.tar.xz",
+    "linux": "https://www.kernel.org/pub/linux/kernel/v6.x/linux-{version}.tar.xz",
+    "gmp": "https://ftp.gnu.org/gnu/gmp/gmp-{version}.tar.xz",
+    "mpfr": "https://ftp.gnu.org/gnu/mpfr/mpfr-{version}.tar.xz",
+    "mpc": "https://ftp.gnu.org/gnu/mpc/mpc-{version}.tar.gz"
+  },
+  "sha256": {}
+}

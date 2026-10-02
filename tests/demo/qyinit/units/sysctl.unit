@@ -1,0 +1,5 @@
+# 应用内核参数。Requires 写的是单元名（即文件名去掉 .unit）。
+Description=应用内核参数
+Requires=hostname
+ExecStart=/usr/bin/true
+Restart=no

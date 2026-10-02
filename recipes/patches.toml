@@ -1,0 +1,14 @@
+# 启元 Linux 补丁清单
+#
+# 单独一个清单而不是散在配方里，是为了能一眼看到"全系统打了多少补丁、
+# 哪些 CVE 已经修了"。散在 177 个配方里没人看得见全貌。
+#
+# kind: upstream（上游 backport）/ distro（发行版自有）/ security（修 CVE）
+# 安全补丁必须填 cve，上游补丁必须填 upstream_commit。
+
+[[qydemo]]
+file = "qydemo-verbose-output.patch"
+sha256 = "9bfabceaf48698f027da4266c68ce47b44b566d6fd0d8a749c55e32d4f199343"
+kind = "distro"
+reason = "输出里标明发行版，便于用户确认包的来源"
+series = 1

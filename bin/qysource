@@ -1,0 +1,11 @@
+#!/usr/bin/env python3
+"""启元 Linux 软件源管理。"""
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+from qyos import sources
+
+if __name__ == "__main__":
+    sys.exit(sources.main_cli())

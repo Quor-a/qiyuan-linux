@@ -1,0 +1,11 @@
+--- a/main.c
++++ b/main.c
+@@ -3,7 +3,7 @@
+ 
+ int main(void)
+ {
+-    printf("qydemo %s\n", qydemo_version());
++    printf("qydemo %s (Qiyuan Linux)\n", qydemo_version());
+     printf("1 + 2 = %d\n", qydemo_add(1, 2));
+     return 0;
+ }

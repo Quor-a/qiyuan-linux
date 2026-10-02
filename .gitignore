@@ -1,0 +1,7 @@
+var/
+*.iso
+*.qyp
+*.log
+__pycache__/
+*.pyc
+.svn/
