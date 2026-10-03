@@ -35,6 +35,10 @@ def build(ctx):
     import shutil as _sh
     _sh.copy(Path(__file__).parent.parent / "qypatches" / "patch-weston-clock.py", Path(ctx.srcdir) / "patch-weston-clock.py")
     ctx.run("python3 patch-weston-clock.py")
+    _sh.copy(Path(__file__).parent.parent / "qypatches" / "patch-weston-taskbar.py", Path(ctx.srcdir) / "patch-weston-taskbar.py")
+    ctx.run("python3 patch-weston-taskbar.py")
+    _sh.copy(Path(__file__).parent.parent / "qypatches" / "patch-weston-taskbar-client.py", Path(ctx.srcdir) / "patch-weston-taskbar-client.py")
+    ctx.run("python3 patch-weston-taskbar-client.py")
     ctx.run("rm -rf build && mkdir -p build")
     ctx.run("cd build && meson setup .. --prefix=/usr "
             "-Dbackend-drm=true -Dbackend-headless=true -Dbackend-drm-screencast-vaapi=false -Dbackend-pipewire=false -Dbackend-rdp=false "

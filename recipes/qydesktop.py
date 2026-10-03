@@ -27,6 +27,7 @@ RECIPE_C = Path(__file__).parent / "qydesktop.c"
 RECIPE_FILES_C = Path(__file__).parent / "qyfiles.c"
 RECIPE_SETTINGS_C = Path(__file__).parent / "qysettings.c"
 RECIPE_APPMENU_C = Path(__file__).parent / "qyappmenu.c"
+RECIPE_EDIT_C = Path(__file__).parent / "qyedit.c"
 
 
 def build(ctx):
@@ -34,6 +35,7 @@ def build(ctx):
     shutil.copy(RECIPE_FILES_C, Path(ctx.srcdir) / "qyfiles.c")
     shutil.copy(RECIPE_SETTINGS_C, Path(ctx.srcdir) / "qysettings.c")
     shutil.copy(RECIPE_APPMENU_C, Path(ctx.srcdir) / "qyappmenu.c")
+    shutil.copy(RECIPE_EDIT_C, Path(ctx.srcdir) / "qyedit.c")
     ctx.run(
         "export PATH={0}/usr/bin:$PATH; export PKG_CONFIG_PATH={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; "
         "export PKG_CONFIG_SYSROOT_DIR={0}; export PKG_CONFIG_LIBDIR={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; "
@@ -41,7 +43,8 @@ def build(ctx):
         "gcc qydesktop.c -o qydesktop $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qyfiles.c -o qyfiles $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qysettings.c -o qysettings $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
-        "gcc qyappmenu.c -o qyappmenu $(pkg-config --cflags --libs gtk+-3.0) -O2".format(ctx.sysroot)
+        "gcc qyappmenu.c -o qyappmenu $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
+        "gcc qyedit.c -o qyedit $(pkg-config --cflags --libs gtk+-3.0) -O2".format(ctx.sysroot)
     )
 
 
@@ -51,3 +54,4 @@ def package(ctx):
     ctx.run("cp qyfiles {}/usr/bin/qyfiles".format(ctx.destdir))
     ctx.run("cp qysettings {}/usr/bin/qysettings".format(ctx.destdir))
     ctx.run("cp qyappmenu {}/usr/bin/qyappmenu".format(ctx.destdir))
+    ctx.run("cp qyedit {}/usr/bin/qyedit".format(ctx.destdir))

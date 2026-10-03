@@ -12,6 +12,11 @@ if "custom_clock_format" in s:
     print("already patched")
     sys.exit(0)
 
+# 0. pango 头
+a0 = "#include \"window.h\""
+if a0 in s and "pango/pango.h" not in s:
+    s = s.replace(a0, a0 + "\n#include <pango/pango.h>", 1)
+
 # 1. struct desktop 加字段
 a1 = "\tenum clock_format clock_format;\n\n\tstruct window *grab_window;"
 b1 = "\tenum clock_format clock_format;\n\tchar *custom_clock_format;\n\n\tstruct window *grab_window;"
@@ -40,10 +45,20 @@ b4 = a4 + '\n\tweston_config_section_get_string(s, "clock-format-string", &deskt
 assert a4 in s, "config anchor"
 s = s.replace(a4, b4, 1)
 
-# 5. redraw 用自定义格式
-a5 = "\tstrftime(string, sizeof string, clock->format_string, timeinfo);"
-assert a5 in s, "strftime anchor"
-s = s.replace(a5, "\tconst char *cf = clock->panel->custom_clock_format;\n\tstrftime(string, sizeof string, cf ? cf : clock->format_string, timeinfo);", 1)
+# 5. redraw: 自定义格式 + cr 创建后选 CJK 字体 (不动原绘制流程)
+a5 = "\tcr = widget_cairo_create(clock->panel->widget);\n\tcairo_set_font_size(cr, 14);"
+assert a5 in s, "cairo create anchor"
+s = s.replace(a5,
+"\tcr = widget_cairo_create(clock->panel->widget);\n"
+"\tcairo_set_font_size(cr, 14);\n"
+"\tcairo_select_font_face(cr, \"Noto Sans CJK SC\", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);", 1)
+
+# 5b. strftime 用自定义格式
+a5b = "\tstrftime(string, sizeof string, clock->format_string, timeinfo);"
+assert a5b in s, "strftime anchor"
+s = s.replace(a5b,
+"\tconst char *cf = clock->panel->custom_clock_format;\n"
+"\tstrftime(string, sizeof string, cf ? cf : clock->format_string, timeinfo);", 1)
 
 open(p, "w").write(s)
 print("weston custom clock patch applied to", p)

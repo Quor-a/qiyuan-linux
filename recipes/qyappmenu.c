@@ -13,7 +13,7 @@ static AppEntry apps[] = {
     { "文件管理器", "▤", "qyfiles",         0 },
     { "终端",       ">_", "weston-terminal", 0 },
     { "系统设置",   "⚙",  "qysettings",      0 },
-    { "文本编辑",   "✎", "weston-editor",   0 },
+    { "文本编辑",   "✎", "qyedit",   0 },
     { "计算器",     "∑", "qysettings",      0 },
     { "系统监视",   "▦", "qysettings",      0 },
 };
