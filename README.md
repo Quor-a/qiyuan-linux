@@ -342,3 +342,13 @@ qiyuan/
 关键坑位记录（详见 git log）：grub-mkrescue 必须重跑（只 mksquashfs 不生效）、
 udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂不生效需 sleep 兜底、
 系统无字体时 Pango 会把窗口算成 65535px 高。
+
+## 桌面一览（QEMU 实测截图）
+
+| 桌面（中文+Noto CJK） | 品牌壁纸桌面 |
+|---|---|
+| ![桌面](docs/screenshots/chinese.png) | ![壁纸](docs/screenshots/wallpaper.png) |
+
+**开始菜单**（搜索 + 固定应用网格 + 常用列表）：
+
+![开始菜单](docs/screenshots/desktop-appmenu.jpg)
