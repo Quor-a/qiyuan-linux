@@ -4,9 +4,9 @@ p = 'clients/desktop-shell.c'
 s = open(p, encoding='utf-8').read()
 
 # 1) panel 结构加字段
-a = '\tchar *custom_clock_format;'
+a = '\tuint32_t color;\n};'
 assert a in s, 'panel struct anchor'
-s = s.replace(a, a + '\n\tstruct qy_taskbar tb;', 1)
+s = s.replace(a, '\tstruct qy_taskbar tb;\n' + a, 1)
 
 # 2) 定义结构+读取+定时回调 (放在 struct panel 前)
 tb_code = '''
@@ -39,22 +39,15 @@ qy_tb_read(struct qy_taskbar *tb)
 \tfclose(f);
 }
 
-static int
-qy_tb_timer_cb(void *data)
-{
-\tstruct panel *panel = data;
-\tqy_tb_read(&panel->tb);
-\twidget_schedule_redraw(panel->widget);
-\treturn 1;
-}
 '''
-a2 = '\nstruct panel {'
-s = s.replace(a2, tb_code + a2, 1)
+a2 = 'struct panel {\n\tstruct surface base;'
+assert a2 in s, 'panel def anchor'
+s = s.replace(a2, tb_code + '\n' + a2, 1)
 
 # 3) redraw 画按钮 (插在 painted=1 前)
-a3 = '\tpanel->painted = 1;'
+a3 = '\tset_hex_color(cr, panel->color);\n\tcairo_paint(cr);\n\n\tcairo_destroy(cr);'
 assert a3 in s, 'redraw anchor'
-draw_code = '''\t/* qiyuan taskbar buttons: centered */
+draw_code = '''\tset_hex_color(cr, panel->color);\n\tcairo_paint(cr);\n\n\t/* qiyuan taskbar buttons: centered */
 \t{
 \t\tstruct rectangle alloc;
 \t\twindow_get_allocation(panel->window, &alloc);
@@ -78,11 +71,20 @@ draw_code = '''\t/* qiyuan taskbar buttons: centered */
 \t\t\tx += (int)te.width + 24;
 \t\t}
 \t}
-\tpanel->painted = 1;'''
+\tcairo_destroy(cr);'''
 s = s.replace(a3, draw_code, 1)
 
 # 4) click handler
 click_code = '''
+static int
+qy_tb_timer_cb(void *data)
+{
+	struct panel *panel = data;
+	qy_tb_read(&panel->tb);
+	widget_schedule_redraw(panel->widget);
+	return 1;
+}
+
 static void
 qy_panel_button_handler(struct widget *widget, struct input *input,
 \t\t\tuint32_t time, uint32_t button,
@@ -115,13 +117,23 @@ assert a6 in s, 'init anchor'
 s = s.replace(a6, a6 + '\n\tqy_tb_read(&panel->tb);', 1)
 a7 = '\tpanel_add_launchers(panel, desktop);'
 assert a7 in s, 'launcher anchor'
-s = s.replace(a7, '''\t{
-\t\tstruct wl_event_loop *loop =
-\t\t\twl_display_get_event_loop(display_get_display(desktop->display));
-\t\twl_event_source_timer_update(
-\t\t\twl_event_loop_add_timer(loop, qy_tb_timer_cb, panel), 500);
-\t}
-''' + a7, 1)
+s = s.replace(a7, a7, 1)
+# 5b) 挂到 clock_func (每秒 toytimer, 官方安全路径): 时钟刷新时顺带刷新任务栏
+import re as _re
+m = _re.search(r'(clock_func\(struct toytimer \*tt\)\n\{\n)', s)
+assert m, 'clock_func anchor'
+
+# 在 clock_func 里 clock_timer_reset(clock) 之后加任务栏刷新: 找函数体
+m2 = _re.search(r'(clock_func\(struct toytimer \*tt\)\n\{.*?)(\n\})', s, _re.S)
+assert m2, 'clock_func body'
+qyhook = '''
+\t/* qiyuan taskbar refresh (1Hz, ride on clock timer) */
+\t{
+\t\tstruct panel *qy_panel = clock->panel;
+\t\tqy_tb_read(&qy_panel->tb);
+\t\twidget_schedule_redraw(qy_panel->widget);
+\t}'''
+s = s.replace(m2.group(0), m2.group(1) + qyhook + m2.group(2), 1)
 
 open(p, 'w', encoding='utf-8').write(s)
 print('taskbar client patch applied')
