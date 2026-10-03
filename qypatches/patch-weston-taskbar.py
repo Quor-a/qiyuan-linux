@@ -27,7 +27,7 @@ qy_taskbar_timer_cb(void *data)
 \tFILE *f = fopen("/tmp/xdg/qy-windows", "w");
 \tif (f) {
 \t\twl_list_for_each(shsurf, &shell->shsurf_list, link) {
-\t\t\tconst char *title =
+\t\t\tif (!shsurf->view || !weston_view_is_mapped(shsurf->view))\n\t\t\t\tcontinue;\n\t\t\tif (!shsurf->desktop_surface)\n\t\t\t\tcontinue;\n\t\t\tconst char *title =
 \t\t\t\tweston_desktop_surface_get_title(shsurf->desktop_surface);
 \t\t\tfprintf(f, "%u\\t%s\\n", (unsigned)(uintptr_t)shsurf,
 \t\t\t\ttitle ? title : "window");
@@ -41,7 +41,7 @@ qy_taskbar_timer_cb(void *data)
 \t\t\tstruct shell_surface *sh = qy_find_shsurf_by_id(shell, id);
 \t\t\tfclose(f);
 \t\t\tunlink("/tmp/xdg/qy-focus");
-\t\t\tif (sh) {
+\t\t\tif (sh && sh->view && weston_view_is_mapped(sh->view)) {
 \t\t\t\tstruct weston_seat *seat;
 \t\t\t\twl_list_for_each(seat, &shell->compositor->seat_list, link) {
 \t\t\t\t\tactivate(shell, sh->view, seat, 0);
