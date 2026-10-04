@@ -352,3 +352,18 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 **开始菜单**（搜索 + 固定应用网格 + 常用列表）：
 
 ![开始菜单](docs/screenshots/desktop-appmenu.jpg)
+
+## 桌面环境 v1.1.1（2026-10-04，QEMU 实测）
+
+**渲染消失病已根治**：应用窗口在点击后不再被桌面壳层遮挡——
+
+| 修复后桌面（多次点击窗口全部保持） |
+|---|
+| ![修复后](docs/screenshots/desktop-fixed.png) |
+
+- **窗口管理**：weston 14.0.2 + 自研 shell 补丁——真任务栏（按窗口列表画按钮）、点击切换焦点、qy-winop 关闭/最小化
+- **壳层策略**：qydesktop/dock/bar 固定在窗口层最底且激活不抬层；任务栏主 widget 全条命中
+- **文件管理器 qyfiles v2**：回收站、新建文件夹、重命名/删除、右键选中行 + 工具栏操作
+- **设置 qysettings**：声音（ALSA amixer Master）、屏幕亮度（/sys/class/backlight）
+- **音频栈**：alsa-lib + alsa-utils 1.2.14（147 包）
+- **健壮性**：initramfs cpio 重建修复、grub.cfg 显式化、DRM 输入设备未就绪自动重试
