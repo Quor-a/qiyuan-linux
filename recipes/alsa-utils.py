@@ -14,9 +14,8 @@ license = "GPL-2.0-or-later"
 # 远程源码的 sha256 尚未填回，构建前会被拒绝：
 # 静默接受未校验的远程源码等于给供应链攻击敞开大门。
 # 在能联网的构建机上执行：qybuild --fetch-checksums alsa-utils
-source = ["https://example.org/src/alsa-utils-1.2.14.tar.xz"]
-sha256 = []
-checksum_pending = True
+source = ["https://www.alsa-project.org/files/pub/utils/alsa-utils-1.2.14.tar.bz2"]
+sha256 = ["0794c74d33fed943e7c50609c13089e409312b6c403d6ae8984fc429c0960741"]
 
 depends = ["alsa-lib", "ncurses"]
 makedepends = ["alsa-lib", "ncurses"]

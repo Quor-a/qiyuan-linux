@@ -155,7 +155,7 @@ static void on_settings_btn(GtkButton *b, gpointer ud) {
 int main(int argc, char **argv) {
     gtk_init(&argc, &argv);
 
-    menu_win = gtk_window_new(GTK_WINDOW_POPUP);
+    menu_win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_decorated(GTK_WINDOW(menu_win), FALSE);
     gtk_window_set_default_size(GTK_WINDOW(menu_win), 460, 420);
     gtk_window_move(GTK_WINDOW(menu_win), 6, 32);
@@ -205,6 +205,7 @@ int main(int argc, char **argv) {
     gtk_box_pack_start(GTK_BOX(bottom), pwr_btn, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), bottom, FALSE, FALSE, 0);
 
+    g_printerr("QYAPPMENU-START toplevel\n");
     rebuild(FALSE);
     gtk_main();
     return 0;

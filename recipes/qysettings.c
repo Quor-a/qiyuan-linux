@@ -3,6 +3,9 @@
 #include <sys/utsname.h>
 #include <sys/sysinfo.h>
 
+static gboolean vol_changed(GtkRange *r, gpointer ud);
+static gboolean br_changed(GtkRange *r, gpointer ud);
+
 static gchar *read_first_line(const char *path) {
     gchar *buf = NULL; gsize len = 0;
     if (g_file_get_contents(path, &buf, &len, NULL)) {
@@ -82,7 +85,88 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(v4), row("单元目录", "/etc/qyinit.d"), FALSE, FALSE, 0);
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), v4, gtk_label_new("服务"));
 
+    /* 声音 (ALSA amixer Master) */
+    GtkWidget *v5 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+    gtk_container_set_border_width(GTK_CONTAINER(v5), 14);
+    GtkWidget *vol = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0, 100, 1);
+    gtk_scale_set_draw_value(GTK_SCALE(vol), TRUE);
+    gtk_range_set_value(GTK_RANGE(vol), -1);
+    gtk_box_pack_start(GTK_BOX(v5), gtk_label_new("输出音量 (Master)"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(v5), vol, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(v5), row("音频后端", "ALSA (amixer)"), FALSE, FALSE, 0);
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), v5, gtk_label_new("声音"));
+
+    /* 显示: 亮度 (backlight 探测) */
+    GtkWidget *v6 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+    gtk_container_set_border_width(GTK_CONTAINER(v6), 14);
+    GtkWidget *br = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 1, 100, 1);
+    gtk_scale_set_draw_value(GTK_SCALE(br), TRUE);
+    gtk_range_set_value(GTK_RANGE(br), 100);
+    gtk_box_pack_start(GTK_BOX(v6), gtk_label_new("屏幕亮度"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(v6), br, FALSE, FALSE, 0);
+    {
+        GDir *bld = g_dir_open("/sys/class/backlight", 0, NULL);
+        const gchar *bln = NULL;
+        if (bld) { bln = g_dir_read_name(bld); }
+        if (bln) {
+            gchar *blinfo = g_strdup_printf("%s (/sys/class/backlight)", bln);
+            gtk_box_pack_start(GTK_BOX(v6), row("背光设备", blinfo), FALSE, FALSE, 0);
+            g_free(blinfo);
+        } else {
+            gtk_box_pack_start(GTK_BOX(v6), row("背光设备", "无 (虚拟显示不支持)"), FALSE, FALSE, 0);
+        }
+        if (bld) g_dir_close(bld);
+    }
+    g_signal_connect(vol, "value-changed", G_CALLBACK(vol_changed), NULL);
+    g_signal_connect(br, "value-changed", G_CALLBACK(br_changed), NULL);
+    /* 初始音量读取 (amixer get Master → [xx%]) */
+    {
+        gchar *out = NULL;
+        gint v0 = 75;
+        if (g_spawn_command_line_sync("amixer get Master", &out, NULL, NULL, NULL) && out) {
+            gchar *pct = strstr(out, "[");
+            if (pct) {
+                gint v = atoi(pct + 1);
+                if (v >= 0 && v <= 100) v0 = v;
+            }
+            g_free(out);
+        }
+        gtk_range_set_value(GTK_RANGE(vol), v0);
+    }
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), v6, gtk_label_new("亮度"));
+
     gtk_widget_show_all(win);
+}
+
+static gboolean vol_changed(GtkRange *r, gpointer ud) {
+    gint v = (gint)gtk_range_get_value(r);
+    gchar *cmd = g_strdup_printf("amixer -q sset Master %d%% 2>/dev/null", v);
+    system(cmd);
+    g_free(cmd);
+    return FALSE;
+}
+
+static gboolean br_changed(GtkRange *r, gpointer ud) {
+    gint v = (gint)gtk_range_get_value(r);
+    GDir *bld = g_dir_open("/sys/class/backlight", 0, NULL);
+    if (bld) {
+        const gchar *bln;
+        gchar *blpath = NULL;
+        while ((bln = g_dir_read_name(bld))) { blpath = g_strdup_printf("/sys/class/backlight/%s", bln); break; }
+        g_dir_close(bld);
+        if (blpath) {
+            gchar *bmaxf = g_strdup_printf("%s/max_brightness", blpath);
+            gchar *bcurf = g_strdup_printf("%s/brightness", blpath);
+            gchar *mx = read_first_line(bmaxf);
+            int maxv = atoi(mx);
+            if (maxv > 0) {
+                FILE *f = fopen(bcurf, "w");
+                if (f) { fprintf(f, "%d", maxv * v / 100); fclose(f); }
+            }
+            g_free(mx); g_free(bmaxf); g_free(bcurf); g_free(blpath);
+        }
+    }
+    return FALSE;
 }
 
 int main(int argc, char **argv) {

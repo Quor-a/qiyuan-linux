@@ -16,6 +16,8 @@ struct qy_tb_item { unsigned id; char title[64]; };
 struct qy_taskbar {
 \tstruct qy_tb_item items[QY_TB_MAX];
 \tint count;
+\tint xs[QY_TB_MAX], xe[QY_TB_MAX];
+\tunsigned fp, committed;
 \tfloat x0, y0, x1, y1;
 };
 
@@ -30,13 +32,17 @@ qy_tb_read(struct qy_taskbar *tb)
 \t\tunsigned id; char *tab = strchr(line, '\\t');
 \t\tif (!tab) continue;
 \t\t*tab = 0; id = (unsigned)strtoul(line, NULL, 10);
-\t\tchar *t = tab + 1; char *nl = strchr(t, '\\n'); if (nl) *nl = 0;
+\t\tchar *t = tab + 1; char *nl = strchr(t, '\\n'); if (!nl) continue; *nl = 0;
 \t\tif (!t[0]) continue;
 \t\ttb->items[tb->count].id = id;
 \t\tsnprintf(tb->items[tb->count].title, 64, "%s", t);
 \t\ttb->count++;
 \t}
 \tfclose(f);
+\t/* fingerprint = ids XOR count */
+\ttb->fp = (unsigned)tb->count * 2654435761u;
+\tfor (int qy_i = 0; qy_i < tb->count; qy_i++)
+\t\ttb->fp ^= tb->items[qy_i].id * 97u + (unsigned)qy_i;
 }
 
 '''
@@ -68,8 +74,10 @@ draw_code = '''\tset_hex_color(cr, panel->color);\n\tcairo_paint(cr);\n\n\t/* qi
 \t\t\tcairo_text_extents(cr, panel->tb.items[i].title, &te);
 \t\t\tcairo_move_to(cr, x, y + 5);
 \t\t\tcairo_show_text(cr, panel->tb.items[i].title);
+\t\t\tpanel->tb.xs[i] = x - 12; panel->tb.xe[i] = x + (int)te.width + 12;
 \t\t\tx += (int)te.width + 24;
 \t\t}
+\t\tpanel->tb.committed = panel->tb.fp;
 \t}
 \tcairo_destroy(cr);'''
 s = s.replace(a3, draw_code, 1)
@@ -92,14 +100,34 @@ qy_panel_button_handler(struct widget *widget, struct input *input,
 {
 \tstruct panel *panel = data;
 \tfloat x, y;
+\tfprintf(stderr, "QY-BTN b=%u st=%u\\n", button, state);
+\tif (button == BTN_RIGHT && state == WL_POINTER_BUTTON_STATE_PRESSED) {
+\t\tinput_get_position(input, &x, &y);
+\t\tif (panel->tb.fp != panel->tb.committed || panel->tb.count == 0)
+\t\t\treturn;
+\t\tif (x < panel->tb.x0 || x > panel->tb.x1)
+\t\t\treturn;
+\t\tint ridx = -1, ri;
+\t\tfor (ri = 0; ri < panel->tb.count; ri++)
+\t\t\tif (x >= panel->tb.xs[ri] && x <= panel->tb.xe[ri]) { ridx = ri; break; }
+\t\tif (ridx < 0) return;
+\t\tFILE *rf = fopen("/tmp/xdg/qy-winop", "w");
+\t\tif (rf) { fprintf(rf, "%u close\\n", panel->tb.items[ridx].id); fclose(rf); }
+\t\treturn;
+\t}
 \tif (button != BTN_LEFT || state != WL_POINTER_BUTTON_STATE_PRESSED)
 \t\treturn;
 \tinput_get_position(input, &x, &y);
-\tif (x < panel->tb.x0 || x > panel->tb.x1 || panel->tb.count == 0)
+\tif (panel->tb.fp != panel->tb.committed || panel->tb.count == 0)
 \t\treturn;
-\tint idx = (int)((x - panel->tb.x0) / ((panel->tb.x1 - panel->tb.x0) / panel->tb.count));
-\tif (idx < 0) idx = 0;
-\tif (idx >= panel->tb.count) idx = panel->tb.count - 1;
+\tif (x < panel->tb.x0 || x > panel->tb.x1)
+\t\treturn;
+\tint idx = -1, qi;
+\tfor (qi = 0; qi < panel->tb.count; qi++)
+\t\tif (x >= panel->tb.xs[qi] && x <= panel->tb.xe[qi]) { idx = qi; break; }
+\tif (idx < 0) return;
+\tfprintf(stderr, "QY-CLICK x=%.0f x0=%.0f x1=%.0f idx=%d fp=%u committed=%u count=%d\\n",
+\t\tx, panel->tb.x0, panel->tb.x1, idx, panel->tb.fp, panel->tb.committed, panel->tb.count);
 \tFILE *f = fopen("/tmp/xdg/qy-focus", "w");
 \tif (f) { fprintf(f, "%u\\n", panel->tb.items[idx].id); fclose(f); }
 }
@@ -118,6 +146,12 @@ s = s.replace(a6, a6 + '\n\tqy_tb_read(&panel->tb);', 1)
 a7 = '\tpanel_add_launchers(panel, desktop);'
 assert a7 in s, 'launcher anchor'
 s = s.replace(a7, a7, 1)
+# 6) panel_resize_handler: 主 widget allocation 覆盖整条面板 (否则 hit test 永不命中主 widget)
+a8 = '''\tstruct panel_launcher *launcher;
+\tstruct panel *panel = data;
+\tint x = 0;'''
+assert a8 in s, 'resize anchor'
+s = s.replace(a8, a8.replace('int x = 0;', 'widget_set_allocation(widget, 0, 0, width, height);\n\tint x = 0;'), 1)
 # 5b) 挂到 clock_func (每秒 toytimer, 官方安全路径): 时钟刷新时顺带刷新任务栏
 import re as _re
 m = _re.search(r'(clock_func\(struct toytimer \*tt\)\n\{\n)', s)

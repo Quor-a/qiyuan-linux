@@ -31,7 +31,7 @@ def build(ctx):
     # introspection 需要: sysroot 工具链 PATH + giscanner PYTHONPATH (cpython-312
     # tag 的 _giscanner 必须用 python3.12 跑, 故 g-ir-scanner shebang 钉 3.12)
     # + gi 的 pkgconfig (g_ir_scanner 变量指 sysroot) + -lm (girepository/cmph)
-    ctx.run("export PATH={0}/usr/bin:$PATH; export PYTHONPATH={0}/usr/lib/x86_64-linux-gnu/gobject-introspection; export PKG_CONFIG_PATH={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; cd build && meson setup .. --prefix=/usr -Dman-pages=disabled -Ddocumentation=false -Dtests=false -Dintrospection=enabled -Dglib_debug=disabled -Dselinux=disabled -Dlibmount=enabled -Dxattr=false".format(ctx.sysroot))
+    ctx.run("export PATH={0}/usr/bin:$PATH; export PYTHONPATH={0}/usr/lib/x86_64-linux-gnu/gobject-introspection; export PKG_CONFIG_PATH={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; cd build && meson setup .. --prefix=/usr -Dman-pages=disabled -Ddocumentation=false -Dtests=false -Dintrospection=enabled -Dglib_debug=disabled -Dselinux=disabled -Dsysprof=disabled -Dlibmount=enabled -Dxattr=false".format(ctx.sysroot))
 
 
 def package(ctx):
