@@ -353,6 +353,9 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 
 ![开始菜单](docs/screenshots/desktop-appmenu.jpg)
 
+![统一图标主题](docs/screenshots/qyappmenu-color-icons.png)
+*v1.7 统一图标主题：cairo 圆角色块 + 9 色板 + 深灰高对比标签*
+
 ## 桌面环境 v1.1.1（2026-10-04，QEMU 实测）
 
 **渲染消失病已根治**：应用窗口在点击后不再被桌面壳层遮挡——
@@ -513,8 +516,11 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 | 网络 DHCP 自启 | ✅ 实测（10.0.2.15） |
 | SSH 远程登录 | ✅ 实测（宿主→VM） |
 | 开机自检输出 | ✅ 实测 |
-| 压缩管理器 qyarc | ✅ 已入包入菜单（GUI 待桌面点击实测） |
+| 压缩管理器 qyarc | ✅ GUI 实测（7za -slt 列表/中文名/解压） |
 | squashfs 权限缺陷 | ✅ 已修 |
+| 安装器 qysetup GUI（v1.5.1） | ✅ 实测（磁盘枚举/确认/日志/进度条） |
+| 权限提升 qysudo + 用户管理 qyuseradd（v1.6.0） | ✅ 实测（wheel 组/shadow 密码校验/提权 uid=0） |
+| 统一图标主题（v1.7，本轮） | ✅ 实测（cairo 圆角色块 9 色板 + 标签深灰高对比） |
 
 ### 下一步开发
 
@@ -523,3 +529,6 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 3. **polkit 替代品 `qysudo`**：setuid 白名单 + 策略文件
 4. **用户管理**：shadow 包接入（useradd/passwd），让多用户可用
 5. **包管理进目标系统**：用 C 重写 qypkg 核心子集（安装/查询/校验）
+6. **声音/亮度设置页**：qysettings 新增音频与背光面板
+7. **SQUASHFS_ZSTD 内核重配**：压缩率/启动速度优化
+8. **qyuseradd GUI**：用户管理图形化（列表/新建/密码/删组）

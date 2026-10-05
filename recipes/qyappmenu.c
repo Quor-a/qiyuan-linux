@@ -5,20 +5,22 @@
 typedef struct {
     const char *name;
     const char *icon;
+    const char *color;      /* 图标底色 (统一主题色板) */
     const char *cmdline;
     int launches;          /* 常用排序 */
 } AppEntry;
 
+/* 统一图标主题色板 (v1.7): 每应用固定主色 */
 static AppEntry apps[] = {
-    { "文件管理器", "▤", "qyfiles",         0 },
-    { "终端",       ">_", "weston-terminal", 0 },
-    { "系统设置",   "⚙",  "qysettings",      0 },
-    { "文本编辑",   "✎", "qyedit",   0 },
-    { "系统监视",   "▦", "qymon",           0 },
-    { "图片查看",   "▣", "qyview",          0 },
-    { "压缩管理",   "▣", "qyarc",           0 },
-    { "系统安装",   "⬇", "qysetup",         0 },
-    { "计算器",     "∑", "qysettings",      0 },
+    { "文件管理器", "▤", "#3b82f6", "qyfiles",         0 },
+    { "终端",       ">_", "#334155", "weston-terminal", 0 },
+    { "系统设置",   "⚙",  "#6b7280", "qysettings",      0 },
+    { "文本编辑",   "✎", "#10b981", "qyedit",          0 },
+    { "系统监视",   "▦", "#f59e0b", "qymon",           0 },
+    { "图片查看",   "▣", "#8b5cf6", "qyview",          0 },
+    { "压缩管理",   "▣", "#ef4444", "qyarc",           0 },
+    { "系统安装",   "⬇", "#f97316", "qysetup",         0 },
+    { "计算器",     "∑", "#06b6d4", "qysettings",      0 },
 };
 #define NAPPS ((int)(sizeof apps / sizeof apps[0]))
 
@@ -45,20 +47,46 @@ static void on_icon_click(GtkButton *btn, gpointer ud) {
     gtk_widget_hide(menu_win);
 }
 
+/* 圆角矩形绘制 (cairo) — 统一图标底 */
+static gboolean icon_draw_cb(GtkWidget *w, cairo_t *cr, gpointer ud) {
+    AppEntry *a = (AppEntry *)ud;
+    GtkAllocation al;
+    gtk_widget_get_allocation(w, &al);
+    GdkRGBA c;
+    gdk_rgba_parse(&c, a->color);
+    double r = 10.0, wdt = al.width, h = al.height;
+    cairo_new_sub_path(cr);
+    cairo_arc(cr, wdt-r, r, r, -G_PI/2, 0);
+    cairo_arc(cr, wdt-r, h-r, r, 0, G_PI/2);
+    cairo_arc(cr, r, h-r, r, G_PI/2, G_PI);
+    cairo_arc(cr, r, r, r, G_PI, 3*G_PI/2);
+    cairo_close_path(cr);
+    cairo_set_source_rgb(cr, c.red, c.green, c.blue);
+    cairo_fill(cr);
+    /* 白色字符居中 */
+    cairo_set_source_rgb(cr, 1, 1, 1);
+    cairo_select_font_face(cr, "sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
+    cairo_set_font_size(cr, h * 0.48);
+    cairo_text_extents_t te;
+    cairo_text_extents(cr, a->icon, &te);
+    cairo_move_to(cr, (wdt - te.width)/2 - te.x_bearing, (h - te.height)/2 - te.y_bearing);
+    cairo_show_text(cr, a->icon);
+    return FALSE;
+}
+
 static GtkWidget *make_grid_icon(AppEntry *a) {
-    GtkWidget *v = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
+    GtkWidget *v = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
     GtkWidget *btn = gtk_button_new();
     gtk_button_set_relief(GTK_BUTTON(btn), GTK_RELIEF_NONE);
-    GtkWidget *ic = gtk_label_new(a->icon);
-    PangoAttrList *big = pango_attr_list_new();
-    pango_attr_list_insert(big, pango_attr_size_new_absolute(30 * PANGO_SCALE));
-    gtk_label_set_attributes(GTK_LABEL(ic), big);
-    pango_attr_list_unref(big);
+    /* 图标画布: 56x56 圆角色块 */
+    GtkWidget *ic = gtk_drawing_area_new();
+    gtk_widget_set_size_request(ic, 56, 56);
+    g_signal_connect(ic, "draw", G_CALLBACK(icon_draw_cb), a);
     GtkWidget *lb = gtk_label_new(a->name);
     gtk_label_set_max_width_chars(GTK_LABEL(lb), 8);
     gtk_label_set_line_wrap(GTK_LABEL(lb), TRUE);
     gtk_label_set_justify(GTK_LABEL(lb), GTK_JUSTIFY_CENTER);
-    gtk_widget_override_color(lb, GTK_STATE_FLAG_NORMAL, &(GdkRGBA){0.92,0.92,0.95,1});
+    gtk_widget_override_color(lb, GTK_STATE_FLAG_NORMAL, &(GdkRGBA){0.15,0.15,0.18,1});
     gtk_container_add(GTK_CONTAINER(btn), v);
     gtk_box_pack_start(GTK_BOX(v), ic, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v), lb, FALSE, FALSE, 0);
