@@ -27,6 +27,7 @@ static gboolean is_img(const char *name) {
 }
 
 static void scan_dir(const char *path) {
+    if (!dir_files) dir_files = g_ptr_array_new_with_free_func(g_free);
     g_ptr_array_set_size(dir_files, 0);
     dir_idx = -1;
     gchar *dir = g_path_get_dirname(path);
