@@ -9,6 +9,8 @@ static GtkWidget *view;
 static GtkWidget *status;
 static char cwd[4096];
 static int in_trash = 0;   /* 当前是否处于回收站页 */
+static int g_argc = 0;     /* main 传下: --trash 检测用 */
+static char **g_argv = NULL;
 static void chdir_to(const char *path);
 static void chdir_trash(void);
 
@@ -409,10 +411,12 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(vbox), status, FALSE, FALSE, 2);
 
     gtk_widget_show_all(win);
-    chdir_to(home);
+    /* argv[1]=="--trash" → 启动即进回收站视图 (调试/自证用) */
+    if (g_argc > 1 && !strcmp(g_argv[1], "--trash")) chdir_trash(); else chdir_to(home);
 }
 
 int main(int argc, char **argv) {
+    g_argc = argc; g_argv = argv;
     GtkApplication *app = gtk_application_new("com.qiyuan.files", G_APPLICATION_NON_UNIQUE);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
     int rc = g_application_run(G_APPLICATION(app), argc, argv);
