@@ -533,6 +533,7 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 | SQUASHFS_ZSTD（v1.7.2） | ✅ 实测（内核开 ZSTD+SQUASHFS_ZSTD；rootfs 355MB zstd；**ISO 449→407MB -9.4%**；live VM 全功能正常） |
 | **端到端装机（v1.7.3）** | ✅ **里程碑**：live ISO → qyinstall 写盘（GPT/EFI+ext4）→ OVMF 从硬盘引导 → 完整桌面系统（rootfstype=ext4 rw，qyuseradd 实测）。修 install initramfs 缺 bin/busybox 致 kernel panic 落 shell 的 bug |
 | **首启向导 qywelcome（v1.8.0）** | ✅ 实测（装机后首启弹窗：主机名/用户/密码/时区 → 应用 → /etc/.qywelcomed 标记后不再弹） |
+| **普通用户自动登录（v1.8.1）** | ✅ 实测（/etc/qyautologin 写用户名 → 桌面以该用户运行 ps 验证；wayland socket 权限共享方案） |
 
 ### 下一步开发
 
