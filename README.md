@@ -413,6 +413,10 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 - **安装端到端实测**：空白 8G 盘 → live 引导 → qyinstall → 拔掉 ISO → OVMF UEFI 纯盘引导 → SSH 登入安装版系统，根分区 /dev/vda2 ext4（7.7G）
 - ISO 修复：rootfs 改 gzip 压缩（内核 CONFIG_SQUASHFS_ZSTD 未开，zstd squashfs 挂载失败进救援 shell —— 教训入 README）
 
+![安装后 UEFI 独立引导桌面](docs/screenshots/installed-desktop.png)
+
+*硬盘安装版：qyfiles 回收站视图 + qymon CPU 曲线 + 终端，UEFI(OVMF) 纯盘引导，SSH 实测根分区 /dev/vda2 ext4*
+
 下一步：qyinstall GUI 前端（qysettings 页）、qysudo、用户管理、统一图标主题。
 
 ## v1.4.2（2026-10-05，QEMU 实测）
