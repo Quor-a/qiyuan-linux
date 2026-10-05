@@ -405,6 +405,17 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 
 ---
 
+## v1.5.1（2026-10-06）
+
+**qysetup 系统安装器 GUI**（应用菜单第 9 项「系统安装」）：
+
+- 磁盘枚举（/sys/block，过滤小盘/sr），二次确认对话框，实时安装日志（g_child_watch + GIOChannel 管道），进度条
+- 后端调 qyinstall CLI（已实测的安装逻辑）
+- live 环境实测：GUI 正确列出 /dev/vda 8.0GB 并成功启动；硬盘引导环境正确报「未找到 live 介质」错误处理路径
+- scripts/ 固化全部 ISO 构建脚本（mkiso/build-bootefi/build-live-initramfs/build-install-initramfs/live-init.sh），修复 /tmp 剪枝导致的构建脚本丢失
+
+下一步：qysudo、用户管理、统一图标主题、声音/亮度设置页。
+
 ## v1.5.0（2026-10-06，QEMU 全链实测）
 
 **系统安装器 qyinstall 落地 —— 启元可安装到硬盘独立引导**：
