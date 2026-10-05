@@ -367,3 +367,38 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 - **设置 qysettings**：声音（ALSA amixer Master）、屏幕亮度（/sys/class/backlight）
 - **音频栈**：alsa-lib + alsa-utils 1.2.14（147 包）
 - **健壮性**：initramfs cpio 重建修复、grub.cfg 显式化、DRM 输入设备未就绪自动重试
+
+## 桌面环境 v1.2.1（2026-10-05，QEMU 实测）
+
+**鼠标点击链路彻底打通**（v1.1.1–v1.2.0 连续三案告破）：
+
+1. **渲染消失病**（v1.1.1）：应用窗口点击后被壁纸窗遮挡 → map 压底 z 序方向修正
+   （weston 渲染器 `wl_list_for_each_reverse` → view_list 头=最顶、尾=最底；旧补丁插头=置顶）
+2. **测试工具链**：QEMU monitor `mouse_button b=1` 是静默失败语法，正确为 `mouse_button 1`（按下）+ `0`（释放）
+3. **HOME 归一**（v1.2.0）：GLib `g_get_home_dir()` 优先读 `$HOME`，init 环境未设时回收站等
+   `~/.local` 路径全部错位 → start-qydesktop.sh 强制 `export HOME=$(getent passwd …)`
+
+**回收站显示 bug 根治实证**（样本数据在而列表空 = HOME 错位，非读取逻辑问题）：
+
+| 回收站视图（修复实证） |
+|---|
+| ![回收站修复](docs/screenshots/qyfiles-trash-ok.png) |
+
+- qyfiles `--trash` 启动参数自证回收站视图；GtkApplication 只传 argv[0]
+  （`--trash` 会被其命令行解析器判 Unknown option 静默退出——自启场景大坑）
+- **qymon 系统监视器 v1**：/proc/stat CPU + /proc/meminfo 内存实时曲线（GtkDrawingArea+cairo，1s 刷新）
+- **qyview 图片查看器 v1**：GdkPixbuf 打开/自适应、滚轮缩放、左右键同目录翻页、双击还原
+- 应用菜单扩至 7 应用；启动器图标点击拉起应用全链路实测
+
+**Release**：[v1.1.2](https://github.com/Quor-a/qiyuan-linux/releases/tag/v1.1.2)（ISO 1.2.0 + 全部修复）
+
+## 开发进度与下一步
+
+- ✅ 已完成：包管理/构建/仓库/init 内核全链路、weston 桌面+任务栏、鼠标点击闭环、
+  qyfiles（回收站全功能）、qysettings（声音/亮度）、qyappmenu、qyedit、qymon、qyview（147 包）
+- 🔧 进行中：qymon/qyview 启动器点击拉起的 VM 实测收尾
+- 📋 下一步：
+  1. 系统级完善：polkit/elogind、服务管理（qyinit 单元依赖可视化）
+  2. 12 类最小集补齐（剩 音频播放器/视频播放器/文本终端增强/压缩管理器 等）
+  3. qyfiles 图标视图 + qyview 缩略图浏览模式
+  4. 安装器（ISO → 硬盘装机）
