@@ -402,3 +402,68 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
   2. 12 类最小集补齐（剩 音频播放器/视频播放器/文本终端增强/压缩管理器 等）
   3. qyfiles 图标视图 + qyview 缩略图浏览模式
   4. 安装器（ISO → 硬盘装机）
+
+---
+
+## 桌面环境 v1.4.0（2026-10-05，QEMU 实测）
+
+本轮把启元从"能跑桌面"推进到**"有系统管理能力的发行版"**——补齐了操作系统层面的
+服务管理、网络自启、远程登录三条主干，并修掉一个会静默损坏系统文件的打包大坑。
+
+### 新增：操作系统层能力
+
+| 能力 | 实现 | 实测 |
+|---|---|---|
+| 服务管理 CLI `qyctl` | 无 dbus/polkit 依赖的自研 C 程序（list/status/start/stop/restart/enable/disable）；与 qyinit 通过 `/run/qyinit/units/<name>.pid` 契约协作 | SSH 进 VM 执行 `qyctl list` 输出 9 个单元 ✅ |
+| 网络开机自启 `qynet` | `start-qynet.sh` + qynet.unit：busybox `udhcpc` DHCP，失败自动静态兜底（slirp 10.0.2.15） | VM 内 `10.0.2.15/24 scope global enp0s3` ✅ |
+| 远程登录 | sshd 服务单元 + host key + 特权分离目录自建 | 宿主 `ssh -p 2222 root@127.0.0.1` 返回 `SSH-OK` / `uname -r = 6.16.1` ✅ |
+| 开机自检 `qyselftest` | 每次启动把 uname/服务表/网络/磁盘/内存/进程数打到串口 | 串口输出 `===QYSELFTEST===` 全项 ✅ |
+| 压缩管理器 `qyarc` | GTK3 图形化：打开/查看条目/解压到/新建/删除；后端 7za + tar | 7za 打包/列表在 VM 内实测 ✅（截图见下） |
+| 应用菜单扩至 8 项 | 新增"压缩管理" | ✅ |
+
+### 修复：一个会静默损坏系统的打包缺陷
+
+`mksquashfs` 以普通用户身份运行，**读不到 root:600 的文件，却会静默打成 0 字节**。
+受害文件包括 `/etc/ssh/ssh_host_*_key`（表现为 sshd 报 `no hostkeys available -- exiting`）。
+修法：打包改用 `sudo mksquashfs ... -all-root`。
+本项目的教训写进规矩：**任何"非 root 进程读写 root-only 文件"的打包步骤，都必须验证产物字节数，而不是看命令退出码。**
+
+### 架构与语言选型（本轮成文）
+
+写入 `doc_架构与语言选型.md`。核心结论：
+
+| 层 | 语言 | 理由 |
+|---|---|---|
+| init / 服务 CLI / 桌面 / 应用 | C | 零运行时依赖、可审计、启动快；最小 rootfs 不装解释器 |
+| 构建系统 / 包管理（开发机） | Python 3 | 依赖图求解与配方元编程，开发效率优先，不进目标系统 |
+| 打包格式 / 脚本 | .qyp 数据格式 / POSIX sh | 无语言属性；脚本只用 busybox 支持的子集 |
+
+明确不引入：systemd、polkit、PulseAudio、目标系统内的 Python 运行时。
+
+### 测试截图
+
+![启元桌面 v1.4.0](docs/screenshots/qymon-running.png)
+
+*桌面实况：左侧「启元文件管理器」**回收站视图**（notes.txt / 报告草稿.txt 带"类型/原位置"列），
+中上「启元系统监视器」CPU 5% 实时曲线（含负载尖峰）与 MEM 曲线，左下角终端。*
+
+![回收站修复实证](docs/screenshots/qyfiles-trash-ok.png)
+
+### 开发进度
+
+| 项 | 状态 |
+|---|---|
+| 服务管理器 qyctl（9 单元） | ✅ 实测 |
+| 网络 DHCP 自启 | ✅ 实测（10.0.2.15） |
+| SSH 远程登录 | ✅ 实测（宿主→VM） |
+| 开机自检输出 | ✅ 实测 |
+| 压缩管理器 qyarc | ✅ 已入包入菜单（GUI 待桌面点击实测） |
+| squashfs 权限缺陷 | ✅ 已修 |
+
+### 下一步开发
+
+1. **qyarc GUI 桌面点击实测** + tar 后端兜底（系统 tar 缺 libselinux，先用 busybox tar）
+2. **安装器（写盘 + 引导）**：ISO → 硬盘，qydisk 路线
+3. **polkit 替代品 `qysudo`**：setuid 白名单 + 策略文件
+4. **用户管理**：shadow 包接入（useradd/passwd），让多用户可用
+5. **包管理进目标系统**：用 C 重写 qypkg 核心子集（安装/查询/校验）

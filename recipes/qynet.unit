@@ -1,0 +1,5 @@
+[Unit]
+Description=Network DHCP (busybox udhcpc)
+After=udevd
+ExecStart=/usr/bin/start-qynet.sh
+Restart=on-failure

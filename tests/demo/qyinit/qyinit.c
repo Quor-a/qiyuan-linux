@@ -281,6 +281,16 @@ static pid_t spawn(unit_t *u)
     }
     u->pid = pid;
     u->started = 1;
+    /* 契约：写 /run/qyinit/units/<name>.pid，供 qyctl 等客户端查询 */
+    {
+        char pdir[] = "/run/qyinit/units";
+        mkdir("/run/qyinit", 0755);
+        mkdir(pdir, 0755);
+        char ppath[PATH_MAX];
+        snprintf(ppath, sizeof ppath, "%s/%s.pid", pdir, u->name);
+        FILE *pf = fopen(ppath, "w");
+        if (pf) { fprintf(pf, "%d\n", (int)pid); fclose(pf); }
+    }
     logmsg("启动 %s（pid %d）", u->name, pid);
     return pid;
 }
@@ -302,6 +312,9 @@ static void mount_early(void)
     mkdir("/sys", 0755);
     mkdir("/dev", 0755);
     mkdir("/run", 0755);
+    /* /run 用 tmpfs：pidfile、XDG_RUNTIME_DIR 都要求可写且重启即清 */
+    if (mount("tmpfs", "/run", "tmpfs", 0, "mode=0755") != 0)
+        logmsg("挂载 /run tmpfs 失败: %s", strerror(errno));
     mkdir("/dev/pts", 0755);
     mkdir("/dev/shm", 0755);
 

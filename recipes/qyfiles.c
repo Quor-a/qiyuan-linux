@@ -419,7 +419,10 @@ int main(int argc, char **argv) {
     g_argc = argc; g_argv = argv;
     GtkApplication *app = gtk_application_new("com.qiyuan.files", G_APPLICATION_NON_UNIQUE);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
-    int rc = g_application_run(G_APPLICATION(app), argc, argv);
+    /* 只把 argv[0] 交给 GtkApplication: 否则 --trash 会被其命令行解析器判为
+       "Unknown option" 而直接退出 (自启/调试场景静默失败根因) */
+    char *own_argv[2] = { argv[0], NULL };
+    int rc = g_application_run(G_APPLICATION(app), 1, own_argv);
     g_object_unref(app);
     return rc;
 }
