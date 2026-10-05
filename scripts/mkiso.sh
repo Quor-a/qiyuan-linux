@@ -15,8 +15,9 @@ cp /tmp/BOOTX64.EFI /tmp/qyiso/BOOTX64.EFI
 [ -f /tmp/initramfs-install.img ] || { echo "缺 /tmp/initramfs-install.img"; exit 1; }
 cp /tmp/initramfs-install.img /tmp/qyiso/live/initramfs-install.img
 
-echo "=== mksquashfs (gzip! 内核无 SQUASHFS_ZSTD) ==="
-sudo mksquashfs $Q/var/sysroot /tmp/qyiso/live/rootfs.squashfs -comp gzip -Xcompression-level 9 -e $Q/var/sysroot/var -e $Q/var/sysroot/home -noappend > /tmp/mksq.log 2>&1
+SQCOMP="${SQCOMP:-zstd}"
+echo "=== mksquashfs (-comp $SQCOMP) ==="
+sudo mksquashfs $Q/var/sysroot /tmp/qyiso/live/rootfs.squashfs -comp $SQCOMP $([ "$SQCOMP" = gzip ] && echo "-Xcompression-level 9") -e $Q/var/sysroot/var -e $Q/var/sysroot/home -noappend > /tmp/mksq.log 2>&1
 
 cat > /tmp/qyiso/boot/grub/grub.cfg <<'EOF'
 set timeout=3

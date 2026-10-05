@@ -530,6 +530,7 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 | 声音/亮度设置页实际生效（v1.7.0） | ✅ 实测（amixer Master 读写 / backlight 写入；内核开 SND_HDA_GENERIC → QEMU 声卡 HDA Intel 识别，音量 55% 回读一致） |
 | 版本号同步 | ✅ /etc/qiyuan-release 0.9 → 1.7，关于页显示正确 |
 | 用户管理 GUI qyusers（v1.7.1） | ✅ 实测（列表/新建/改密/删除/[wheel] 标记；修 atoi 解析 bug） |
+| SQUASHFS_ZSTD（v1.7.2） | ✅ 实测（内核开 ZSTD+SQUASHFS_ZSTD；rootfs 355MB zstd；**ISO 449→407MB -9.4%**；live VM 全功能正常） |
 
 ### 下一步开发
 
@@ -541,4 +542,5 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 6. **声音/亮度设置页**：qysettings 新增音频与背光面板
 7. **SQUASHFS_ZSTD 内核重配**：压缩率/启动速度优化
 8. **qyuseradd GUI**：用户管理图形化（列表/新建/密码/删组）
-9. **SQUASHFS_ZSTD 内核重配**：压缩率/启动速度优化（内核重编 ~12 分钟已验证可行）
+9. **开机动画/主题**：PLYMOUTH 替代（busybox 静态进度）或 PSPLASH
+10. **装盘安装器端到端**：qysetup 真实写盘 + grub 安装 + 重启进硬盘系统

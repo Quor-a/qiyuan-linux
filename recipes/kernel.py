@@ -49,7 +49,8 @@ def build(ctx):
                 "CONFIG_USB_SUPPORT=y", "CONFIG_USB_HID=y",
                 "CONFIG_INPUT_EVDEV=y",
                 "CONFIG_SOUND=y", "CONFIG_SND=y", "CONFIG_SND_PCI=y",
-                "CONFIG_SND_HDA_INTEL=y", "CONFIG_SND_HDA_GENERIC=y"):
+                "CONFIG_SND_HDA_INTEL=y", "CONFIG_SND_HDA_GENERIC=y",
+                "CONFIG_ZSTD_DECOMPRESS=y", "CONFIG_SQUASHFS_ZSTD=y"):
         ctx.run("./scripts/config -e {}".format(opt.split("=")[0]))
     ctx.run("make olddefconfig")
     ctx.run("make -j2 bzImage modules")
