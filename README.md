@@ -531,6 +531,7 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 | 版本号同步 | ✅ /etc/qiyuan-release 0.9 → 1.7，关于页显示正确 |
 | 用户管理 GUI qyusers（v1.7.1） | ✅ 实测（列表/新建/改密/删除/[wheel] 标记；修 atoi 解析 bug） |
 | SQUASHFS_ZSTD（v1.7.2） | ✅ 实测（内核开 ZSTD+SQUASHFS_ZSTD；rootfs 355MB zstd；**ISO 449→407MB -9.4%**；live VM 全功能正常） |
+| **端到端装机（v1.7.3）** | ✅ **里程碑**：live ISO → qyinstall 写盘（GPT/EFI+ext4）→ OVMF 从硬盘引导 → 完整桌面系统（rootfstype=ext4 rw，qyuseradd 实测）。修 install initramfs 缺 bin/busybox 致 kernel panic 落 shell 的 bug |
 
 ### 下一步开发
 
@@ -543,4 +544,4 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 7. **SQUASHFS_ZSTD 内核重配**：压缩率/启动速度优化
 8. **qyuseradd GUI**：用户管理图形化（列表/新建/密码/删组）
 9. **开机动画/主题**：PLYMOUTH 替代（busybox 静态进度）或 PSPLASH
-10. **装盘安装器端到端**：qysetup 真实写盘 + grub 安装 + 重启进硬盘系统
+10. **装机后收尾**：主机名设置 / 普通用户自动登录 / 时区 / 语言，安装器向导化（磁盘选择→用户预创建）

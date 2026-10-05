@@ -22,5 +22,7 @@ for d in proc sys dev run; do /bin/busybox mkdir -p /newroot/$d; /bin/busybox mo
 exec /bin/busybox switch_root /newroot /usr/bin/qyinit
 EOF
 chmod 755 init
+# 关键: init 的 shebang 是 /bin/busybox — live initramfs 可能只有 bin/sh → 补链
+[ -e bin/busybox ] || ln -sf sh bin/busybox
 find . | cpio -o -H newc 2>/dev/null | gzip -9 > /tmp/initramfs-install.img
 ls -la /tmp/initramfs-install.img
