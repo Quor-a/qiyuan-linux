@@ -118,7 +118,7 @@ static void list_tar(void)
 {
     /* tar tvf: 权限 owner size date time name */
     char cmd[PATH_MAX + 64];
-    snprintf(cmd, sizeof cmd, "tar tvf '%s'", g_arc);
+    snprintf(cmd, sizeof cmd, "tar tvf '%s' 2>/dev/null || busybox tar tvf '%s'", g_arc, g_arc);
     gchar *out = run_capture(cmd);
     if (!out) { status_set("tar 执行失败"); return; }
     int n_items = 0;
@@ -199,7 +199,7 @@ static void act_extract(GtkWidget *w, gpointer data)
         if (strcmp(t, "7z") == 0 || strcmp(t, "zip") == 0 || strcmp(t, "rar") == 0)
             snprintf(cmd, sizeof cmd, "7za x -y -o'%s' '%s'", dir, g_arc);
         else if (t[0] == 't')
-            snprintf(cmd, sizeof cmd, "tar xf '%s' -C '%s'", g_arc, dir);
+            snprintf(cmd, sizeof cmd, "tar xf '%s' -C '%s' 2>/dev/null || busybox tar xf '%s' -C '%s'", g_arc, dir, g_arc, dir);
         else if (strcmp(t, "gz") == 0 || strcmp(t, "xz") == 0 || strcmp(t, "zst") == 0) {
             snprintf(cmd, sizeof cmd, "cp '%s' '%s/' && cd '%s' && ", g_arc, dir, dir);
             size_t n = strlen(cmd);
@@ -243,7 +243,7 @@ static void act_new(GtkWidget *w, gpointer data)
             if (strcmp(t, "zip") == 0 || strcmp(t, "7z") == 0)
                 snprintf(cmd, sizeof cmd, "7za a '%s' '%s'", g_arc, src);
             else
-                snprintf(cmd, sizeof cmd, "tar czf '%s' '%s'", g_arc, src);
+                snprintf(cmd, sizeof cmd, "tar czf '%s' '%s' 2>/dev/null || busybox tar czf '%s' '%s'", g_arc, src, g_arc, src);
             gboolean ok = g_spawn_command_line_sync(cmd, NULL, NULL, NULL, NULL);
             status_set(ok ? "已创建 %s" : "创建失败", g_arc);
             g_free(src);
