@@ -405,6 +405,17 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 
 ---
 
+## v1.4.1（2026-10-05，QEMU 实测）
+
+**qyarc 压缩管理器修复版**：
+
+- **g_spawn_command_line_sync 不是 shell**：管道/重定向/|| 被当普通参数 → 改经 /bin/sh -c 执行（run_shell_sync）
+- tar 列表解析重写：兼容 GNU tar 与 busybox tar（busybox -tv 输出 6 字段，原 7 字段 sscanf 整行解析失败 → 列表空白）
+- tar 配方 --without-selinux（修 VM 内 GNU tar 缺 libselinux）
+- 测试截图：tgz 双文件列表（测试A.txt/dataB.bin）GUI 实证
+
+下一步：安装器（ISO→硬盘）、qysudo、用户管理、qyview 实测、统一图标主题。
+
 ## 桌面环境 v1.4.0（2026-10-05，QEMU 实测）
 
 本轮把启元从"能跑桌面"推进到**"有系统管理能力的发行版"**——补齐了操作系统层面的
