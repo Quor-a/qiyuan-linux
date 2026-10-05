@@ -90,7 +90,6 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_container_set_border_width(GTK_CONTAINER(v5), 14);
     GtkWidget *vol = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0, 100, 1);
     gtk_scale_set_draw_value(GTK_SCALE(vol), TRUE);
-    gtk_range_set_value(GTK_RANGE(vol), -1);
     gtk_box_pack_start(GTK_BOX(v5), gtk_label_new("输出音量 (Master)"), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v5), vol, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v5), row("音频后端", "ALSA (amixer)"), FALSE, FALSE, 0);
@@ -101,7 +100,6 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_container_set_border_width(GTK_CONTAINER(v6), 14);
     GtkWidget *br = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 1, 100, 1);
     gtk_scale_set_draw_value(GTK_SCALE(br), TRUE);
-    gtk_range_set_value(GTK_RANGE(br), 100);
     gtk_box_pack_start(GTK_BOX(v6), gtk_label_new("屏幕亮度"), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v6), br, FALSE, FALSE, 0);
     {
