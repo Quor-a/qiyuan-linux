@@ -405,6 +405,15 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 
 ---
 
+## v1.4.2（2026-10-05，QEMU 实测）
+
+**qyview 图片查看器修复**：
+
+- dir_files GPtrArray 未初始化 → g_ptr_array 断言失败、窗口不显示 → scan_dir 前惰性创建
+- 实测：SSH 拉起 qyview 打开 qiyuan.png，窗口「启元图片查看器」图片完整渲染
+
+下一步：安装器（ISO→硬盘）、qysudo、用户管理、统一图标主题。
+
 ## v1.4.1（2026-10-05，QEMU 实测）
 
 **qyarc 压缩管理器修复版**：
