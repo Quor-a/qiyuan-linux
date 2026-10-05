@@ -14,8 +14,9 @@ static AppEntry apps[] = {
     { "终端",       ">_", "weston-terminal", 0 },
     { "系统设置",   "⚙",  "qysettings",      0 },
     { "文本编辑",   "✎", "qyedit",   0 },
+    { "系统监视",   "▦", "qymon",           0 },
+    { "图片查看",   "▣", "qyview",          0 },
     { "计算器",     "∑", "qysettings",      0 },
-    { "系统监视",   "▦", "qysettings",      0 },
 };
 #define NAPPS ((int)(sizeof apps / sizeof apps[0]))
 
