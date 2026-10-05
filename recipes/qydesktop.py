@@ -54,6 +54,7 @@ def build(ctx):
         "gcc qyfiles.c -o qyfiles $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qysettings.c -o qysettings $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qyusers.c -o qyusers $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
+        "gcc qywelcome.c -o qywelcome $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qyappmenu.c -o qyappmenu $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qyedit.c -o qyedit $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qymon.c -o qymon $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
@@ -78,6 +79,7 @@ def package(ctx):
     ctx.run("cp qyuseradd.sh {}/usr/bin/qyuseradd && chmod +x {}/usr/bin/qyuseradd".format(ctx.destdir, ctx.destdir))
     ctx.run("cp qyusers {}/usr/bin/qyusers".format(ctx.destdir))
     ctx.run("cp qyinstall.sh {}/usr/bin/qyinstall && chmod +x {}/usr/bin/qyinstall".format(ctx.destdir, ctx.destdir))
+    ctx.run("cp qywelcome {}/usr/bin/qywelcome".format(ctx.destdir))
     # 网络自启单元 (busybox udhcpc DHCP)：
     ctx.run("mkdir -p {}/etc/qyinit.d".format(ctx.destdir))
     ctx.install_file("qynet.unit", "etc/qyinit.d/qynet.unit")

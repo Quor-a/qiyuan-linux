@@ -283,6 +283,8 @@ int main(int argc, char **argv) {
     build_bar();
     build_dock();
     build_desktop();
+    /* 首启向导: 未配置过则拉起 */
+    if (access("/etc/.qywelcomed", F_OK) != 0) launch_cmd("qywelcome");
     g_timeout_add_seconds(2, taskbar_tick, NULL);
     gtk_main();
     return 0;
