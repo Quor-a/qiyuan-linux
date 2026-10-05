@@ -355,6 +355,9 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 
 ![统一图标主题](docs/screenshots/qyappmenu-color-icons.png)
 *v1.7 统一图标主题：cairo 圆角色块 + 9 色板 + 深灰高对比标签*
+![系统设置 v1.7](docs/screenshots/qysettings-170.png)
+*v1.7.0 系统设置：关于页 Qiyuan Linux 1.7 + 声音/亮度页实际生效（ALSA Master / backlight）*
+
 
 ## 桌面环境 v1.1.1（2026-10-04，QEMU 实测）
 
@@ -520,7 +523,9 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 | squashfs 权限缺陷 | ✅ 已修 |
 | 安装器 qysetup GUI（v1.5.1） | ✅ 实测（磁盘枚举/确认/日志/进度条） |
 | 权限提升 qysudo + 用户管理 qyuseradd（v1.6.0） | ✅ 实测（wheel 组/shadow 密码校验/提权 uid=0） |
-| 统一图标主题（v1.7，本轮） | ✅ 实测（cairo 圆角色块 9 色板 + 标签深灰高对比） |
+| 统一图标主题（v1.7） | ✅ 实测（cairo 圆角色块 9 色板 + 标签深灰高对比） |
+| 声音/亮度设置页实际生效（v1.7.0） | ✅ 实测（amixer Master 读写 / backlight 写入；内核开 SND_HDA_GENERIC → QEMU 声卡 HDA Intel 识别，音量 55% 回读一致） |
+| 版本号同步 | ✅ /etc/qiyuan-release 0.9 → 1.7，关于页显示正确 |
 
 ### 下一步开发
 
@@ -532,3 +537,4 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 6. **声音/亮度设置页**：qysettings 新增音频与背光面板
 7. **SQUASHFS_ZSTD 内核重配**：压缩率/启动速度优化
 8. **qyuseradd GUI**：用户管理图形化（列表/新建/密码/删组）
+9. **SQUASHFS_ZSTD 内核重配**：压缩率/启动速度优化（内核重编 ~12 分钟已验证可行）
