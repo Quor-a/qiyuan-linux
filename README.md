@@ -405,6 +405,17 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 
 ---
 
+## v1.6.0（2026-10-06）
+
+**qysudo 权限提升 + 用户管理**：
+
+- **qysudo**（setuid-root C 程序）：/etc/qysudoers 授权（用户或 %wheel 组）→ /etc/shadow 密码校验（crypt_r SHA512，3 次重试）→ 提权执行；PATH 重置防注入；root 免密
+- **用户体系**：/etc/shadow 落地（root:600）；wheel 组；qyuseradd 脚本（创建用户+home+入 wheel）
+- **实测**：chroot 中 tester(wheel) 输密码 → qysudo id → uid=0(root) ✅
+- 教训：/etc/shadow 里 root 为 `!`（锁定）时 sshd 拒绝一切认证（"account is locked"）→ root 必须有真实密码 hash（默认 qiyuan-root，README 提醒用户改）
+
+下一步：统一图标主题、声音/亮度设置页、SQUASHFS_ZSTD 内核重配、qyuseradd GUI。
+
 ## v1.5.1（2026-10-06）
 
 **qysetup 系统安装器 GUI**（应用菜单第 9 项「系统安装」）：
