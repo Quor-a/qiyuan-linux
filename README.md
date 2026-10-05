@@ -357,6 +357,9 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 *v1.7 统一图标主题：cairo 圆角色块 + 9 色板 + 深灰高对比标签*
 ![系统设置 v1.7](docs/screenshots/qysettings-170.png)
 *v1.7.0 系统设置：关于页 Qiyuan Linux 1.7 + 声音/亮度页实际生效（ALSA Master / backlight）*
+![用户管理 GUI](docs/screenshots/qyusers-gui.png)
+*v1.7.1 用户管理 qyusers：用户列表 / 新建 / 改密 / 删除 / wheel 组标记*
+
 
 
 ## 桌面环境 v1.1.1（2026-10-04，QEMU 实测）
@@ -526,6 +529,7 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 | 统一图标主题（v1.7） | ✅ 实测（cairo 圆角色块 9 色板 + 标签深灰高对比） |
 | 声音/亮度设置页实际生效（v1.7.0） | ✅ 实测（amixer Master 读写 / backlight 写入；内核开 SND_HDA_GENERIC → QEMU 声卡 HDA Intel 识别，音量 55% 回读一致） |
 | 版本号同步 | ✅ /etc/qiyuan-release 0.9 → 1.7，关于页显示正确 |
+| 用户管理 GUI qyusers（v1.7.1） | ✅ 实测（列表/新建/改密/删除/[wheel] 标记；修 atoi 解析 bug） |
 
 ### 下一步开发
 
