@@ -21,6 +21,10 @@
 
 enum { COL_NAME, COL_TYPE, COL_SIZE, COL_MTIME, N_COLS };
 
+/* GtkApplication 只传 argv[0]（铁律），自定义参数走全局 */
+static int g_argc = 0;
+static char **g_argv = NULL;
+
 static GtkWidget *g_view;
 static GtkListStore *g_store;
 static GtkWidget *g_status;
@@ -46,13 +50,25 @@ static const char *arc_type(const char *path)
     return "";
 }
 
+/* ★ g_spawn_command_line_sync 不是 shell：它用 g_shell_parse_argv 分词，
+ *   管道、重定向、|| 都会被当成普通参数 → 必须显式经 /bin/sh -c 执行。 */
+static gboolean run_shell_sync(const char *cmd, gchar **stdout_out, gboolean capture)
+{
+    char *argv[4] = { (char *)"/bin/sh", (char *)"-c", (char *)cmd, NULL };
+    gchar *out = NULL;
+    GError *err = NULL;
+    gboolean ok = g_spawn_sync(NULL, argv, NULL, G_SPAWN_SEARCH_PATH,
+                               NULL, NULL, capture ? &out : NULL, NULL, NULL, &err);
+    if (err) { g_error_free(err); ok = FALSE; }
+    if (stdout_out) *stdout_out = out;
+    else g_free(out);
+    return ok;
+}
+
 static gchar *run_capture(const char *cmd)
 {
     gchar *out = NULL;
-    if (!g_spawn_command_line_sync(cmd, &out, NULL, NULL, NULL)) {
-        g_free(out);
-        return NULL;
-    }
+    if (!run_shell_sync(cmd, &out, TRUE)) { g_free(out); return NULL; }
     return out;
 }
 
@@ -85,8 +101,10 @@ static void list_7z(void)
     if (!out) { status_set("7za 执行失败"); return; }
     char name[1024] = "", size[64] = "", mtime[64] = "";
     int n_items = 0;
+    int first_block = 1;   /* 7za -slt 第一个 Path 是包自身，跳过 */
     for (char *line = strtok(out, "\n"); line; line = strtok(NULL, "\n")) {
         if (strncmp(line, "Path = ", 7) == 0) {
+            if (first_block) { first_block = 0; name[0] = '\0'; continue; }
             if (name[0]) {
                 GtkTreeIter it;
                 gtk_list_store_append(g_store, &it);
@@ -114,19 +132,48 @@ static void list_7z(void)
     status_set("%s — %d 项", g_arc, n_items);
 }
 
+/* 解析 tar -tv 一行：字段顺序 = perms owner size date time name…（name 可含空格）
+ * GNU tar 与 busybox tar 都是 6 字段（owner/group 合并为一列），
+ * 因此不能用固定 7 字段 sscanf —— 那会让 busybox 输出整行解析失败、列表空白。 */
+static int parse_tar_line(const char *line, char *perms, size_t psz,
+                          char *size, size_t ssz, char *date, size_t dsz,
+                          char *name, size_t nsz)
+{
+    const char *tok[6]; size_t len[6];
+    const char *p = line;
+    for (int i = 0; i < 5; i++) {
+        while (*p == ' ' || *p == '\t') p++;
+        if (!*p) return -1;
+        tok[i] = p;
+        while (*p && *p != ' ' && *p != '\t') p++;
+        len[i] = (size_t)(p - tok[i]);
+    }
+    while (*p == ' ' || *p == '\t') p++;
+    if (!*p) return -1;
+    tok[5] = p; len[5] = strlen(p);
+    snprintf(perms, psz, "%.*s", (int)len[0], tok[0]);
+    snprintf(size,  ssz, "%.*s", (int)len[2], tok[2]);
+    snprintf(date,  dsz, "%.*s", (int)len[3], tok[3]);
+    snprintf(name,  nsz, "%s", tok[5]);
+    return 0;
+}
+
 static void list_tar(void)
 {
-    /* tar tvf: 权限 owner size date time name */
-    char cmd[PATH_MAX + 64];
-    snprintf(cmd, sizeof cmd, "tar tvf '%s' 2>/dev/null || busybox tar tvf '%s'", g_arc, g_arc);
+    char cmd[PATH_MAX * 3 + 256];
+    /* GNU tar 优先；系统 tar 缺依赖时回落 busybox（必须 -tv 才有元数据） */
+    snprintf(cmd, sizeof cmd,
+        "tar tvf '%s' 2>/dev/null || busybox tar -tvzf '%s' 2>/dev/null || busybox tar -tvf '%s'",
+        g_arc, g_arc, g_arc);
     gchar *out = run_capture(cmd);
     if (!out) { status_set("tar 执行失败"); return; }
     int n_items = 0;
     for (char *line = strtok(out, "\n"); line; line = strtok(NULL, "\n")) {
-        if (strlen(line) < 30) continue;
+        if (strlen(line) < 20) continue;
         char perms[16] = "", size[32] = "", date[24] = "", name[1024] = "";
-        if (sscanf(line, "%15s %*s %*s %31s %23s %*s %1023[^\n]",
-                   perms, size, date, name) < 4) continue;
+        if (parse_tar_line(line, perms, sizeof perms, size, sizeof size,
+                           date, sizeof date, name, sizeof name) != 0) continue;
+        if (size[0] < '0' || size[0] > '9') continue;
         GtkTreeIter it;
         gtk_list_store_append(g_store, &it);
         gtk_list_store_set(g_store, &it, COL_NAME, name,
@@ -199,14 +246,14 @@ static void act_extract(GtkWidget *w, gpointer data)
         if (strcmp(t, "7z") == 0 || strcmp(t, "zip") == 0 || strcmp(t, "rar") == 0)
             snprintf(cmd, sizeof cmd, "7za x -y -o'%s' '%s'", dir, g_arc);
         else if (t[0] == 't')
-            snprintf(cmd, sizeof cmd, "tar xf '%s' -C '%s' 2>/dev/null || busybox tar xf '%s' -C '%s'", g_arc, dir, g_arc, dir);
+            snprintf(cmd, sizeof cmd, "tar xf '%s' -C '%s' 2>/dev/null || busybox tar -xzf '%s' -C '%s' 2>/dev/null || busybox tar -xf '%s' -C '%s'", g_arc, dir, g_arc, dir, g_arc, dir);
         else if (strcmp(t, "gz") == 0 || strcmp(t, "xz") == 0 || strcmp(t, "zst") == 0) {
             snprintf(cmd, sizeof cmd, "cp '%s' '%s/' && cd '%s' && ", g_arc, dir, dir);
             size_t n = strlen(cmd);
             if (strcmp(t, "gz") == 0) snprintf(cmd + n, sizeof cmd - n, "gunzip -f '%s'", strrchr(g_arc, '/') ? g_arc : g_arc);
             /* 简化：gzip -d 在目标目录对副本执行 */
         }
-        gboolean ok = g_spawn_command_line_sync(cmd, NULL, NULL, NULL, NULL);
+        gboolean ok = run_shell_sync(cmd, NULL, FALSE);
         status_set(ok ? "已解压到 %s" : "解压失败", dir);
         g_free(dir);
     }
@@ -243,8 +290,8 @@ static void act_new(GtkWidget *w, gpointer data)
             if (strcmp(t, "zip") == 0 || strcmp(t, "7z") == 0)
                 snprintf(cmd, sizeof cmd, "7za a '%s' '%s'", g_arc, src);
             else
-                snprintf(cmd, sizeof cmd, "tar czf '%s' '%s' 2>/dev/null || busybox tar czf '%s' '%s'", g_arc, src, g_arc, src);
-            gboolean ok = g_spawn_command_line_sync(cmd, NULL, NULL, NULL, NULL);
+                snprintf(cmd, sizeof cmd, "tar czf '%s' '%s' 2>/dev/null || busybox tar -czf '%s' '%s'", g_arc, src, g_arc, src);
+            gboolean ok = run_shell_sync(cmd, NULL, FALSE);
             status_set(ok ? "已创建 %s" : "创建失败", g_arc);
             g_free(src);
             refresh_list();
@@ -268,7 +315,7 @@ static void act_delete(GtkWidget *w, gpointer data)
     if (strcmp(t, "7z") == 0 || strcmp(t, "zip") == 0)
         snprintf(cmd, sizeof cmd, "7za d '%s' '%s'", g_arc, name);
     else { status_set("tar 包不支持删除条目（整包重打包实现，v2）"); g_free(name); return; }
-    g_spawn_command_line_sync(cmd, NULL, NULL, NULL, NULL);
+    run_shell_sync(cmd, NULL, FALSE);
     status_set("已删除: %s", name);
     g_free(name);
     refresh_list();
@@ -319,11 +366,20 @@ static void activate(GtkApplication *app, gpointer user_data)
     /* 打开对话框的二级选择：response 处理挂在 act_new 内部流程之外，
        这里给 sel 的 ACCEPT 走 on_add_response 由 act_new 的 run 直接 return 前接入 */
     gtk_widget_show_all(win);
-    status_set("打开一个压缩包开始");
+    /* --open <path>：启动即打开压缩包（自动化测试与 CLI 友好） */
+    for (int i = 1; i < g_argc - 1; i++) {
+        if (strcmp(g_argv[i], "--open") == 0) {
+            snprintf(g_arc, sizeof g_arc, "%s", g_argv[i + 1]);
+            refresh_list();
+            break;
+        }
+    }
+    if (!g_arc[0]) status_set("打开一个压缩包开始");
 }
 
 int main(int argc, char **argv)
 {
+    g_argc = argc; g_argv = argv;
     GtkApplication *app = gtk_application_new("io.github.quora.qyarc", G_APPLICATION_FLAGS_NONE);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
     int rc = g_application_run(G_APPLICATION(app), 0, NULL); /* 铁律：只传 argv[0] */
