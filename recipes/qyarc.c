@@ -366,12 +366,21 @@ static void activate(GtkApplication *app, gpointer user_data)
     /* 打开对话框的二级选择：response 处理挂在 act_new 内部流程之外，
        这里给 sel 的 ACCEPT 走 on_add_response 由 act_new 的 run 直接 return 前接入 */
     gtk_widget_show_all(win);
-    /* --open <path>：启动即打开压缩包（自动化测试与 CLI 友好） */
-    for (int i = 1; i < g_argc - 1; i++) {
-        if (strcmp(g_argv[i], "--open") == 0) {
+    /* --open <path>：启动即打开压缩包（自动化测试与 CLI 友好）；
+       裸路径参数也直接打开（qyarc <archive>） */
+    for (int i = 1; i < g_argc; i++) {
+        if (strcmp(g_argv[i], "--open") == 0 && i + 1 < g_argc) {
             snprintf(g_arc, sizeof g_arc, "%s", g_argv[i + 1]);
             refresh_list();
             break;
+        }
+        if (g_argv[i][0] != '-') {
+            struct stat st0;
+            if (stat(g_argv[i], &st0) == 0) {
+                snprintf(g_arc, sizeof g_arc, "%s", g_argv[i]);
+                refresh_list();
+                break;
+            }
         }
     }
     if (!g_arc[0]) status_set("打开一个压缩包开始");

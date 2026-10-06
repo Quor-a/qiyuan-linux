@@ -538,9 +538,9 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 | **开机动画 qyboot（v1.9.0）** | ✅ 实测（fbdev 直写 /dev/fb0：深蓝渐变+圆角 Logo+进度条动画；qydesktop 就绪后 SIGTERM 触发 2 秒淡出切桌面；内核补开 DRM_FBDEV_EMULATION/SQUASHFS_ZSTD/SND_HDA codec） |
 | **多语言框架 qyl10n（v1.9.1）** | ✅ 实测（TR() 轻量中英表：QYLANG 环境变量 / /etc/qylang 双来源；CLI 实测 文件管理器↔Files；qyappmenu 10 个应用标签 en 模式全英文（截图）；qysettings 新增"语言"页（简体中文/English 按钮写 /etc/qylang）） |
 | **qysudo 命令白名单（v1.9.2）** | ✅ 实测（qysudoers 子集语法 `ALL=(NOPASSWD) /cmd1,/cmd2`；`-n` 免交互；裸命令名安全 PATH 解析；拒绝 `..` 相对路径。VM 实测：wheel 用户 `qysudo -n /bin/mount` 免密 RC=0；非白名单 `id` RC=9 拒绝；未授权用户 RC=4 拒绝） |
+| **qyarc 桌面实测修复（v1.9.3）** | ✅ 实测（GUI 打开 7z 列表渲染 3 项与 `7za l` 一致；修裸路径参数 `qyarc <archive>` 被忽略 bug，此前只认 `--open`；HMP screendump 实证窗口截图） |
 
 ### 下一步开发
 
-1. **qyarc GUI 桌面点击实测** + tar 后端兜底（系统 tar 缺 libselinux，先用 busybox tar）
 2. **软件中心**：qypkg GUI（浏览/安装/卸载仓库包）
 3. **更多应用接入 TR()**（qyfiles/qysettings/qyusers/qywelcome 等界面文案中英化）
