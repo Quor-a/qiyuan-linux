@@ -213,6 +213,21 @@ static const pair tbl[] = {
     { "（暂无普通用户）", "(no regular users)" },
     { "＋ 新建用户", "＋ New User" },
 
+    { "启元软件中心", "Qiyuan Store" },
+    { "软件中心", "Store" },
+    { "搜索软件包…", "Search packages…" },
+    { "版本", "Version" },
+    { "状态", "Status" },
+    { "已安装，可卸载", "Installed — click to remove" },
+    { "未安装，可安装", "Not installed — click to install" },
+    { "选择一个软件包", "Select a package" },
+    { "✓ 已安装", "✓ Installed" },
+    { "可安装", "Available" },
+    { "卸载", "Remove" },
+    { "执行中…", "Running…" },
+    { "完成 ✓", "Done ✓" },
+    { "失败 (rc=%d)", "Failed (rc=%d)" },
+    { "仓库缺失", "Repository missing" },
 };
 
 #define NTBL ((int)(sizeof tbl / sizeof tbl[0]))

@@ -3,4 +3,4 @@
 %wheel ALL=(ALL)
 root ALL=(ALL)
 # wheel 组常用管理命令免密白名单
-%wheel ALL=(NOPASSWD) /usr/bin/qyuseradd,/usr/bin/qyinstall,/bin/mount,/bin/umount
+%wheel ALL=(NOPASSWD) /usr/bin/qyuseradd,/usr/bin/qyinstall,/bin/mount,/bin/umount,/usr/bin/qypkg-inst

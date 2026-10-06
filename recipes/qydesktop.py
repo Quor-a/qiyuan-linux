@@ -6,7 +6,7 @@
 
 name = "qydesktop"
 version = "0.1.0"
-release = 4
+release = 7
 summary = "启元桌面 shell（GTK3）"
 license = "MIT"
 
@@ -32,6 +32,8 @@ RECIPE_MON_C = Path(__file__).parent / "qymon.c"
 RECIPE_VIEW_C = Path(__file__).parent / "qyview.c"
 RECIPE_CTL_C = Path(__file__).parent / "qyctl.c"
 RECIPE_ARC_C = Path(__file__).parent / "qyarc.c"
+RECIPE_STORE_C = Path(__file__).parent / "qystore.c"
+RECIPE_INST_C = Path(__file__).parent / "qypkg-inst.c"
 
 
 def build(ctx):
@@ -45,6 +47,9 @@ def build(ctx):
     shutil.copy(RECIPE_VIEW_C, Path(ctx.srcdir) / "qyview.c")
     shutil.copy(RECIPE_CTL_C, Path(ctx.srcdir) / "qyctl.c")
     shutil.copy(RECIPE_ARC_C, Path(ctx.srcdir) / "qyarc.c")
+    shutil.copy(RECIPE_STORE_C, Path(ctx.srcdir) / "qystore.c")
+    shutil.copy(RECIPE_INST_C, Path(ctx.srcdir) / "qypkg-inst.c")
+    shutil.copy(Path(__file__).parent / "qystore.desktop", Path(ctx.srcdir) / "qystore.desktop")
     shutil.copy(Path(__file__).parent / "qynet.unit", Path(ctx.srcdir) / "qynet.unit")
     shutil.copy(Path(__file__).parent / "start-qynet.sh", Path(ctx.srcdir) / "start-qynet.sh")
     for _f in ("qyl10n.c", "qyl10n.h", "qysetup.c", "qysudo.c", "qyusers.c", "qywelcome.c",
@@ -66,7 +71,9 @@ def build(ctx):
         "gcc qymon.c qyl10n.c -o qymon $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
         "gcc qyview.c qyl10n.c -o qyview $(pkg-config --cflags --libs gtk+-3.0 gdk-pixbuf-2.0) -O2 -ljpeg -lmount && "
         "gcc qyctl.c -o qyctl -O2 -Wall && "
-        "gcc qyarc.c qyl10n.c -o qyarc $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount".format(ctx.sysroot)
+        "gcc qyarc.c qyl10n.c -o qyarc $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qystore.c qyl10n.c -o qystore $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qypkg-inst.c -o qypkg-inst -O2".format(ctx.sysroot)
     )
 
 
@@ -81,6 +88,8 @@ def package(ctx):
     ctx.run("cp qyview {}/usr/bin/qyview".format(ctx.destdir))
     ctx.run("cp qyctl {}/usr/bin/qyctl".format(ctx.destdir))
     ctx.run("cp qyarc {}/usr/bin/qyarc".format(ctx.destdir))
+    ctx.run("cp qystore {}/usr/bin/qystore".format(ctx.destdir))
+    ctx.run("cp qypkg-inst {}/usr/bin/qypkg-inst".format(ctx.destdir))
     ctx.run("cp qysetup {}/usr/bin/qysetup".format(ctx.destdir))
     ctx.run("cp qyuseradd.sh {}/usr/bin/qyuseradd && chmod +x {}/usr/bin/qyuseradd".format(ctx.destdir, ctx.destdir))
     ctx.run("cp qyusers {}/usr/bin/qyusers".format(ctx.destdir))
@@ -96,3 +105,6 @@ def package(ctx):
     ctx.install_file("qynet.unit", "etc/qyinit.d/qynet.unit")
     ctx.run("cp start-qynet.sh {}/usr/bin/start-qynet.sh".format(ctx.destdir))
     ctx.run("chmod 0755 {}/usr/bin/start-qynet.sh".format(ctx.destdir))
+    # 软件中心 desktop entry (v1.9.5):
+    ctx.run("mkdir -p {}/usr/share/applications".format(ctx.destdir))
+    ctx.install_file("qystore.desktop", "usr/share/applications/qystore.desktop")

@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Qiyuan Store
+Name[zh_CN]=启元软件中心
+Comment=Browse and install QYPKG packages
+Comment[zh_CN]=浏览并安装 QYPKG 软件包
+Exec=qystore
+Icon=applications-system
+Terminal=false
+Categories=System;PackageManager;

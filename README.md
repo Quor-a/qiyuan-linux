@@ -540,6 +540,7 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 | **qysudo 命令白名单（v1.9.2）** | ✅ 实测（qysudoers 子集语法 `ALL=(NOPASSWD) /cmd1,/cmd2`；`-n` 免交互；裸命令名安全 PATH 解析；拒绝 `..` 相对路径。VM 实测：wheel 用户 `qysudo -n /bin/mount` 免密 RC=0；非白名单 `id` RC=9 拒绝；未授权用户 RC=4 拒绝） |
 | **qyarc 桌面实测修复（v1.9.3）** | ✅ 实测（GUI 打开 7z 列表渲染 3 项与 `7za l` 一致；修裸路径参数 `qyarc <archive>` 被忽略 bug，此前只认 `--open`；HMP screendump 实证窗口截图） |
 | **全应用接入 TR() 多语言（v1.9.4）** | ✅ 实测（9 个应用 195 处中文字面量包 TR；qyl10n 表扩至 ~200 词条；VM en 模式实证：Qiyuan Files 工具栏 Home/Up/New Folder…、Qiyuan Settings 标签页 About/Display/Fonts… 全英文（截图）；顶栏时钟 en 格式 %m/%d 同步写入 weston.ini） |
+| **软件中心 qystore（v1.9.5）** | ✅ 实测（qystore GTK GUI：搜索/109 包列表/已装标记/安装·卸载按钮；qypkg-inst C 解包器支持 gz+xz QYPKG 包，装卸/清单/记录全链验证；离线仓库 /usr/share/qyrepo 41MB 内置 ISO；开始菜单新增 Store 入口 + qysudo 免密白名单；VM GUI 实测截图 docs/screenshots/qystore-v195.png） |
 
 ### 下一步开发
 
