@@ -3,6 +3,19 @@
 #include <sys/utsname.h>
 #include <sys/sysinfo.h>
 
+/* ---------- 语言页回调 ---------- */
+static void on_lang_zh(GtkWidget *w, gpointer ud) {
+    (void)w; (void)ud;
+    FILE *f = fopen("/etc/qylang", "w");
+    if (f) { fputs("zh", f); fclose(f); }
+}
+static void on_lang_en(GtkWidget *w, gpointer ud) {
+    (void)w; (void)ud;
+    FILE *f = fopen("/etc/qylang", "w");
+    if (f) { fputs("en", f); fclose(f); }
+}
+
+
 static gboolean vol_changed(GtkRange *r, gpointer ud);
 static gboolean br_changed(GtkRange *r, gpointer ud);
 
@@ -133,6 +146,22 @@ static void activate(GtkApplication *app, gpointer ud) {
     }
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), v6, gtk_label_new("亮度"));
 
+    /* 语言 */
+    GtkWidget *vlang = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+    gtk_container_set_border_width(GTK_CONTAINER(vlang), 16);
+    GtkWidget *llb = gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(llb), "<b>界面语言 / Interface Language</b>");
+    gtk_widget_set_halign(llb, GTK_ALIGN_START);
+    gtk_box_pack_start(GTK_BOX(vlang), llb, FALSE, FALSE, 0);
+    GtkWidget *bzh = gtk_button_new_with_label("简体中文");
+    GtkWidget *ben = gtk_button_new_with_label("English");
+    g_signal_connect(bzh, "clicked", G_CALLBACK(on_lang_zh), NULL);
+    g_signal_connect(ben, "clicked", G_CALLBACK(on_lang_en), NULL);
+    gtk_box_pack_start(GTK_BOX(vlang), bzh, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(vlang), ben, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(vlang), gtk_label_new("切换后重新启动生效 / Takes effect after reboot"), FALSE, FALSE, 0);
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), vlang, gtk_label_new("语言"));
+
     gtk_widget_show_all(win);
 }
 
@@ -166,6 +195,7 @@ static gboolean br_changed(GtkRange *r, gpointer ud) {
     }
     return FALSE;
 }
+
 
 int main(int argc, char **argv) {
     GtkApplication *app = gtk_application_new("com.qiyuan.settings", G_APPLICATION_NON_UNIQUE);

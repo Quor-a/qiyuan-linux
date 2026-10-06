@@ -55,7 +55,7 @@ def build(ctx):
         "gcc qysettings.c -o qysettings $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qyusers.c -o qyusers $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qywelcome.c -o qywelcome $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
-        "gcc qyappmenu.c -o qyappmenu $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
+        "cp qyl10n.c qyl10n.h . && gcc qyappmenu.c qyl10n.c -o qyappmenu $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qyedit.c -o qyedit $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qymon.c -o qymon $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qyview.c -o qyview $(pkg-config --cflags --libs gtk+-3.0 gdk-pixbuf-2.0) -O2 && "

@@ -536,10 +536,10 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 | **普通用户自动登录（v1.8.1）** | ✅ 实测（/etc/qyautologin 写用户名 → 桌面以该用户运行 ps 验证；wayland socket 权限共享方案） |
 | **安装器集成用户预创建（v1.8.2）** | ✅ 实测（qysetup 安装时弹"初始用户"表单 → qyinstall --user 直接写目标盘 passwd/shadow/wheel/autologin → 从盘引导桌面以该用户运行；密码经 qyinit 首启 hook 用 busybox chpasswd 设置；修 busybox 无 cryptpw/VM 无 python3 的哈希生成死路） |
 | **开机动画 qyboot（v1.9.0）** | ✅ 实测（fbdev 直写 /dev/fb0：深蓝渐变+圆角 Logo+进度条动画；qydesktop 就绪后 SIGTERM 触发 2 秒淡出切桌面；内核补开 DRM_FBDEV_EMULATION/SQUASHFS_ZSTD/SND_HDA codec） |
+| **多语言框架 qyl10n（v1.9.1）** | ✅ 实测（TR() 轻量中英表：QYLANG 环境变量 / /etc/qylang 双来源；CLI 实测 文件管理器↔Files；qyappmenu 10 个应用标签 en 模式全英文（截图）；qysettings 新增"语言"页（简体中文/English 按钮写 /etc/qylang）） |
 
 ### 下一步开发
 
 1. **qyarc GUI 桌面点击实测** + tar 后端兜底（系统 tar 缺 libselinux，先用 busybox tar）
-3. **多语言**：qydesktop 系列应用中文之外增加英文切换
 4. **qysudo 策略增强**：按命令白名单（sudoers 子集语法）
 5. **软件中心**：qypkg GUI（浏览/安装/卸载仓库包）

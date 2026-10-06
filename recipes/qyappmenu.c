@@ -1,4 +1,5 @@
 /* qyappmenu - 启元开始菜单 (ArcMenu 风格: 搜索+固定网格+常用列表+用户区) */
+#include "qyl10n.h"
 #include <gtk/gtk.h>
 #include <string.h>
 
@@ -83,7 +84,7 @@ static GtkWidget *make_grid_icon(AppEntry *a) {
     GtkWidget *ic = gtk_drawing_area_new();
     gtk_widget_set_size_request(ic, 56, 56);
     g_signal_connect(ic, "draw", G_CALLBACK(icon_draw_cb), a);
-    GtkWidget *lb = gtk_label_new(a->name);
+    GtkWidget *lb = gtk_label_new(TR(a->name));
     gtk_label_set_max_width_chars(GTK_LABEL(lb), 8);
     gtk_label_set_line_wrap(GTK_LABEL(lb), TRUE);
     gtk_label_set_justify(GTK_LABEL(lb), GTK_JUSTIFY_CENTER);
@@ -108,7 +109,7 @@ static GtkWidget *make_freq_row(AppEntry *a) {
     GtkWidget *b = gtk_button_new();
     gtk_button_set_relief(GTK_BUTTON(b), GTK_RELIEF_NONE);
     GtkWidget *ic = gtk_label_new(a->icon);
-    GtkWidget *lb = gtk_label_new(a->name);
+    GtkWidget *lb = gtk_label_new(TR(a->name));
     gtk_widget_set_halign(lb, GTK_ALIGN_START);
     gtk_widget_override_color(lb, GTK_STATE_FLAG_NORMAL, &(GdkRGBA){0.88,0.88,0.92,1});
     gtk_container_add(GTK_CONTAINER(b), h);
@@ -144,7 +145,7 @@ static void rebuild(gboolean filtered) {
         col = (col + 1) % 4;
     }
     if (!any) {
-        gtk_box_pack_start(GTK_BOX(grid_box), gtk_label_new("无匹配应用"), FALSE, FALSE, 4);
+        gtk_box_pack_start(GTK_BOX(grid_box), gtk_label_new(TR("无匹配应用")), FALSE, FALSE, 4);
     }
 
     /* Frequent: launches > 0 的按次数排 */
@@ -213,7 +214,7 @@ int main(int argc, char **argv) {
 
     /* 3. Frequent 常用 */
     GtkWidget *fl = gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(fl), "<b>常 用</b>");
+    gtk_label_set_markup(GTK_LABEL(fl), g_strdup_printf("<b>%s</b>", TR("常用")));
     gtk_widget_set_halign(fl, GTK_ALIGN_START);
     gtk_widget_override_color(fl, GTK_STATE_FLAG_NORMAL, &(GdkRGBA){0.95,0.95,0.95,1});
     gtk_box_pack_start(GTK_BOX(vbox), fl, FALSE, FALSE, 0);
