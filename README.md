@@ -537,9 +537,10 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 | **安装器集成用户预创建（v1.8.2）** | ✅ 实测（qysetup 安装时弹"初始用户"表单 → qyinstall --user 直接写目标盘 passwd/shadow/wheel/autologin → 从盘引导桌面以该用户运行；密码经 qyinit 首启 hook 用 busybox chpasswd 设置；修 busybox 无 cryptpw/VM 无 python3 的哈希生成死路） |
 | **开机动画 qyboot（v1.9.0）** | ✅ 实测（fbdev 直写 /dev/fb0：深蓝渐变+圆角 Logo+进度条动画；qydesktop 就绪后 SIGTERM 触发 2 秒淡出切桌面；内核补开 DRM_FBDEV_EMULATION/SQUASHFS_ZSTD/SND_HDA codec） |
 | **多语言框架 qyl10n（v1.9.1）** | ✅ 实测（TR() 轻量中英表：QYLANG 环境变量 / /etc/qylang 双来源；CLI 实测 文件管理器↔Files；qyappmenu 10 个应用标签 en 模式全英文（截图）；qysettings 新增"语言"页（简体中文/English 按钮写 /etc/qylang）） |
+| **qysudo 命令白名单（v1.9.2）** | ✅ 实测（qysudoers 子集语法 `ALL=(NOPASSWD) /cmd1,/cmd2`；`-n` 免交互；裸命令名安全 PATH 解析；拒绝 `..` 相对路径。VM 实测：wheel 用户 `qysudo -n /bin/mount` 免密 RC=0；非白名单 `id` RC=9 拒绝；未授权用户 RC=4 拒绝） |
 
 ### 下一步开发
 
 1. **qyarc GUI 桌面点击实测** + tar 后端兜底（系统 tar 缺 libselinux，先用 busybox tar）
-4. **qysudo 策略增强**：按命令白名单（sudoers 子集语法）
-5. **软件中心**：qypkg GUI（浏览/安装/卸载仓库包）
+2. **软件中心**：qypkg GUI（浏览/安装/卸载仓库包）
+3. **更多应用接入 TR()**（qyfiles/qysettings/qyusers/qywelcome 等界面文案中英化）

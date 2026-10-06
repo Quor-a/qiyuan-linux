@@ -1,3 +1,6 @@
-# qysudo 策略: %组 ALL=(ALL)  — 允许该组成员经 qysudo 提权 (需输密码)
+# qysudo 策略 (语法见 qysudo.c 头注释)
+# 需密码: ALL=(ALL); 免密白名单: ALL=(NOPASSWD) /path/cmd1,/path/cmd2
 %wheel ALL=(ALL)
 root ALL=(ALL)
+# wheel 组常用管理命令免密白名单
+%wheel ALL=(NOPASSWD) /usr/bin/qyuseradd,/usr/bin/qyinstall,/bin/mount,/bin/umount
