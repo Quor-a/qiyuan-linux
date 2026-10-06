@@ -11,6 +11,7 @@
  * 新建: 7za a 或 tar czf（对话框选格式与文件）
  */
 #define _GNU_SOURCE
+#include "qyl10n.h"
 #include <gtk/gtk.h>
 #include <string.h>
 #include <stdlib.h>
@@ -98,7 +99,7 @@ static void list_7z(void)
     char cmd[PATH_MAX + 64];
     snprintf(cmd, sizeof cmd, "7za l -slt '%s'", g_arc);
     gchar *out = run_capture(cmd);
-    if (!out) { status_set("7za 执行失败"); return; }
+    if (!out) { status_set(TR("7za 执行失败")); return; }
     char name[1024] = "", size[64] = "", mtime[64] = "";
     int n_items = 0;
     int first_block = 1;   /* 7za -slt 第一个 Path 是包自身，跳过 */
@@ -109,7 +110,7 @@ static void list_7z(void)
                 GtkTreeIter it;
                 gtk_list_store_append(g_store, &it);
                 gtk_list_store_set(g_store, &it, COL_NAME, name,
-                    COL_TYPE, "文件", COL_SIZE, size, COL_MTIME, mtime, -1);
+                    COL_TYPE, TR("文件"), COL_SIZE, size, COL_MTIME, mtime, -1);
                 n_items++;
             }
             snprintf(name, sizeof name, "%s", line + 7);
@@ -125,11 +126,11 @@ static void list_7z(void)
         GtkTreeIter it;
         gtk_list_store_append(g_store, &it);
         gtk_list_store_set(g_store, &it, COL_NAME, name,
-            COL_TYPE, "文件", COL_SIZE, size, COL_MTIME, mtime, -1);
+            COL_TYPE, TR("文件"), COL_SIZE, size, COL_MTIME, mtime, -1);
         n_items++;
     }
     g_free(out);
-    status_set("%s — %d 项", g_arc, n_items);
+    status_set(TR("%s — %d 项"), g_arc, n_items);
 }
 
 /* 解析 tar -tv 一行：字段顺序 = perms owner size date time name…（name 可含空格）
@@ -166,7 +167,7 @@ static void list_tar(void)
         "tar tvf '%s' 2>/dev/null || busybox tar -tvzf '%s' 2>/dev/null || busybox tar -tvf '%s'",
         g_arc, g_arc, g_arc);
     gchar *out = run_capture(cmd);
-    if (!out) { status_set("tar 执行失败"); return; }
+    if (!out) { status_set(TR("tar 执行失败")); return; }
     int n_items = 0;
     for (char *line = strtok(out, "\n"); line; line = strtok(NULL, "\n")) {
         if (strlen(line) < 20) continue;
@@ -177,12 +178,12 @@ static void list_tar(void)
         GtkTreeIter it;
         gtk_list_store_append(g_store, &it);
         gtk_list_store_set(g_store, &it, COL_NAME, name,
-            COL_TYPE, perms[0] == 'd' ? "目录" : "文件",
+            COL_TYPE, perms[0] == 'd' ? TR("目录") : TR("文件"),
             COL_SIZE, size, COL_MTIME, date, -1);
         n_items++;
     }
     g_free(out);
-    status_set("%s — %d 项", g_arc, n_items);
+    status_set(TR("%s — %d 项"), g_arc, n_items);
 }
 
 static void list_single(void)
@@ -197,15 +198,15 @@ static void list_single(void)
     human_size(size, sizeof size, st.st_size);
     gtk_list_store_append(g_store, &it);
     gtk_list_store_set(g_store, &it, COL_NAME, b,
-        COL_TYPE, "压缩文件", COL_SIZE, size, COL_MTIME, "", -1);
-    status_set("%s — 单文件压缩", g_arc);
+        COL_TYPE, TR("压缩文件"), COL_SIZE, size, COL_MTIME, "", -1);
+    status_set(TR("%s — 单文件压缩"), g_arc);
 }
 
 static void refresh_list(void)
 {
     gtk_list_store_clear(g_store);
     const char *t = arc_type(g_arc);
-    if (t[0] == '\0') { status_set("不支持的格式"); return; }
+    if (t[0] == '\0') { status_set(TR("不支持的格式")); return; }
     if (strcmp(t, "7z") == 0 || strcmp(t, "zip") == 0 || strcmp(t, "rar") == 0)
         list_7z();
     else if (strncmp(t, "t", 1) == 0)
@@ -218,10 +219,10 @@ static void refresh_list(void)
 static void act_open(GtkWidget *w, gpointer data)
 {
     (void)w; (void)data;
-    GtkWidget *dlg = gtk_file_chooser_dialog_new("打开压缩包",
+    GtkWidget *dlg = gtk_file_chooser_dialog_new(TR("打开压缩包"),
         GTK_WINDOW(gtk_widget_get_toplevel(g_view)),
-        GTK_FILE_CHOOSER_ACTION_OPEN, "_取消", GTK_RESPONSE_CANCEL,
-        "_打开", GTK_RESPONSE_ACCEPT, NULL);
+        GTK_FILE_CHOOSER_ACTION_OPEN, TR("_取消"), GTK_RESPONSE_CANCEL,
+        TR("_打开"), GTK_RESPONSE_ACCEPT, NULL);
     if (gtk_dialog_run(GTK_DIALOG(dlg)) == GTK_RESPONSE_ACCEPT) {
         char *path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dlg));
         snprintf(g_arc, sizeof g_arc, "%s", path);
@@ -234,11 +235,11 @@ static void act_open(GtkWidget *w, gpointer data)
 static void act_extract(GtkWidget *w, gpointer data)
 {
     (void)w; (void)data;
-    if (!g_arc[0]) { status_set("先打开一个压缩包"); return; }
-    GtkWidget *dlg = gtk_file_chooser_dialog_new("解压到…",
+    if (!g_arc[0]) { status_set(TR("先打开一个压缩包")); return; }
+    GtkWidget *dlg = gtk_file_chooser_dialog_new(TR("解压到…"),
         GTK_WINDOW(gtk_widget_get_toplevel(g_view)),
-        GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER, "_取消", GTK_RESPONSE_CANCEL,
-        "_解压", GTK_RESPONSE_ACCEPT, NULL);
+        GTK_FILE_CHOOSER_ACTION_SELECT_FOLDER, TR("_取消"), GTK_RESPONSE_CANCEL,
+        TR("_解压"), GTK_RESPONSE_ACCEPT, NULL);
     if (gtk_dialog_run(GTK_DIALOG(dlg)) == GTK_RESPONSE_ACCEPT) {
         char *dir = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dlg));
         const char *t = arc_type(g_arc);
@@ -254,7 +255,7 @@ static void act_extract(GtkWidget *w, gpointer data)
             /* 简化：gzip -d 在目标目录对副本执行 */
         }
         gboolean ok = run_shell_sync(cmd, NULL, FALSE);
-        status_set(ok ? "已解压到 %s" : "解压失败", dir);
+        status_set(ok ? TR("已解压到 %s") : TR("解压失败"), dir);
         g_free(dir);
     }
     gtk_widget_destroy(dlg);
@@ -263,12 +264,12 @@ static void act_extract(GtkWidget *w, gpointer data)
 static void act_new(GtkWidget *w, gpointer data)
 {
     (void)w; (void)data;
-    GtkWidget *save = gtk_file_chooser_dialog_new("新建压缩包",
+    GtkWidget *save = gtk_file_chooser_dialog_new(TR("新建压缩包"),
         GTK_WINDOW(gtk_widget_get_toplevel(g_view)),
-        GTK_FILE_CHOOSER_ACTION_SAVE, "_取消", GTK_RESPONSE_CANCEL,
-        "_创建", GTK_RESPONSE_ACCEPT, NULL);
+        GTK_FILE_CHOOSER_ACTION_SAVE, TR("_取消"), GTK_RESPONSE_CANCEL,
+        TR("_创建"), GTK_RESPONSE_ACCEPT, NULL);
     GtkFileFilter *f = gtk_file_filter_new();
-    gtk_file_filter_set_name(f, "压缩包 (7z / zip / tar.gz)");
+    gtk_file_filter_set_name(f, TR("压缩包 (7z / zip / tar.gz)"));
     gtk_file_filter_add_pattern(f, "*.7z");
     gtk_file_filter_add_pattern(f, "*.zip");
     gtk_file_filter_add_pattern(f, "*.tar.gz");
@@ -279,10 +280,10 @@ static void act_new(GtkWidget *w, gpointer data)
         g_free(path);
         gtk_widget_destroy(save);
         /* 再选要打包的文件（同步流程，避免跨回调状态） */
-        GtkWidget *sel = gtk_file_chooser_dialog_new("选择要压缩的文件",
+        GtkWidget *sel = gtk_file_chooser_dialog_new(TR("选择要压缩的文件"),
             GTK_WINDOW(gtk_widget_get_toplevel(g_view)),
-            GTK_FILE_CHOOSER_ACTION_OPEN, "_取消", GTK_RESPONSE_CANCEL,
-            "_确定", GTK_RESPONSE_ACCEPT, NULL);
+            GTK_FILE_CHOOSER_ACTION_OPEN, TR("_取消"), GTK_RESPONSE_CANCEL,
+            TR("_确定"), GTK_RESPONSE_ACCEPT, NULL);
         if (gtk_dialog_run(GTK_DIALOG(sel)) == GTK_RESPONSE_ACCEPT) {
             char *src = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(sel));
             const char *t = arc_type(g_arc);
@@ -292,7 +293,7 @@ static void act_new(GtkWidget *w, gpointer data)
             else
                 snprintf(cmd, sizeof cmd, "tar czf '%s' '%s' 2>/dev/null || busybox tar -czf '%s' '%s'", g_arc, src, g_arc, src);
             gboolean ok = run_shell_sync(cmd, NULL, FALSE);
-            status_set(ok ? "已创建 %s" : "创建失败", g_arc);
+            status_set(ok ? TR("已创建 %s") : TR("创建失败"), g_arc);
             g_free(src);
             refresh_list();
         }
@@ -307,16 +308,16 @@ static void act_delete(GtkWidget *w, gpointer data)
     (void)w; (void)data;
     GtkTreeSelection *sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(g_view));
     GtkTreeIter it;
-    if (!gtk_tree_selection_get_selected(sel, NULL, &it)) { status_set("未选中条目"); return; }
+    if (!gtk_tree_selection_get_selected(sel, NULL, &it)) { status_set(TR("未选中条目")); return; }
     gchar *name = NULL;
     gtk_tree_model_get(GTK_TREE_MODEL(g_store), &it, COL_NAME, &name, -1);
     const char *t = arc_type(g_arc);
     char cmd[PATH_MAX * 2 + 128];
     if (strcmp(t, "7z") == 0 || strcmp(t, "zip") == 0)
         snprintf(cmd, sizeof cmd, "7za d '%s' '%s'", g_arc, name);
-    else { status_set("tar 包不支持删除条目（整包重打包实现，v2）"); g_free(name); return; }
+    else { status_set(TR("tar 包不支持删除条目（整包重打包实现，v2）")); g_free(name); return; }
     run_shell_sync(cmd, NULL, FALSE);
-    status_set("已删除: %s", name);
+    status_set(TR("已删除: %s"), name);
     g_free(name);
     refresh_list();
 }
@@ -325,7 +326,7 @@ static void activate(GtkApplication *app, gpointer user_data)
 {
     (void)user_data;
     GtkWidget *win = gtk_application_window_new(app);
-    gtk_window_set_title(GTK_WINDOW(win), "启元压缩管理器");
+    gtk_window_set_title(GTK_WINDOW(win), TR("启元压缩管理器"));
     gtk_window_set_default_size(GTK_WINDOW(win), 720, 480);
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
@@ -335,20 +336,20 @@ static void activate(GtkApplication *app, gpointer user_data)
     GtkWidget *bar = gtk_toolbar_new();
     gtk_toolbar_set_style(GTK_TOOLBAR(bar), GTK_TOOLBAR_TEXT);
     GtkToolItem *b;
-    b = gtk_tool_button_new(NULL, "打开");   g_signal_connect(b, "clicked", G_CALLBACK(act_open), NULL);
+    b = gtk_tool_button_new(NULL, TR("打开"));   g_signal_connect(b, "clicked", G_CALLBACK(act_open), NULL);
     gtk_toolbar_insert(GTK_TOOLBAR(bar), b, -1);
-    b = gtk_tool_button_new(NULL, "解压到"); g_signal_connect(b, "clicked", G_CALLBACK(act_extract), NULL);
+    b = gtk_tool_button_new(NULL, TR("解压到")); g_signal_connect(b, "clicked", G_CALLBACK(act_extract), NULL);
     gtk_toolbar_insert(GTK_TOOLBAR(bar), b, -1);
-    b = gtk_tool_button_new(NULL, "新建");   g_signal_connect(b, "clicked", G_CALLBACK(act_new), NULL);
+    b = gtk_tool_button_new(NULL, TR("新建"));   g_signal_connect(b, "clicked", G_CALLBACK(act_new), NULL);
     gtk_toolbar_insert(GTK_TOOLBAR(bar), b, -1);
-    b = gtk_tool_button_new(NULL, "删除");   g_signal_connect(b, "clicked", G_CALLBACK(act_delete), NULL);
+    b = gtk_tool_button_new(NULL, TR("删除"));   g_signal_connect(b, "clicked", G_CALLBACK(act_delete), NULL);
     gtk_toolbar_insert(GTK_TOOLBAR(bar), b, -1);
     gtk_box_pack_start(GTK_BOX(vbox), bar, FALSE, FALSE, 0);
 
     /* 列表 */
     g_store = gtk_list_store_new(N_COLS, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
     g_view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(g_store));
-    const char *titles[N_COLS] = { "名称", "类型", "大小", "修改时间" };
+    const char *titles[N_COLS] = { TR("名称"), TR("类型"), TR("大小"), TR("修改时间") };
     for (int i = 0; i < N_COLS; i++) {
         GtkCellRenderer *r = gtk_cell_renderer_text_new();
         GtkTreeViewColumn *c = gtk_tree_view_column_new_with_attributes(titles[i], r, "text", i, NULL);
@@ -383,7 +384,7 @@ static void activate(GtkApplication *app, gpointer user_data)
             }
         }
     }
-    if (!g_arc[0]) status_set("打开一个压缩包开始");
+    if (!g_arc[0]) status_set(TR("打开一个压缩包开始"));
 }
 
 int main(int argc, char **argv)

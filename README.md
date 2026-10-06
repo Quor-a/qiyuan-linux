@@ -539,6 +539,7 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 | **多语言框架 qyl10n（v1.9.1）** | ✅ 实测（TR() 轻量中英表：QYLANG 环境变量 / /etc/qylang 双来源；CLI 实测 文件管理器↔Files；qyappmenu 10 个应用标签 en 模式全英文（截图）；qysettings 新增"语言"页（简体中文/English 按钮写 /etc/qylang）） |
 | **qysudo 命令白名单（v1.9.2）** | ✅ 实测（qysudoers 子集语法 `ALL=(NOPASSWD) /cmd1,/cmd2`；`-n` 免交互；裸命令名安全 PATH 解析；拒绝 `..` 相对路径。VM 实测：wheel 用户 `qysudo -n /bin/mount` 免密 RC=0；非白名单 `id` RC=9 拒绝；未授权用户 RC=4 拒绝） |
 | **qyarc 桌面实测修复（v1.9.3）** | ✅ 实测（GUI 打开 7z 列表渲染 3 项与 `7za l` 一致；修裸路径参数 `qyarc <archive>` 被忽略 bug，此前只认 `--open`；HMP screendump 实证窗口截图） |
+| **全应用接入 TR() 多语言（v1.9.4）** | ✅ 实测（9 个应用 195 处中文字面量包 TR；qyl10n 表扩至 ~200 词条；VM en 模式实证：Qiyuan Files 工具栏 Home/Up/New Folder…、Qiyuan Settings 标签页 About/Display/Fonts… 全英文（截图）；顶栏时钟 en 格式 %m/%d 同步写入 weston.ini） |
 
 ### 下一步开发
 

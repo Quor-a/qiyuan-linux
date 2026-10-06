@@ -2,6 +2,7 @@
  * 后端: /usr/bin/qyinstall <disk>（CLI 脚本，已实测）
  * 界面: 磁盘列表 → 确认 → 后台安装（VTE 风格日志区，禁止窗口关闭直到完成）
  */
+#include "qyl10n.h"
 #include <gtk/gtk.h>
 #include <string.h>
 #include <glib/gstdio.h>
@@ -83,15 +84,15 @@ static void on_install_exit(GPid pid, gint status, gpointer ud) {
     g_source_remove(log_watch);
     installing = FALSE;
     gboolean ok = (status == 0);
-    log_append(ok ? "=== 安装完成！===" : "=== 安装失败（状态 %d），查看上方日志 ===", status);
+    log_append(ok ? TR("=== 安装完成！===") : TR("=== 安装失败（状态 %d），查看上方日志 ==="), status);
     gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(bar), ok ? 1.0 : 0.0);
     gtk_widget_set_sensitive(btn_install, TRUE);
     if (ok) {
         GtkWidget *dlg = gtk_message_dialog_new(GTK_WINDOW(win), GTK_DIALOG_MODAL,
             GTK_MESSAGE_INFO, GTK_BUTTONS_NONE,
             "启元系统已成功安装！\n\n重新启动后将从硬盘引导，\n首次开机会出现初始配置向导。");
-        gtk_window_set_title(GTK_WINDOW(dlg), "安装完成");
-        gtk_dialog_add_buttons(GTK_DIALOG(dlg), "稍后重启", GTK_RESPONSE_CANCEL, "立即重启", GTK_RESPONSE_OK, NULL);
+        gtk_window_set_title(GTK_WINDOW(dlg), TR("安装完成"));
+        gtk_dialog_add_buttons(GTK_DIALOG(dlg), TR("稍后重启"), GTK_RESPONSE_CANCEL, TR("立即重启"), GTK_RESPONSE_OK, NULL);
         gint r = gtk_dialog_run(GTK_DIALOG(dlg));
         gtk_widget_destroy(dlg);
         if (r == GTK_RESPONSE_OK) system("reboot");
@@ -102,15 +103,15 @@ static void do_install(GtkWidget *w, gpointer ud) {
     GtkTreeSelection *sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(disk_list));
     GtkTreeIter it; GtkTreeModel *m;
     if (!gtk_tree_selection_get_selected(sel, &m, &it)) {
-        log_append("请先在列表中选择目标磁盘");
+        log_append(TR("请先在列表中选择目标磁盘"));
         return;
     }
     gchar *dev = NULL;
     gtk_tree_model_get(m, &it, 0, &dev, -1);
 
     /* 用户预创建 (可选): 弹表单 */
-    GtkWidget *udlg = gtk_dialog_new_with_buttons("初始用户", GTK_WINDOW(win), GTK_DIALOG_MODAL,
-        "跳过", GTK_RESPONSE_CANCEL, "确定", GTK_RESPONSE_OK, NULL);
+    GtkWidget *udlg = gtk_dialog_new_with_buttons(TR("初始用户"), GTK_WINDOW(win), GTK_DIALOG_MODAL,
+        TR("跳过"), GTK_RESPONSE_CANCEL, TR("确定"), GTK_RESPONSE_OK, NULL);
     GtkWidget *ug = gtk_grid_new();
     gtk_grid_set_row_spacing(GTK_GRID(ug), 6);
     gtk_grid_set_column_spacing(GTK_GRID(ug), 8);
@@ -118,9 +119,9 @@ static void do_install(GtkWidget *w, gpointer ud) {
     GtkWidget *une = gtk_entry_new();
     GtkWidget *upe = gtk_entry_new();
     gtk_entry_set_visibility(GTK_ENTRY(upe), FALSE);
-    gtk_grid_attach(GTK_GRID(ug), gtk_label_new("用户名（留空跳过）"), 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(ug), gtk_label_new(TR("用户名（留空跳过）")), 0, 0, 1, 1);
     gtk_grid_attach(GTK_GRID(ug), une, 1, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(ug), gtk_label_new("密码"), 0, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(ug), gtk_label_new(TR("密码")), 0, 1, 1, 1);
     gtk_grid_attach(GTK_GRID(ug), upe, 1, 1, 1, 1);
     GtkWidget *ua = gtk_dialog_get_content_area(GTK_DIALOG(udlg));
     gtk_box_pack_start(GTK_BOX(ua), ug, TRUE, TRUE, 0);
@@ -141,7 +142,7 @@ static void do_install(GtkWidget *w, gpointer ud) {
     GtkWidget *dlg = gtk_message_dialog_new(GTK_WINDOW(win), GTK_DIALOG_MODAL,
         GTK_MESSAGE_WARNING, GTK_BUTTONS_OK_CANCEL,
         "将把启元系统安装到 %s\n该磁盘上的所有数据将被清除！", dev);
-    gtk_window_set_title(GTK_WINDOW(dlg), "确认安装");
+    gtk_window_set_title(GTK_WINDOW(dlg), TR("确认安装"));
     gint resp = gtk_dialog_run(GTK_DIALOG(dlg));
     gtk_widget_destroy(dlg);
     if (resp != GTK_RESPONSE_OK) { g_free(dev); if (user_spec) g_free(user_spec); return; }
@@ -149,7 +150,7 @@ static void do_install(GtkWidget *w, gpointer ud) {
     installing = TRUE;
     gtk_widget_set_sensitive(btn_install, FALSE);
     gtk_progress_bar_pulse(GTK_PROGRESS_BAR(bar));
-    log_append("=== 开始安装到 %s ===", dev);
+    log_append(TR("=== 开始安装到 %s ==="), dev);
     gchar *cmd;
     if (user_spec)
         cmd = g_strdup_printf("/usr/bin/qyinstall %s --user %s", dev, user_spec);
@@ -162,7 +163,7 @@ static void do_install(GtkWidget *w, gpointer ud) {
     if (!g_spawn_async_with_pipes(NULL, argv, NULL,
             G_SPAWN_SEARCH_PATH | G_SPAWN_DO_NOT_REAP_CHILD,
             NULL, NULL, &install_pid, NULL, &outfd, NULL, &err)) {
-        log_append("启动 qyinstall 失败: %s", err->message);
+        log_append(TR("启动 qyinstall 失败: %s"), err->message);
         g_error_free(err);
         installing = FALSE;
         gtk_widget_set_sensitive(btn_install, TRUE);
@@ -178,7 +179,7 @@ static void do_install(GtkWidget *w, gpointer ud) {
 
 static void activate(GtkApplication *app, gpointer ud) {
     win = gtk_application_window_new(app);
-    gtk_window_set_title(GTK_WINDOW(win), "启元系统安装器");
+    gtk_window_set_title(GTK_WINDOW(win), TR("启元系统安装器"));
     gtk_window_set_default_size(GTK_WINDOW(win), 640, 480);
 
     GtkWidget *v = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
@@ -187,15 +188,15 @@ static void activate(GtkApplication *app, gpointer ud) {
 
     v = v; /* 列表区 */
     GtkWidget *lbl = gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(lbl), "<b>目标磁盘</b>（选中后点安装；数据将被清除）");
+    gtk_label_set_markup(GTK_LABEL(lbl), TR("<b>目标磁盘</b>（选中后点安装；数据将被清除）"));
     gtk_widget_set_halign(lbl, GTK_ALIGN_START);
     gtk_box_pack_start(GTK_BOX(v), lbl, FALSE, FALSE, 0);
 
     GtkListStore *st = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_STRING);
     disk_list = gtk_tree_view_new_with_model(GTK_TREE_MODEL(st));
     GtkCellRenderer *r = gtk_cell_renderer_text_new();
-    GtkTreeViewColumn *c1 = gtk_tree_view_column_new_with_attributes("设备", r, "text", 0, NULL);
-    GtkTreeViewColumn *c2 = gtk_tree_view_column_new_with_attributes("容量", r, "text", 1, NULL);
+    GtkTreeViewColumn *c1 = gtk_tree_view_column_new_with_attributes(TR("设备"), r, "text", 0, NULL);
+    GtkTreeViewColumn *c2 = gtk_tree_view_column_new_with_attributes(TR("容量"), r, "text", 1, NULL);
     gtk_tree_view_append_column(GTK_TREE_VIEW(disk_list), c1);
     gtk_tree_view_append_column(GTK_TREE_VIEW(disk_list), c2);
     gtk_tree_view_set_headers_visible(GTK_TREE_VIEW(disk_list), TRUE);
@@ -205,7 +206,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_scrolled_window_set_min_content_height(GTK_SCROLLED_WINDOW(scroll), 110);
     gtk_box_pack_start(GTK_BOX(v), scroll, FALSE, FALSE, 0);
 
-    btn_install = gtk_button_new_with_label("⬇  安装启元到所选磁盘");
+    btn_install = gtk_button_new_with_label(TR("⬇  安装启元到所选磁盘"));
     g_signal_connect(btn_install, "clicked", G_CALLBACK(do_install), NULL);
     gtk_box_pack_start(GTK_BOX(v), btn_install, FALSE, FALSE, 0);
 
@@ -213,7 +214,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(v), bar, FALSE, FALSE, 0);
 
     GtkWidget *lbl2 = gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(lbl2), "<b>安装日志</b>");
+    gtk_label_set_markup(GTK_LABEL(lbl2), TR("<b>安装日志</b>"));
     gtk_widget_set_halign(lbl2, GTK_ALIGN_START);
     gtk_box_pack_start(GTK_BOX(v), lbl2, FALSE, FALSE, 0);
     log_view = gtk_text_view_new();

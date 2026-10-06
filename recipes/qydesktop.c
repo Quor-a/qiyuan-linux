@@ -3,6 +3,7 @@
  * 左侧垂直 Dock: 深色半透明条 + 彩色圆角图标 + 底部九点应用网格
  * 桌面: 品牌壁纸 + 主文件夹图标
  */
+#include "qyl10n.h"
 #include <gtk/gtk.h>
 #include <time.h>
 #include <string.h>
@@ -38,7 +39,7 @@ static gboolean tick(gpointer data) {
     time_t t = time(NULL);
     struct tm tm_;
     localtime_r(&t, &tm_);
-    strftime(buf, sizeof buf, "%m月%d日 %H:%M", &tm_);
+    strftime(buf, sizeof buf, TR("%m月%d日 %H:%M"), &tm_);
     gtk_label_set_text(GTK_LABEL(clock_label), buf);
     return G_SOURCE_CONTINUE;
 }
@@ -157,7 +158,7 @@ static void build_dock(void) {
     gtk_widget_override_color(gl, GTK_STATE_FLAG_NORMAL, &(GdkRGBA){1,1,1,1});
     gtk_widget_set_size_request(grid_btn, 50, 50);
     gtk_container_add(GTK_CONTAINER(grid_btn), gl);
-    gtk_widget_set_tooltip_text(grid_btn, "显示应用");
+    gtk_widget_set_tooltip_text(grid_btn, TR("显示应用"));
     g_signal_connect(grid_btn, "clicked", G_CALLBACK(menu_click), NULL);
     gtk_box_pack_end(GTK_BOX(vbox), grid_btn, FALSE, FALSE, 0);
 
@@ -179,7 +180,7 @@ static void build_bar(void) {
     gtk_widget_override_background_color(hbox, GTK_STATE_FLAG_NORMAL, &(GdkRGBA){0.03,0.03,0.04,1});
     gtk_container_add(GTK_CONTAINER(bar), hbox);
 
-    GtkWidget *act = gtk_button_new_with_label("活动");
+    GtkWidget *act = gtk_button_new_with_label(TR("活动"));
     gtk_button_set_relief(GTK_BUTTON(act), GTK_RELIEF_NONE);
     gtk_widget_override_color(act, GTK_STATE_FLAG_NORMAL, &(GdkRGBA){1,1,1,1});
     g_signal_connect(act, "clicked", G_CALLBACK(on_activities), NULL);
@@ -266,7 +267,7 @@ static void build_desktop(void) {
     gtk_label_set_attributes(GTK_LABEL(ic), big);
     pango_attr_list_unref(big);
     gtk_widget_override_color(ic, GTK_STATE_FLAG_NORMAL, &(GdkRGBA){1,0.85,0.5,1});
-    GtkWidget *lb = gtk_label_new("主文件夹");
+    GtkWidget *lb = gtk_label_new(TR("主文件夹"));
     gtk_widget_override_color(lb, GTK_STATE_FLAG_NORMAL, &(GdkRGBA){1,1,1,1});
     gtk_container_add(GTK_CONTAINER(btn), v);
     gtk_box_pack_start(GTK_BOX(v), ic, FALSE, FALSE, 0);

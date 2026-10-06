@@ -1,4 +1,5 @@
 /* qyfiles - 启元文件管理器 (GTK3) — v3: 回收站页(还原/清空) + 侧边栏 + 彻底删除 */
+#include "qyl10n.h"
 #include <gtk/gtk.h>
 #include <string.h>
 #include <stdlib.h>
@@ -103,7 +104,7 @@ static void do_delete(void) {
     if (in_trash) { g_free(name); g_free(full); return; }
     GError *err = NULL;
     if (!trash_file(full, &err)) {
-        gchar *msg = g_strdup_printf("删除失败: %s", err ? err->message : "?");
+        gchar *msg = g_strdup_printf(TR("删除失败: %s"), err ? err->message : "?");
         gtk_label_set_text(GTK_LABEL(status), msg);
         g_free(msg); g_clear_error(&err);
     }
@@ -120,12 +121,12 @@ static void do_purge(void) {
         : g_build_filename(cwd, name, NULL);
     GtkWidget *dlg = gtk_message_dialog_new(GTK_WINDOW(gtk_widget_get_toplevel(view)),
         GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING, GTK_BUTTONS_OK_CANCEL,
-        "彻底删除 \"%s\"? 不可恢复!", name);
+        TR("彻底删除 \"%s\"? 不可恢复!"), name);
     if (gtk_dialog_run(GTK_DIALOG(dlg)) == GTK_RESPONSE_OK) {
         gchar *cmd = g_strdup_printf("rm -rf -- %s", full);
         int rc = system(cmd);
         g_free(cmd);
-        gtk_label_set_text(GTK_LABEL(status), rc == 0 ? "已彻底删除" : "删除失败");
+        gtk_label_set_text(GTK_LABEL(status), rc == 0 ? TR("已彻底删除") : TR("删除失败"));
         if (in_trash) {
             char info[4096];
             trash_dir(NULL, 0, info, sizeof info);
@@ -146,7 +147,7 @@ static void do_restore(void) {
     trash_dir(NULL, 0, info, sizeof info);
     gchar *ti = g_strdup_printf("%s/%s.trashinfo", info, name);
     if (!read_trashinfo(ti, orig, sizeof orig)) {
-        gtk_label_set_text(GTK_LABEL(status), "还原失败: 无元数据");
+        gtk_label_set_text(GTK_LABEL(status), TR("还原失败: 无元数据"));
         g_free(name); g_free(ti); return;
     }
     g_free(ti);
@@ -161,11 +162,11 @@ static void do_restore(void) {
     g_free(cmd); g_free(src);
     if (rc == 0) {
         g_unlink(ti);
-        gchar *msg = g_strdup_printf("已还原到 %s", orig);
+        gchar *msg = g_strdup_printf(TR("已还原到 %s"), orig);
         gtk_label_set_text(GTK_LABEL(status), msg);
         g_free(msg);
     } else {
-        gtk_label_set_text(GTK_LABEL(status), "还原失败");
+        gtk_label_set_text(GTK_LABEL(status), TR("还原失败"));
     }
     g_free(name);
     chdir_trash();
@@ -175,7 +176,7 @@ static void do_restore(void) {
 static void do_empty_trash(void) {
     GtkWidget *dlg = gtk_message_dialog_new(GTK_WINDOW(gtk_widget_get_toplevel(view)),
         GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING, GTK_BUTTONS_OK_CANCEL,
-        "清空回收站? 全部内容不可恢复!");
+        TR("清空回收站? 全部内容不可恢复!"));
     if (gtk_dialog_run(GTK_DIALOG(dlg)) == GTK_RESPONSE_OK) {
         char files[4096], info[4096];
         trash_dir(files, sizeof files, info, sizeof info);
@@ -260,8 +261,8 @@ static gboolean on_popup(GtkWidget *w, GdkEventButton *ev, gpointer ud) {
             gtk_tree_selection_select_path(sel, path);
             gtk_tree_path_free(path);
             gtk_label_set_text(GTK_LABEL(status), in_trash
-                ? "已选中: 用工具栏[还原/彻底删除]操作"
-                : "已选中: 用工具栏[新建文件夹/删除/重命名]操作");
+                ? TR("已选中: 用工具栏[还原/彻底删除]操作")
+                : TR("已选中: 用工具栏[新建文件夹/删除/重命名]操作"));
         }
         return TRUE;
     }
@@ -282,10 +283,10 @@ static void chdir_to(const char *path) {
         g_free(full);
         GtkTreeIter it;
         gtk_list_store_append(store, &it);
-        gtk_list_store_set(store, &it, 0, isdir ? "[目录]" : "[文件]", 1, name, -1);
+        gtk_list_store_set(store, &it, 0, isdir ? TR("[目录]") : TR("[文件]"), 1, name, -1);
     }
     g_dir_close(dir);
-    gchar *msg = g_strdup_printf("位置: %s", path);
+    gchar *msg = g_strdup_printf(TR("位置: %s"), path);
     gtk_label_set_text(GTK_LABEL(status), msg);
     g_free(msg);
     g_strlcpy(cwd, path, sizeof cwd);
@@ -308,13 +309,13 @@ static void chdir_trash(void) {
             if (read_trashinfo(ti, orig, sizeof orig)) {
                 gtk_list_store_set(store, &it, 0, orig, 1, name, -1);
             } else {
-                gtk_list_store_set(store, &it, 0, "(无元数据)", 1, name, -1);
+                gtk_list_store_set(store, &it, 0, TR("(无元数据)"), 1, name, -1);
             }
             g_free(ti);
         }
         g_dir_close(dir);
     }
-    gtk_label_set_text(GTK_LABEL(status), "位置: 回收站 (工具栏: 还原 / 彻底删除 / 清空)");
+    gtk_label_set_text(GTK_LABEL(status), TR("位置: 回收站 (工具栏: 还原 / 彻底删除 / 清空)"));
     g_strlcpy(cwd, files, sizeof cwd);
 }
 
@@ -340,7 +341,7 @@ static void on_home(GtkButton *b, gpointer ud) { chdir_to(g_get_home_dir()); }
 
 static void activate(GtkApplication *app, gpointer ud) {
     GtkWidget *win = gtk_application_window_new(app);
-    gtk_window_set_title(GTK_WINDOW(win), "启元文件管理器");
+    gtk_window_set_title(GTK_WINDOW(win), TR("启元文件管理器"));
     GdkGeometry geo = { .max_width = 1920, .max_height = 1080 };
     gtk_window_set_geometry_hints(GTK_WINDOW(win), NULL, &geo, GDK_HINT_MAX_SIZE);
     gtk_window_set_default_size(GTK_WINDOW(win), 720, 480);
@@ -355,13 +356,13 @@ static void activate(GtkApplication *app, gpointer ud) {
     const char *home = g_get_home_dir();
     static char p_home[512], p_docs[512], p_dl[512];
     snprintf(p_home, sizeof p_home, "%s", home);
-    snprintf(p_docs, sizeof p_docs, "%s/文档", home);
-    snprintf(p_dl, sizeof p_dl, "%s/下载", home);
-    side_button("主目录", p_home, side);
-    side_button("文档", p_docs, side);
-    side_button("下载", p_dl, side);
-    side_button("根目录 /", "/", side);
-    side_button("回收站", "TRASH", side);
+    snprintf(p_docs, sizeof p_docs, TR("%s/文档"), home);
+    snprintf(p_dl, sizeof p_dl, TR("%s/下载"), home);
+    side_button(TR("主目录"), p_home, side);
+    side_button(TR("文档"), p_docs, side);
+    side_button(TR("下载"), p_dl, side);
+    side_button(TR("根目录 /"), "/", side);
+    side_button(TR("回收站"), "TRASH", side);
     gtk_box_pack_start(GTK_BOX(hpane), side, FALSE, FALSE, 0);
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
@@ -369,21 +370,21 @@ static void activate(GtkApplication *app, gpointer ud) {
 
     GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
     gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 2);
-    GtkWidget *b_home = gtk_button_new_with_label("主目录");
+    GtkWidget *b_home = gtk_button_new_with_label(TR("主目录"));
     g_signal_connect(b_home, "clicked", G_CALLBACK(on_home), NULL);
-    GtkWidget *b_up = gtk_button_new_with_label("上一级");
+    GtkWidget *b_up = gtk_button_new_with_label(TR("上一级"));
     g_signal_connect(b_up, "clicked", G_CALLBACK(on_up), NULL);
-    GtkWidget *b_mk = gtk_button_new_with_label("新建文件夹");
+    GtkWidget *b_mk = gtk_button_new_with_label(TR("新建文件夹"));
     g_signal_connect(b_mk, "clicked", G_CALLBACK(do_mkdir), NULL);
-    GtkWidget *b_del = gtk_button_new_with_label("删除");
+    GtkWidget *b_del = gtk_button_new_with_label(TR("删除"));
     g_signal_connect(b_del, "clicked", G_CALLBACK(do_delete), NULL);
-    GtkWidget *b_ren = gtk_button_new_with_label("重命名");
+    GtkWidget *b_ren = gtk_button_new_with_label(TR("重命名"));
     g_signal_connect(b_ren, "clicked", G_CALLBACK(do_rename), NULL);
-    GtkWidget *b_res = gtk_button_new_with_label("还原");
+    GtkWidget *b_res = gtk_button_new_with_label(TR("还原"));
     g_signal_connect(b_res, "clicked", G_CALLBACK(do_restore), NULL);
-    GtkWidget *b_pur = gtk_button_new_with_label("彻底删除");
+    GtkWidget *b_pur = gtk_button_new_with_label(TR("彻底删除"));
     g_signal_connect(b_pur, "clicked", G_CALLBACK(do_purge), NULL);
-    GtkWidget *b_emp = gtk_button_new_with_label("清空回收站");
+    GtkWidget *b_emp = gtk_button_new_with_label(TR("清空回收站"));
     g_signal_connect(b_emp, "clicked", G_CALLBACK(do_empty_trash), NULL);
     gtk_box_pack_start(GTK_BOX(hbox), b_home, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_up, FALSE, FALSE, 0);
@@ -397,16 +398,16 @@ static void activate(GtkApplication *app, gpointer ud) {
     GtkListStore *store = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_STRING);
     view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
     GtkCellRenderer *r1 = gtk_cell_renderer_text_new();
-    gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view), -1, "类型/原位置", r1, "text", 0, NULL);
+    gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view), -1, TR("类型/原位置"), r1, "text", 0, NULL);
     GtkCellRenderer *r2 = gtk_cell_renderer_text_new();
-    gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view), -1, "名称", r2, "text", 1, NULL);
+    gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view), -1, TR("名称"), r2, "text", 1, NULL);
     GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
     gtk_container_add(GTK_CONTAINER(scroll), view);
     gtk_box_pack_start(GTK_BOX(vbox), scroll, TRUE, TRUE, 0);
     g_signal_connect(view, "row-activated", G_CALLBACK(on_activated), NULL);
     g_signal_connect(view, "button-press-event", G_CALLBACK(on_popup), NULL);
 
-    status = gtk_label_new("位置: /");
+    status = gtk_label_new(TR("位置: /"));
     gtk_widget_set_halign(status, GTK_ALIGN_START);
     gtk_box_pack_start(GTK_BOX(vbox), status, FALSE, FALSE, 2);
 

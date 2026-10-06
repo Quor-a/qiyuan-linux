@@ -1,4 +1,5 @@
 /* qyedit - 启元文本编辑器 (GTK3, 打开/编辑/保存, 中文界面) */
+#include "qyl10n.h"
 #include <gtk/gtk.h>
 #include <string.h>
 
@@ -7,14 +8,14 @@ static GtkWidget *win = NULL;
 static gchar *current_path = NULL;
 
 static void set_title(void) {
-    gchar *t = g_strdup_printf("%s - 启元文本编辑器", current_path ? g_path_get_basename(current_path) : "未命名");
+    gchar *t = g_strdup_printf(TR("%s - 启元文本编辑器"), current_path ? g_path_get_basename(current_path) : TR("未命名"));
     gtk_window_set_title(GTK_WINDOW(win), t);
     g_free(t);
 }
 
 static void do_open(GtkWidget *w, gpointer ud) {
-    GtkWidget *dlg = gtk_file_chooser_dialog_new("打开文件", GTK_WINDOW(win),
-        GTK_FILE_CHOOSER_ACTION_OPEN, "_取消", GTK_RESPONSE_CANCEL, "_打开", GTK_RESPONSE_ACCEPT, NULL);
+    GtkWidget *dlg = gtk_file_chooser_dialog_new(TR("打开文件"), GTK_WINDOW(win),
+        GTK_FILE_CHOOSER_ACTION_OPEN, TR("_取消"), GTK_RESPONSE_CANCEL, TR("_打开"), GTK_RESPONSE_ACCEPT, NULL);
     if (gtk_dialog_run(GTK_DIALOG(dlg)) == GTK_RESPONSE_ACCEPT) {
         gchar *path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dlg));
         gchar *text = NULL; gsize len = 0;
@@ -32,8 +33,8 @@ static void do_open(GtkWidget *w, gpointer ud) {
 
 static void do_save(GtkWidget *w, gpointer ud) {
     if (!current_path) {
-        GtkWidget *dlg = gtk_file_chooser_dialog_new("保存文件", GTK_WINDOW(win),
-            GTK_FILE_CHOOSER_ACTION_SAVE, "_取消", GTK_RESPONSE_CANCEL, "_保存", GTK_RESPONSE_ACCEPT, NULL);
+        GtkWidget *dlg = gtk_file_chooser_dialog_new(TR("保存文件"), GTK_WINDOW(win),
+            GTK_FILE_CHOOSER_ACTION_SAVE, TR("_取消"), GTK_RESPONSE_CANCEL, TR("_保存"), GTK_RESPONSE_ACCEPT, NULL);
         gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(dlg), TRUE);
         if (gtk_dialog_run(GTK_DIALOG(dlg)) != GTK_RESPONSE_ACCEPT) { gtk_widget_destroy(dlg); return; }
         current_path = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dlg));
@@ -65,12 +66,12 @@ int main(int argc, char **argv) {
     gtk_container_add(GTK_CONTAINER(win), vbox);
 
     GtkWidget *mb = gtk_menu_bar_new();
-    GtkWidget *file_item = gtk_menu_item_new_with_label("文件");
+    GtkWidget *file_item = gtk_menu_item_new_with_label(TR("文件"));
     GtkWidget *file_menu = gtk_menu_new();
-    GtkWidget *mi_open = gtk_menu_item_new_with_label("打开...");
-    GtkWidget *mi_save = gtk_menu_item_new_with_label("保存");
-    GtkWidget *mi_sas  = gtk_menu_item_new_with_label("另存为...");
-    GtkWidget *mi_quit = gtk_menu_item_new_with_label("退出");
+    GtkWidget *mi_open = gtk_menu_item_new_with_label(TR("打开..."));
+    GtkWidget *mi_save = gtk_menu_item_new_with_label(TR("保存"));
+    GtkWidget *mi_sas  = gtk_menu_item_new_with_label(TR("另存为..."));
+    GtkWidget *mi_quit = gtk_menu_item_new_with_label(TR("退出"));
     g_signal_connect(mi_open, "activate", G_CALLBACK(do_open), NULL);
     g_signal_connect(mi_save, "activate", G_CALLBACK(do_save), NULL);
     g_signal_connect(mi_sas,  "activate", G_CALLBACK(do_save_as), NULL);
