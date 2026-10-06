@@ -1,0 +1,5 @@
+[Unit]
+Description=Qiyuan boot splash
+ExecStart=/usr/bin/qyboot
+After=udevd
+Restart=no

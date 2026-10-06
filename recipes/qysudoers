@@ -1,0 +1,3 @@
+# qysudo 策略: %组 ALL=(ALL)  — 允许该组成员经 qysudo 提权 (需输密码)
+%wheel ALL=(ALL)
+root ALL=(ALL)
