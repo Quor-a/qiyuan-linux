@@ -83,9 +83,19 @@ static void on_install_exit(GPid pid, gint status, gpointer ud) {
     g_source_remove(log_watch);
     installing = FALSE;
     gboolean ok = (status == 0);
-    log_append(ok ? "=== 安装完成！可以关闭窗口并重启 ===" : "=== 安装失败（状态 %d），查看上方日志 ===", status);
+    log_append(ok ? "=== 安装完成！===" : "=== 安装失败（状态 %d），查看上方日志 ===", status);
     gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(bar), ok ? 1.0 : 0.0);
     gtk_widget_set_sensitive(btn_install, TRUE);
+    if (ok) {
+        GtkWidget *dlg = gtk_message_dialog_new(GTK_WINDOW(win), GTK_DIALOG_MODAL,
+            GTK_MESSAGE_INFO, GTK_BUTTONS_NONE,
+            "启元系统已成功安装！\n\n重新启动后将从硬盘引导，\n首次开机会出现初始配置向导。");
+        gtk_window_set_title(GTK_WINDOW(dlg), "安装完成");
+        gtk_dialog_add_buttons(GTK_DIALOG(dlg), "稍后重启", GTK_RESPONSE_CANCEL, "立即重启", GTK_RESPONSE_OK, NULL);
+        gint r = gtk_dialog_run(GTK_DIALOG(dlg));
+        gtk_widget_destroy(dlg);
+        if (r == GTK_RESPONSE_OK) system("reboot");
+    }
 }
 
 static void do_install(GtkWidget *w, gpointer ud) {
@@ -98,6 +108,35 @@ static void do_install(GtkWidget *w, gpointer ud) {
     gchar *dev = NULL;
     gtk_tree_model_get(m, &it, 0, &dev, -1);
 
+    /* 用户预创建 (可选): 弹表单 */
+    GtkWidget *udlg = gtk_dialog_new_with_buttons("初始用户", GTK_WINDOW(win), GTK_DIALOG_MODAL,
+        "跳过", GTK_RESPONSE_CANCEL, "确定", GTK_RESPONSE_OK, NULL);
+    GtkWidget *ug = gtk_grid_new();
+    gtk_grid_set_row_spacing(GTK_GRID(ug), 6);
+    gtk_grid_set_column_spacing(GTK_GRID(ug), 8);
+    gtk_container_set_border_width(GTK_CONTAINER(ug), 12);
+    GtkWidget *une = gtk_entry_new();
+    GtkWidget *upe = gtk_entry_new();
+    gtk_entry_set_visibility(GTK_ENTRY(upe), FALSE);
+    gtk_grid_attach(GTK_GRID(ug), gtk_label_new("用户名（留空跳过）"), 0, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(ug), une, 1, 0, 1, 1);
+    gtk_grid_attach(GTK_GRID(ug), gtk_label_new("密码"), 0, 1, 1, 1);
+    gtk_grid_attach(GTK_GRID(ug), upe, 1, 1, 1, 1);
+    GtkWidget *ua = gtk_dialog_get_content_area(GTK_DIALOG(udlg));
+    gtk_box_pack_start(GTK_BOX(ua), ug, TRUE, TRUE, 0);
+    gtk_widget_show_all(udlg);
+    gint uresp = gtk_dialog_run(GTK_DIALOG(udlg));
+    const char *uname = gtk_entry_get_text(GTK_ENTRY(une));
+    const char *upass = gtk_entry_get_text(GTK_ENTRY(upe));
+    gchar *user_spec = NULL;
+    if (uresp == GTK_RESPONSE_OK && *uname) {
+        if (*upass)
+            user_spec = g_strdup_printf("%s %s", uname, upass);
+        else
+            user_spec = g_strdup_printf("%s", uname);
+    }
+    gtk_widget_destroy(udlg);
+
     /* 二次确认 */
     GtkWidget *dlg = gtk_message_dialog_new(GTK_WINDOW(win), GTK_DIALOG_MODAL,
         GTK_MESSAGE_WARNING, GTK_BUTTONS_OK_CANCEL,
@@ -105,14 +144,19 @@ static void do_install(GtkWidget *w, gpointer ud) {
     gtk_window_set_title(GTK_WINDOW(dlg), "确认安装");
     gint resp = gtk_dialog_run(GTK_DIALOG(dlg));
     gtk_widget_destroy(dlg);
-    if (resp != GTK_RESPONSE_OK) { g_free(dev); return; }
+    if (resp != GTK_RESPONSE_OK) { g_free(dev); if (user_spec) g_free(user_spec); return; }
 
     installing = TRUE;
     gtk_widget_set_sensitive(btn_install, FALSE);
     gtk_progress_bar_pulse(GTK_PROGRESS_BAR(bar));
     log_append("=== 开始安装到 %s ===", dev);
-    gchar *cmd = g_strdup_printf("/usr/bin/qyinstall %s", dev);
+    gchar *cmd;
+    if (user_spec)
+        cmd = g_strdup_printf("/usr/bin/qyinstall %s --user %s", dev, user_spec);
+    else
+        cmd = g_strdup_printf("/usr/bin/qyinstall %s", dev);
     gchar *argv[4] = { "/bin/busybox", "sh", "-c", cmd };
+    g_free(user_spec);
     GError *err = NULL;
     gint outfd;
     if (!g_spawn_async_with_pipes(NULL, argv, NULL,

@@ -5,7 +5,12 @@
 set -e
 BUSY=/bin/busybox
 DISK="$1"
-[ -b "$DISK" ] || { echo "用法: qyinstall <整盘设备如/dev/vda>"; exit 1; }
+[ -b "$DISK" ] || { echo "用法: qyinstall <整盘设备如/dev/vda> [--user <名> [密码]]"; exit 1; }
+# --user 解析
+NEWU=""; NEWP=""
+if [ "$2" = "--user" ]; then
+    NEWU="$3"; NEWP="$4"
+fi
 
 # 0. 找 live 源
 SRC=""
@@ -104,5 +109,38 @@ fi
 echo "BOOTX64.EFI installed"
 
 # 7. 摘载
+# 用户预创建 + autologin (写目标盘)
+if [ -n "$NEWU" ]; then
+    # 直接改目标盘文件 (chroot 内 busybox 动态链接会因缺 proc/挂载死锁)
+    $BUSY grep -q "^$NEWU:" /tmp/arctgt/etc/passwd || \
+      echo "$NEWU:x:1500:1500:$NEWU:/home/$NEWU:/bin/sh" >> /tmp/arctgt/etc/passwd
+    $BUSY grep -q "^$NEWU:" /tmp/arctgt/etc/group || \
+      echo "$NEWU:x:1500:" >> /tmp/arctgt/etc/group
+    $BUSY grep -q "^$NEWU:" /tmp/arctgt/etc/shadow 2>/dev/null || \
+      echo "$NEWU:!::0:99999:7:::" >> /tmp/arctgt/etc/shadow
+    $BUSY chmod 600 /tmp/arctgt/etc/shadow
+    $BUSY mkdir -p /tmp/arctgt/home/$NEWU
+    $BUSY chown 1500:1500 /tmp/arctgt/home/$NEWU
+    # 密码: 用目标系统的 busybox chpasswd 在 chroot 外算不行 → 用 passwd 行预置 (首次登录用 qywelcome/qyusers 改) 或 shadow 写锁标记由向导处理
+    if [ -n "$NEWP" ]; then
+        # 用 python3 (sysroot 有) 生成 sha512-crypt; 失败则留锁标记由 qywelcome/qyusers 改密
+        H=$(python3 - "$NEWP" <<'PYEOF' 2>/dev/null
+import crypt,sys
+print(crypt.crypt(sys.argv[1], crypt.mksalt(crypt.METHOD_SHA512)))
+PYEOF
+)
+        if [ -n "$H" ]; then
+            $BUSY sed -i "s|^$NEWU:![^:]*:|$NEWU:$H:|" /tmp/arctgt/etc/shadow
+        else
+            # 无 python3: 目标系统首启用 busybox chpasswd 设置
+            echo "$NEWU:$NEWP" > /tmp/arctgt/etc/.initpw
+            echo "密码将由首启向导设置"
+        fi
+    fi
+    # 加入 wheel
+    $BUSY sed -i "s/^wheel:x:10:\(.*\)$/wheel:x:10:\1,$NEWU/" /tmp/arctgt/etc/group
+    echo "$NEWU" > /tmp/arctgt/etc/qyautologin
+    echo "用户 $NEWU 已预创建 (autologin)"
+fi
 $BUSY umount /tmp/arctgt/efi /tmp/arctgt /tmp/arcsrc /tmp/isoroot 2>/dev/null || true
 echo "===QYINSTALL-DONE=== root=UUID=$RUUID efi=$EUUID"

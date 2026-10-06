@@ -534,16 +534,12 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 | **端到端装机（v1.7.3）** | ✅ **里程碑**：live ISO → qyinstall 写盘（GPT/EFI+ext4）→ OVMF 从硬盘引导 → 完整桌面系统（rootfstype=ext4 rw，qyuseradd 实测）。修 install initramfs 缺 bin/busybox 致 kernel panic 落 shell 的 bug |
 | **首启向导 qywelcome（v1.8.0）** | ✅ 实测（装机后首启弹窗：主机名/用户/密码/时区 → 应用 → /etc/.qywelcomed 标记后不再弹） |
 | **普通用户自动登录（v1.8.1）** | ✅ 实测（/etc/qyautologin 写用户名 → 桌面以该用户运行 ps 验证；wayland socket 权限共享方案） |
+| **安装器集成用户预创建（v1.8.2）** | ✅ 实测（qysetup 安装时弹"初始用户"表单 → qyinstall --user 直接写目标盘 passwd/shadow/wheel/autologin → 从盘引导桌面以该用户运行；密码经 qyinit 首启 hook 用 busybox chpasswd 设置；修 busybox 无 cryptpw/VM 无 python3 的哈希生成死路） |
 
 ### 下一步开发
 
 1. **qyarc GUI 桌面点击实测** + tar 后端兜底（系统 tar 缺 libselinux，先用 busybox tar）
-2. **安装器（写盘 + 引导）**：ISO → 硬盘，qydisk 路线
-3. **polkit 替代品 `qysudo`**：setuid 白名单 + 策略文件
-4. **用户管理**：shadow 包接入（useradd/passwd），让多用户可用
-5. **包管理进目标系统**：用 C 重写 qypkg 核心子集（安装/查询/校验）
-6. **声音/亮度设置页**：qysettings 新增音频与背光面板
-7. **SQUASHFS_ZSTD 内核重配**：压缩率/启动速度优化
-8. **qyuseradd GUI**：用户管理图形化（列表/新建/密码/删组）
-9. **开机动画/主题**：PLYMOUTH 替代（busybox 静态进度）或 PSPLASH
-10. **装机后收尾**：普通用户自动登录 / 语言设置；qysetup 图形化集成 qywelcome 逻辑
+2. **开机动画与 plymouth 级体验**（内核 fb 动画 / 简易 qyboot splash）
+3. **多语言**：qydesktop 系列应用中文之外增加英文切换
+4. **qysudo 策略增强**：按命令白名单（sudoers 子集语法）
+5. **软件中心**：qypkg GUI（浏览/安装/卸载仓库包）

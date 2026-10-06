@@ -79,6 +79,7 @@ def package(ctx):
     ctx.run("cp qyuseradd.sh {}/usr/bin/qyuseradd && chmod +x {}/usr/bin/qyuseradd".format(ctx.destdir, ctx.destdir))
     ctx.run("cp qyusers {}/usr/bin/qyusers".format(ctx.destdir))
     ctx.run("cp qyinstall.sh {}/usr/bin/qyinstall && chmod +x {}/usr/bin/qyinstall".format(ctx.destdir, ctx.destdir))
+    ctx.run("mkdir -p {}/etc/qyinit.d && cp qyinitpw.sh {}/etc/qyinit.d/40-initpw && chmod +x {}/etc/qyinit.d/40-initpw".format(ctx.destdir, ctx.destdir, ctx.destdir))
     ctx.run("cp qywelcome {}/usr/bin/qywelcome".format(ctx.destdir))
     # 网络自启单元 (busybox udhcpc DHCP)：
     ctx.run("mkdir -p {}/etc/qyinit.d".format(ctx.destdir))
