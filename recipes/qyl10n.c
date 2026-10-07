@@ -228,6 +228,9 @@ static const pair tbl[] = {
     { "完成 ✓", "Done ✓" },
     { "失败 (rc=%d)", "Failed (rc=%d)" },
     { "仓库缺失", "Repository missing" },
+    { "个软件包", "packages" },
+    { "已安装", "installed" },
+    { "依赖", "Depends" },
 };
 
 #define NTBL ((int)(sizeof tbl / sizeof tbl[0]))

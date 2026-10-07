@@ -19,12 +19,48 @@ enum { C_NAME, C_VER, C_SIZE, C_STATUS, C_FILE, C_N };
 static GtkListStore *store;
 static GtkWidget *info_label;
 static GtkWidget *btn_act;
+static GtkWidget *count_label;
 static char g_file[512] = "", g_name[128] = "", g_status[32] = "";
 
 static int is_installed(const char *name) {
     char p[300];
     snprintf(p, sizeof p, INST_DIR "/%s", name);
     return access(p, F_OK) == 0;
+}
+
+
+/* 读包 meta json (QYPKG 128B 头: meta_off@16 meta_len@24) */
+static char *pkg_meta(const char *file) {
+    char path[512];
+    snprintf(path, sizeof path, "%s/%s", REPO_DIR, file);
+    FILE *f = fopen(path, "rb");
+    if (!f) return NULL;
+    unsigned char hdr[128];
+    if (fread(hdr, 1, 128, f) != 128 || memcmp(hdr, "QYPKG", 5) != 0) { fclose(f); return NULL; }
+    unsigned long long mo = 0, ml = 0;
+    for (int i = 7; i >= 0; i--) mo = (mo << 8) | hdr[16 + i];
+    for (int i = 7; i >= 0; i--) ml = (ml << 8) | hdr[24 + i];
+    if (ml > 4u << 20) { fclose(f); return NULL; }
+    char *js = malloc(ml + 1);
+    if (!js || fread(js, 1, ml, f) != ml) { fclose(f); free(js); return NULL; }
+    js[ml] = 0;
+    fclose(f);
+    return js;
+}
+static int json_str(const char *js, const char *key, char *out, size_t outsz) {
+    char pat[64];
+    snprintf(pat, sizeof pat, "\"%s\"", key);
+    const char *k = strstr(js, pat);
+    if (!k) return -1;
+    k = strchr(k + strlen(pat), ':');
+    if (!k) return -1;
+    while (*k && *k != '"') k++;
+    if (*k != '"') return -1;
+    k++;
+    size_t i = 0;
+    while (*k && *k != '"' && i + 1 < outsz) out[i++] = *k++;
+    out[i] = 0;
+    return 0;
 }
 
 static char *slurp(const char *path, size_t *len) {
@@ -45,6 +81,84 @@ static void human_size(long v, char *out, size_t n) {
     if (v >= 1048576) snprintf(out, n, "%.1f MB", v / 1048576.0);
     else if (v >= 1024) snprintf(out, n, "%ld KB", v / 1024);
     else snprintf(out, n, "%ld B", v);
+}
+
+
+/* 在 store 中按包名查文件名, 找到返回 0 并填 out */
+static int find_file_by_name(const char *name, char *out, size_t outsz) {
+    GtkTreeIter it;
+    if (!gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &it)) return -1;
+    do {
+        gchar *n = NULL, *f = NULL;
+        gtk_tree_model_get(GTK_TREE_MODEL(store), &it, C_NAME, &n, C_FILE, &f, -1);
+        int hit = (n && strcmp(n, name) == 0);
+        if (hit) snprintf(out, outsz, "%s", f ? f : "");
+        g_free(n); g_free(f);
+        if (hit) return 0;
+    } while (gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &it));
+    return -1;
+}
+
+/* 组装安装命令: 依赖包在前, 目标包在后 (qypkg-inst 支持多包顺序安装) */
+static void build_install_cmd(const char *file, char *out, size_t outsz) {
+    char *js = pkg_meta(file);
+    char deps[512] = "";
+    if (js) {
+        const char *dp = strstr(js, "\"depends\"");
+        if (dp) {
+            size_t j = 0;
+            const char *q = strchr(dp, '[');
+            if (q) {
+                q++;
+                while (*q && *q != ']' && j + 1 < sizeof deps) {
+                    if (*q == '"') {
+                        q++;
+                        if (j && j + 1 < sizeof deps) deps[j++] = ' ';
+                        while (*q && *q != '"' && j + 1 < sizeof deps) deps[j++] = *q++;
+                    }
+                    q++;
+                }
+            }
+            deps[j] = 0;
+        }
+        free(js);
+    }
+    /* deps 是空格分隔包名 */
+    char cmd[2048];
+    snprintf(cmd, sizeof cmd, "qysudo -n /usr/bin/qypkg-inst");
+    char *save = NULL;
+    for (char *t = strtok_r(deps, " ", &save); t; t = strtok_r(NULL, " ", &save)) {
+        char df[256];
+        if (is_installed(t)) continue;              /* 已装跳过 */
+        if (find_file_by_name(t, df, sizeof df) != 0) continue;  /* 仓库无此包(如 glibc 系统自带) */
+        strncat(cmd, " '", sizeof cmd - strlen(cmd) - 1);
+        strncat(cmd, df, sizeof cmd - strlen(cmd) - 1);
+        strncat(cmd, "'", sizeof cmd - strlen(cmd) - 1);
+    }
+    char tail[600];
+    snprintf(tail, sizeof tail, "/%s'", file);
+    strncat(cmd, " '", sizeof cmd - strlen(cmd) - 1);
+    strncat(cmd, REPO_DIR, sizeof cmd - strlen(cmd) - 1);
+    strncat(cmd, tail, sizeof cmd - strlen(cmd) - 1);
+    snprintf(out, outsz, "%s", cmd);
+}
+
+/* 状态栏: 软件包总数 / 已安装数 */
+static void update_count_label(void) {
+    if (!count_label) return;
+    int total = gtk_tree_model_iter_n_children(GTK_TREE_MODEL(store), NULL), inst = 0;
+    GtkTreeIter it;
+    if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &it)) {
+        do {
+            gchar *n = NULL;
+            gtk_tree_model_get(GTK_TREE_MODEL(store), &it, C_NAME, &n, -1);
+            if (n && is_installed(n)) inst++;
+            g_free(n);
+        } while (gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &it));
+    }
+    char buf[128];
+    snprintf(buf, sizeof buf, "%d %s / %d %s", total, TR("个软件包"), inst, TR("已安装"));
+    gtk_label_set_text(GTK_LABEL(count_label), buf);
 }
 
 static void load_repo(const char *filter) {
@@ -106,6 +220,7 @@ static void load_repo(const char *filter) {
             C_FILE, file, -1);
     }
     free(js);
+    update_count_label();
 }
 
 static void refresh_row_status(void) {
@@ -114,20 +229,61 @@ static void refresh_row_status(void) {
     load_repo(f);
 }
 
+static void show_row(GtkTreeView *tv, GtkTreeIter *itp);
+
 static void on_row_activated(GtkTreeView *tv, GtkTreePath *path,
                              GtkTreeViewColumn *col, gpointer ud) {
-    (void)tv; (void)col; (void)ud;
+    (void)col; (void)ud;
     GtkTreeIter it;
     GtkTreeModel *m = gtk_tree_view_get_model(tv);
     if (!gtk_tree_model_get_iter(m, &it, path)) return;
+    show_row(tv, &it);
+}
+
+static void show_row(GtkTreeView *tv, GtkTreeIter *itp) {
+    GtkTreeIter it = *itp;
+    GtkTreeModel *m = gtk_tree_view_get_model(tv);
     gchar *name = NULL, *file = NULL, *ver = NULL;
     gtk_tree_model_get(m, &it, C_NAME, &name, C_VER, &ver, C_FILE, &file, -1);
     snprintf(g_name, sizeof g_name, "%s", name ? name : "");
     snprintf(g_file, sizeof g_file, "%s", file ? file : "");
     snprintf(g_status, sizeof g_status, "%s", is_installed(g_name) ? "installed" : "available");
-    char txt[512];
-    snprintf(txt, sizeof txt, "%s-%s\n%s", g_name, ver ? ver : "",
-             g_status[0] == 'i' ? TR("已安装，可卸载") : TR("未安装，可安装"));
+    char txt[1024];
+    char *js = pkg_meta(file ? file : "");
+    if (js) {
+        char desc[512] = "", deps[256] = "";
+        json_str(js, "description", desc, sizeof desc);
+        if (!desc[0]) json_str(js, "summary", desc, sizeof desc);
+        /* depends 数组首段扫名字 */
+        const char *dp = strstr(js, "\"depends\"");
+        if (dp) {
+            size_t j = 0;
+            const char *q = strchr(dp, '[');
+            if (q) {
+                q++;
+                while (*q && *q != ']' && j + 1 < sizeof deps) {
+                    if (*q == '"') {
+                        q++;
+                        if (j && j + 1 < sizeof deps) deps[j++] = ',';
+                        while (*q && *q != '"' && j + 1 < sizeof deps) deps[j++] = *q++;
+                    }
+                    q++;
+                }
+            }
+            deps[j] = 0;
+        }
+        free(js);
+        snprintf(txt, sizeof txt, "%s-%s\n%s\n%s: %s",
+                 g_name, ver ? ver : "", desc,
+                 TR("依赖"), deps);
+    } else {
+        snprintf(txt, sizeof txt, "%s-%s", g_name, ver ? ver : "");
+    }
+    {
+        size_t L = strlen(txt);
+        snprintf(txt + L, sizeof txt - L, "\n%s",
+                 g_status[0] == 'i' ? TR("已安装，可卸载") : TR("未安装，可安装"));
+    }
     gtk_label_set_text(GTK_LABEL(info_label), txt);
     gtk_button_set_label(GTK_BUTTON(btn_act),
         g_status[0] == 'i' ? TR("卸载") : TR("安装"));
@@ -148,7 +304,7 @@ static void on_act(GtkWidget *w, gpointer ud) {
     if (g_status[0] == 'i') {
         snprintf(cmd, sizeof cmd, "qysudo -n /usr/bin/qypkg-inst -r %s", g_name);
     } else {
-        snprintf(cmd, sizeof cmd, "qysudo -n /usr/bin/qypkg-inst '%s'/%s", REPO_DIR, g_file);
+        build_install_cmd(g_file, cmd, sizeof cmd);
     }
     append_log(TR("执行中…"));
     while (gtk_events_pending()) gtk_main_iteration();
@@ -199,6 +355,10 @@ int main(int argc, char **argv) {
     gtk_container_add(GTK_CONTAINER(sw), GTK_WIDGET(tv));
     gtk_box_pack_start(GTK_BOX(vbox), sw, TRUE, TRUE, 0);
 
+    count_label = gtk_label_new("");
+    gtk_label_set_xalign(GTK_LABEL(count_label), 0.0);
+    gtk_box_pack_start(GTK_BOX(vbox), count_label, FALSE, FALSE, 0);
+
     info_label = gtk_label_new(TR("选择一个软件包"));
     gtk_label_set_xalign(GTK_LABEL(info_label), 0.0);
     gtk_box_pack_start(GTK_BOX(vbox), info_label, FALSE, FALSE, 0);
@@ -208,6 +368,12 @@ int main(int argc, char **argv) {
     gtk_box_pack_start(GTK_BOX(vbox), btn_act, FALSE, FALSE, 0);
 
     load_repo(NULL);
+    /* 自动选中首行, 打开即显示详情 */
+    {
+        GtkTreeIter first;
+        if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &first))
+            show_row(GTK_TREE_VIEW(tv), &first);
+    }
     gtk_widget_show_all(win);
     gtk_main();
     return 0;
