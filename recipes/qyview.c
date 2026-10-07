@@ -71,7 +71,11 @@ static void load_by_index(GtkWidget *da, int idx) {
     gchar *full = g_build_filename(cur_dir, (gchar*)dir_files->pdata[idx], NULL);
     if (load_path(full)) {
         dir_idx = idx;
-        if (g_win) gtk_window_set_title(g_win, (gchar *)dir_files->pdata[idx]);
+        if (g_win) {
+            gchar *ttl = g_strdup_printf("%s — 图片查看", (gchar *)dir_files->pdata[idx]);
+            gtk_window_set_title(g_win, ttl);
+            g_free(ttl);
+        }
         if (page_label) {
             gchar buf[32];
             g_snprintf(buf, sizeof buf, "%d / %d", dir_idx + 1, dir_files->len);

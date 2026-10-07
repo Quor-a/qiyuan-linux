@@ -218,8 +218,9 @@ static void task_glyph(const char *title, const char **glyph, const char **cls) 
     if (strstr(title, "软件中心")) { *glyph = "▦"; *cls = "c-store"; return; }
     if (strstr(title, "回收站"))   { *glyph = "🗑"; *cls = "c-trash"; return; }
     if (strstr(title, "文本") || strstr(title, "编辑器")) { *glyph = "✎"; *cls = "c-grid"; return; }
-    if (strstr(title, "图片"))     { *glyph = "▣"; *cls = "c-grid"; return; }
+    if (strstr(title, "图片") || strstr(title, "图像") || strstr(title, "查看")) { *glyph = "▣"; *cls = "c-view"; return; }
     if (strstr(title, "压缩"))     { *glyph = "▣"; *cls = "c-grid"; return; }
+    if (strstr(title, "Terminal") || strstr(title, "erminal")) { *glyph = ">_"; *cls = "c-term"; return; }
     *glyph = "▣"; *cls = "c-grid";
 }
 
