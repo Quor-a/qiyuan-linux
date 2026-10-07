@@ -58,10 +58,49 @@ static void add_class(GtkWidget *w, const char *cls) {
     gtk_style_context_add_class(gtk_widget_get_style_context(w), cls);
 }
 
+/* ---------- 常用列表持久化: ~/.config/qiyuan/appmenu-freq ---------- */
+#define FREQ_FILE ".config/qiyuan/appmenu-freq"
+
+static char *freq_path(void) {
+    return g_build_filename(g_get_home_dir(), FREQ_FILE, NULL);
+}
+
+static void freq_save(void) {
+    char *dir = g_build_filename(g_get_home_dir(), ".config/qiyuan", NULL);
+    g_mkdir_with_parents(dir, 0700);
+    g_free(dir);
+    char *path = freq_path();
+    FILE *f = fopen(path, "w");
+    if (f) {
+        for (int i = 0; i < NAPPS; i++)
+            if (apps[i].launches > 0)
+                fprintf(f, "%s %d\n", apps[i].name, apps[i].launches);
+        fclose(f);
+    }
+    g_free(path);
+}
+
+static void freq_load(void) {
+    char *path = freq_path();
+    FILE *f = fopen(path, "r");
+    if (f) {
+        char name[96];
+        int n;
+        while (fscanf(f, "%95s %d", name, &n) == 2) {
+            for (int i = 0; i < NAPPS; i++)
+                if (strcmp(apps[i].name, name) == 0)
+                    apps[i].launches = n;
+        }
+        fclose(f);
+    }
+    g_free(path);
+}
+
 /* ---------- 固定区: 图标网格 (4 列) ---------- */
 static void on_icon_click(GtkButton *btn, gpointer ud) {
     AppEntry *a = (AppEntry *)ud;
     a->launches++;
+    freq_save();
     launch_cmd(a->cmdline);
     gtk_widget_hide(menu_win);
 }
@@ -117,6 +156,7 @@ static GtkWidget *make_grid_icon(AppEntry *a) {
 static void on_row_click(GtkButton *btn, gpointer ud) {
     AppEntry *a = (AppEntry *)ud;
     a->launches++;
+    freq_save();
     launch_cmd(a->cmdline);
     gtk_widget_hide(menu_win);
 }
@@ -294,6 +334,7 @@ int main(int argc, char **argv) {
     gtk_box_pack_start(GTK_BOX(vbox), bottom, FALSE, FALSE, 0);
 
     g_printerr("QYAPPMENU-START toplevel\n");
+    freq_load();      /* 载入历史常用计数 */
     rebuild(FALSE);
     gtk_main();
     return 0;
