@@ -786,3 +786,12 @@ sysroot 工具链，PASS）。
   （否则 GTK 默认主题的渐变图会盖住背景色，导致 `:checked` 橙色不生效）
 
 构建产物：`qydesktop 0.1.0-27`。截图 `docs/screenshots/qysettings-about-v2.png`。
+
+### 顶栏 CPU/内存实时小部件（v0.1.0-28，2026-10 实测）
+
+- **顶栏状态区**（电源按钮左侧）新增实时资源显示：`CPU xx% · MEM xx%`
+- 每 2 秒读取 `/proc/stat` 与 `/proc/meminfo` 计算 CPU 占用率与内存使用率并刷新
+- 新增 `qy-mon-widget` 主题类（12px 灰字，与顶栏风格一致）
+- 验证：顶栏右侧可检出小部件文字，且 2 秒前后资源数值变化（像素差异>0）
+
+构建产物：`qydesktop 0.1.0-28`。

@@ -66,6 +66,7 @@ static GtkWidget *taskbar_box   = NULL;
 static guint     active_id     = 0;   /* 最近点击的任务栏窗口（本地高亮反馈） */
 static long      active_until  = 0;   /* 高亮截止时间戳 */
 static GtkWidget *clock_label  = NULL;
+static GtkWidget *mon_label    = NULL;  /* 顶栏 CPU/内存小部件 */
 static GtkWidget *desktop_fixed = NULL;
 
 /* ---------- 工具 ---------- */
@@ -121,6 +122,44 @@ static gboolean tick(gpointer data) {
     localtime_r(&t, &tm_);
     strftime(buf, sizeof buf, TR("%m月%d日 %H:%M:%S"), &tm_);
     gtk_label_set_text(GTK_LABEL(clock_label), buf);
+    return G_SOURCE_CONTINUE;
+}
+
+/* ---------- 顶栏 CPU/内存小部件 ---------- */
+static gboolean mon_tick(gpointer data) {
+    static long prev_total = 0, prev_idle = 0;
+    FILE *f = fopen("/proc/stat", "r");
+    if (!f) return G_SOURCE_CONTINUE;
+    long u, n, s, idle, iow, irq, sirq, steal;
+    if (fscanf(f, "cpu %ld %ld %ld %ld %ld %ld %ld %ld",
+               &u, &n, &s, &idle, &iow, &irq, &sirq, &steal) == 8) {
+        long total = u + n + s + idle + iow + irq + sirq + steal;
+        long dtotal = total - prev_total;
+        long didle = (idle + iow) - prev_idle;
+        double usage = dtotal > 0 ? 1.0 - (double)didle / (double)dtotal : 0.0;
+        prev_total = total;
+        prev_idle = idle + iow;
+        fclose(f);
+        unsigned long avail = 0, total_kb = 0;
+        char key[64];
+        unsigned long val;
+        char unit[16];
+        f = fopen("/proc/meminfo", "r");
+        if (f) {
+            while (fscanf(f, "%63s %lu %15s", key, &val, unit) >= 2) {
+                if (!strcmp(key, "MemTotal:")) total_kb = val;
+                else if (!strcmp(key, "MemAvailable:")) { avail = val; break; }
+            }
+            fclose(f);
+        }
+        double mem = total_kb > 0 ? 1.0 - (double)avail / (double)total_kb : 0.0;
+        char buf[80];
+        g_snprintf(buf, sizeof buf, "CPU %d%% · MEM %d%%",
+                   (int)(usage * 100 + 0.5), (int)(mem * 100 + 0.5));
+        gtk_label_set_text(GTK_LABEL(data), buf);
+    } else {
+        fclose(f);
+    }
     return G_SOURCE_CONTINUE;
 }
 
@@ -465,6 +504,11 @@ static void build_bar(void) {
 
     /* 右侧状态区 */
     GtkWidget *st = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
+    mon_label = gtk_label_new("CPU 0% · MEM 0%");
+    add_class(mon_label, "qy-mon-widget");
+    gtk_widget_set_tooltip_text(mon_label, TR("系统资源"));
+    gtk_box_pack_start(GTK_BOX(st), mon_label, FALSE, FALSE, 6);
+    g_timeout_add_seconds(2, mon_tick, mon_label);
     GtkWidget *power = gtk_button_new_with_label("⏻");
     gtk_button_set_relief(GTK_BUTTON(power), GTK_RELIEF_NONE);
     add_class(power, "qy-status-btn");

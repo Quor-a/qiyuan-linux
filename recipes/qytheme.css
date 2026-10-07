@@ -353,3 +353,10 @@ notebook tab:checked {
     font-size: 13px;
     color: #D1D5DB;
 }
+
+/* ---------- 顶栏系统资源小部件 ---------- */
+.qy-mon-widget {
+    font-size: 12px;
+    color: #9CA3AF;
+    padding: 0 6px;
+}
