@@ -209,6 +209,20 @@ static void on_task_clicked(GtkButton *btn, gpointer ud) {
     if (f) { fprintf(f, "%u", id); fclose(f); }
 }
 
+/* 按窗口标题关键词映射图标字符 + 主题色类 */
+static void task_glyph(const char *title, const char **glyph, const char **cls) {
+    if (strstr(title, "文件") || strstr(title, "主文件夹")) { *glyph = "▤"; *cls = "c-files"; return; }
+    if (strstr(title, "终端"))     { *glyph = ">_"; *cls = "c-term"; return; }
+    if (strstr(title, "设置"))     { *glyph = "⚙"; *cls = "c-settings"; return; }
+    if (strstr(title, "监视"))     { *glyph = "▦"; *cls = "c-mon"; return; }
+    if (strstr(title, "软件中心")) { *glyph = "▦"; *cls = "c-store"; return; }
+    if (strstr(title, "回收站"))   { *glyph = "🗑"; *cls = "c-trash"; return; }
+    if (strstr(title, "文本") || strstr(title, "编辑器")) { *glyph = "✎"; *cls = "c-grid"; return; }
+    if (strstr(title, "图片"))     { *glyph = "▣"; *cls = "c-grid"; return; }
+    if (strstr(title, "压缩"))     { *glyph = "▣"; *cls = "c-grid"; return; }
+    *glyph = "▣"; *cls = "c-grid";
+}
+
 static guint read_focus(void) {
     FILE *f = fopen(QY_FOCUS, "r");
     guint id = 0;
@@ -230,16 +244,28 @@ static void refresh_taskbar(void) {
     guint focus = read_focus();
     long now = time(NULL);
     for (int i = 0; i < n; i++) {
-        GtkWidget *b = gtk_button_new_with_label(wins[i].title);
+        GtkWidget *b = gtk_button_new();
         gtk_button_set_relief(GTK_BUTTON(b), GTK_RELIEF_NONE);
         add_class(b, "qy-bar-btn");
+        GtkWidget *hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
+        gtk_container_add(GTK_CONTAINER(b), hb);
+        const char *glyph, *cls;
+        task_glyph(wins[i].title, &glyph, &cls);
+        GtkWidget *gl = gtk_label_new(glyph);
+        add_class(gl, "qy-task-glyph");
+        add_class(gl, cls);
+        gtk_box_pack_start(GTK_BOX(hb), gl, FALSE, FALSE, 0);
+        GtkWidget *tl = gtk_label_new(wins[i].title);
+        add_class(tl, "qy-task-label");
+        gtk_box_pack_start(GTK_BOX(hb), tl, FALSE, FALSE, 0);
+        gtk_widget_set_tooltip_text(b, wins[i].title);
         if ((wins[i].id == active_id && now < active_until) ||
             wins[i].id == focus)
             add_class(b, "qy-bar-btn-active");
         g_signal_connect(b, "clicked", G_CALLBACK(on_task_clicked),
                          GUINT_TO_POINTER(wins[i].id));
         gtk_box_pack_start(GTK_BOX(taskbar_box), b, FALSE, FALSE, 2);
-        gtk_widget_show(b);
+        gtk_widget_show_all(b);
     }
 }
 
