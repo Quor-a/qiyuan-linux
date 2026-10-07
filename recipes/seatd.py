@@ -42,5 +42,5 @@ def package(ctx):
         "After=dbus\n"
         "\n"
         "[Service]\n"
-        "ExecStart=/usr/sbin/seatd -g video\n"
+        "ExecStart=/usr/bin/seatd -g video\n"
         "Restart=on-failure\n")
