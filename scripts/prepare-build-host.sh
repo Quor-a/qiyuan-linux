@@ -28,6 +28,8 @@ for t in gcc make pkg-config meson ninja bison flex autoconf automake libtoolize
 done
 # 内核 objtool 需要 gelf.h（libelf-dev）；mesa 需要 llvm pkgconfig
 [ -f /usr/include/gelf.h ] || { echo "缺少头文件: gelf.h (libelf-dev)"; MISSING=1; }
+# man-db 构建用宿主 groff 生成自身手册页（troff -me 宏）
+command -v groff >/dev/null || { echo "缺少工具: groff"; MISSING=1; }
 [ "$MISSING" = 0 ] || {
   echo
   echo "在 Debian/Ubuntu 上执行："
