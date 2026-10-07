@@ -67,6 +67,8 @@ static guint     active_id     = 0;   /* 最近点击的任务栏窗口（本地
 static long      active_until  = 0;   /* 高亮截止时间戳 */
 static GtkWidget *clock_label  = NULL;
 static GtkWidget *mon_label    = NULL;  /* 顶栏 CPU/内存小部件 */
+static GtkWidget *mon_draw     = NULL;  /* 顶栏 CPU/内存迷你条 (cairo) */
+static double    mon_cpu = 0.0, mon_mem = 0.0;  /* 当前使用率 0~1 */
 static GtkWidget *desktop_fixed = NULL;
 
 /* ---------- 工具 ---------- */
@@ -115,6 +117,20 @@ static void add_class(GtkWidget *w, const char *cls) {
 }
 
 /* ---------- 时钟 ---------- */
+/* 顶栏迷你资源条: 87x6, 两条圆角矩形 (CPU 左 / 内存 右) */
+static gboolean mon_draw_cb(GtkWidget *w, cairo_t *cr, gpointer ud) {
+    int W = 87, H = 6;
+    cairo_set_source_rgb(cr, 0.11, 0.14, 0.19);   /* #1c2331 trough */
+    cairo_rectangle(cr, 0, 0, W, H);
+    cairo_fill(cr);
+    cairo_set_source_rgb(cr, 0.914, 0.329, 0.125);  /* #E95420 */
+    double cw = mon_cpu * 38.0;
+    if (cw > 0) { cairo_rectangle(cr, 1, 1, cw, H - 2); cairo_fill(cr); }
+    double mw = mon_mem * 38.0;
+    if (mw > 0) { cairo_rectangle(cr, 46, 1, mw, H - 2); cairo_fill(cr); }
+    return FALSE;
+}
+
 static gboolean tick(gpointer data) {
     char buf[64];
     time_t t = time(NULL);
@@ -157,6 +173,9 @@ static gboolean mon_tick(gpointer data) {
         g_snprintf(buf, sizeof buf, "CPU %d%% · MEM %d%%",
                    (int)(usage * 100 + 0.5), (int)(mem * 100 + 0.5));
         gtk_label_set_text(GTK_LABEL(data), buf);
+        mon_cpu = usage;
+        mon_mem = mem;
+        if (mon_draw) gtk_widget_queue_draw(mon_draw);
     } else {
         fclose(f);
     }
@@ -547,9 +566,18 @@ static void build_bar(void) {
 
     /* 右侧状态区 */
     GtkWidget *st = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
+    GtkWidget *mon_hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 3);
+    gtk_widget_set_size_request(mon_hb, 87, 8);
+    mon_draw = gtk_drawing_area_new();
+    gtk_widget_set_size_request(mon_draw, 87, 6);
+    gtk_widget_set_halign(mon_draw, GTK_ALIGN_CENTER);
+    gtk_widget_set_valign(mon_draw, GTK_ALIGN_CENTER);
+    g_signal_connect(mon_draw, "draw", G_CALLBACK(mon_draw_cb), NULL);
+    gtk_widget_set_tooltip_text(mon_draw, TR("系统资源"));
+    gtk_box_pack_start(GTK_BOX(mon_hb), mon_draw, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(st), mon_hb, FALSE, FALSE, 6);
     mon_label = gtk_label_new("CPU 0% · MEM 0%");
     add_class(mon_label, "qy-mon-widget");
-    gtk_widget_set_tooltip_text(mon_label, TR("系统资源"));
     gtk_box_pack_start(GTK_BOX(st), mon_label, FALSE, FALSE, 6);
     g_timeout_add_seconds(2, mon_tick, mon_label);
     GtkWidget *power = gtk_button_new_with_label("⏻");
