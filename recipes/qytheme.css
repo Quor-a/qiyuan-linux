@@ -1,7 +1,19 @@
 /* qytheme.css — 启元桌面主题 v2.0
  * 深色底 + 品牌橙(#E95420)/紫(#77216F) 强调色
- * 供 qydesktop 加载: /usr/share/themes/qiyuan/gtk-3.0/gtk.css
+ * 供 qydesktop/qyappmenu 加载: /usr/share/themes/qiyuan/gtk-3.0/gtk.css
  */
+
+/* 加载本主题的应用进程内，所有窗口默认深色底 */
+window {
+    background-color: #10151f;
+    color: #f5f6f7;
+}
+entry {
+    background-color: #1c2331;
+    color: #f5f6f7;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+}
 
 /* ---------- 顶栏 ---------- */
 .qy-bar {
@@ -145,4 +157,36 @@
 }
 .qy-dialog .qy-btn-danger:hover {
     background-color: #ff6b3d;
+}
+/* ---------- 应用启动器 qyappmenu ---------- */
+.qy-appmenu-title {
+    color: #c9cdd4;
+    font-weight: bold;
+    font-size: 12px;
+    padding: 2px 2px;
+}
+.qy-appmenu-icon-label {
+    color: #f5f6f7;
+    font-size: 12px;
+}
+.qy-appmenu-freq-label {
+    color: #f5f6f7;
+    font-size: 13px;
+}
+.qy-appmenu-user {
+    color: #f5f6f7;
+    font-size: 13px;
+}
+.qy-appmenu-close {
+    background-image: none;
+    background-color: transparent;
+    border: none;
+    border-radius: 6px;
+    color: #c9cdd4;
+    font-size: 13px;
+    padding: 2px 8px;
+}
+.qy-appmenu-close:hover {
+    background-color: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
 }

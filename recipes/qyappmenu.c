@@ -1,6 +1,7 @@
 /* qyappmenu - 启元开始菜单 (ArcMenu 风格: 搜索+固定网格+常用列表+用户区) */
 #include "qyl10n.h"
 #include <gtk/gtk.h>
+#include <gdk/gdkkeysyms.h>
 #include <string.h>
 
 typedef struct {
@@ -22,8 +23,8 @@ static AppEntry apps[] = {
     { "压缩管理",   "▣", "#ef4444", "qyarc",           0 },
     { "系统安装",   "⬇", "#f97316", "qysetup",         0 },
     { "用户管理",   "☻", "#0ea5e9", "qyusers",         0 },
-    { "计算器",     "∑", "#06b6d4", "qysettings",      0 },
-    { "软件中心",   "⌂", "#22c55e", "qystore",         0 },
+    { "回收站",     "🗑", "#6b7280", "qyfiles --trash", 0 },
+    { "软件中心",   "▦", "#0a7ea4", "qystore",         0 },
 };
 #define NAPPS ((int)(sizeof apps / sizeof apps[0]))
 
@@ -40,6 +41,21 @@ static void launch_cmd(const char *cmd) {
     g_spawn_async(NULL, argv, NULL, G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, &err);
     if (err) { g_printerr("launch: %s\n", err->message); g_error_free(err); }
     g_strfreev(argv);
+}
+
+/* ---------- 主题 ---------- */
+static void load_theme(void) {
+    GtkCssProvider *p = gtk_css_provider_new();
+    if (gtk_css_provider_load_from_path(p, "/usr/share/themes/qiyuan/gtk-3.0/gtk.css", NULL)) {
+        gtk_style_context_add_provider_for_screen(
+            gdk_screen_get_default(), GTK_STYLE_PROVIDER(p),
+            GTK_STYLE_PROVIDER_PRIORITY_USER);
+    }
+    g_object_unref(p);
+}
+
+static void add_class(GtkWidget *w, const char *cls) {
+    gtk_style_context_add_class(gtk_widget_get_style_context(w), cls);
 }
 
 /* ---------- 固定区: 图标网格 (4 列) ---------- */
@@ -89,7 +105,7 @@ static GtkWidget *make_grid_icon(AppEntry *a) {
     gtk_label_set_max_width_chars(GTK_LABEL(lb), 8);
     gtk_label_set_line_wrap(GTK_LABEL(lb), TRUE);
     gtk_label_set_justify(GTK_LABEL(lb), GTK_JUSTIFY_CENTER);
-    gtk_widget_override_color(lb, GTK_STATE_FLAG_NORMAL, &(GdkRGBA){0.15,0.15,0.18,1});
+    add_class(lb, "qy-appmenu-icon-label");
     gtk_container_add(GTK_CONTAINER(btn), v);
     gtk_box_pack_start(GTK_BOX(v), ic, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v), lb, FALSE, FALSE, 0);
@@ -112,12 +128,29 @@ static GtkWidget *make_freq_row(AppEntry *a) {
     GtkWidget *ic = gtk_label_new(a->icon);
     GtkWidget *lb = gtk_label_new(TR(a->name));
     gtk_widget_set_halign(lb, GTK_ALIGN_START);
-    gtk_widget_override_color(lb, GTK_STATE_FLAG_NORMAL, &(GdkRGBA){0.88,0.88,0.92,1});
+    add_class(lb, "qy-appmenu-freq-label");
     gtk_container_add(GTK_CONTAINER(b), h);
     gtk_box_pack_start(GTK_BOX(h), ic, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(h), lb, TRUE, TRUE, 0);
     g_signal_connect(b, "clicked", G_CALLBACK(on_row_click), a);
     return b;
+}
+
+/* ---------- 搜索匹配: 中文名 + 英文名（大小写不敏感） ---------- */
+static gboolean app_matches(const AppEntry *a, const char *q) {
+    if (!q || !q[0]) return TRUE;
+    if (strstr(a->name, q)) return TRUE;
+    const char *en = TR(a->name);
+    if (en && strstr(en, q)) return TRUE;
+    if (en) {
+        size_t ql = strlen(q);
+        for (const char *p = en; *p; p++) {
+            if (g_ascii_tolower(*p) == g_ascii_tolower(q[0]) &&
+                g_ascii_strncasecmp(p, q, ql) == 0)
+                return TRUE;
+        }
+    }
+    return FALSE;
 }
 
 /* ---------- 刷新 (按搜索过滤 + 按启动次数排序常用区) ---------- */
@@ -136,7 +169,7 @@ static void rebuild(gboolean filtered) {
     GtkWidget *cur_row = NULL;
     int col = 0;
     for (int i = 0; i < NAPPS; i++) {
-        if (filtered && q[0] && !strstr(apps[i].name, q)) continue;
+        if (filtered && !app_matches(&apps[i], q)) continue;
         any = TRUE;
         if (col == 0) {
             cur_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
@@ -178,7 +211,7 @@ static void on_search_changed(GtkEditable *e, gpointer ud) {
 
 /* ---------- 电源按钮 ---------- */
 static void on_power(GtkButton *b, gpointer ud) {
-    system("poweroff -f");
+    launch_cmd("busybox poweroff");
 }
 
 static void on_settings_btn(GtkButton *b, gpointer ud) {
@@ -186,29 +219,50 @@ static void on_settings_btn(GtkButton *b, gpointer ud) {
     gtk_widget_hide(menu_win);
 }
 
+static void on_close_clicked(GtkButton *b, gpointer ud) {
+    gtk_widget_hide(menu_win);
+}
+
+static gboolean on_menu_keypress(GtkWidget *w, GdkEventKey *ev, gpointer ud) {
+    if (ev->keyval == GDK_KEY_Escape) {
+        gtk_widget_hide(menu_win);
+        return TRUE;
+    }
+    return FALSE;
+}
+
 int main(int argc, char **argv) {
     gtk_init(&argc, &argv);
+    load_theme();
 
     menu_win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_decorated(GTK_WINDOW(menu_win), FALSE);
     gtk_window_set_default_size(GTK_WINDOW(menu_win), 460, 420);
     gtk_window_move(GTK_WINDOW(menu_win), 6, 32);
+    g_signal_connect(menu_win, "key-press-event", G_CALLBACK(on_menu_keypress), NULL);
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
     gtk_container_set_border_width(GTK_CONTAINER(vbox), 10);
     gtk_container_add(GTK_CONTAINER(menu_win), vbox);
 
-    /* 1. 搜索框 */
+    /* 1. 搜索框 + 关闭按钮 */
+    GtkWidget *search_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
     search_entry = gtk_search_entry_new();
-    gtk_entry_set_placeholder_text(GTK_ENTRY(search_entry), "搜索应用...");
+    gtk_entry_set_placeholder_text(GTK_ENTRY(search_entry), TR("搜索应用..."));
     g_signal_connect(search_entry, "search-changed", G_CALLBACK(on_search_changed), NULL);
-    gtk_box_pack_start(GTK_BOX(vbox), search_entry, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(search_row), search_entry, TRUE, TRUE, 0);
+    GtkWidget *close_btn = gtk_button_new_with_label("✕");
+    gtk_button_set_relief(GTK_BUTTON(close_btn), GTK_RELIEF_NONE);
+    add_class(close_btn, "qy-appmenu-close");
+    g_signal_connect(close_btn, "clicked", G_CALLBACK(on_close_clicked), NULL);
+    gtk_box_pack_start(GTK_BOX(search_row), close_btn, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox), search_row, FALSE, FALSE, 0);
 
     /* 2. Pinned 固定应用 */
     GtkWidget *pl = gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(pl), "<b>固 定</b>");
+    gtk_label_set_markup(GTK_LABEL(pl), g_strdup_printf("<b>%s</b>", TR("固定")));
     gtk_widget_set_halign(pl, GTK_ALIGN_START);
-    gtk_widget_override_color(pl, GTK_STATE_FLAG_NORMAL, &(GdkRGBA){0.95,0.95,0.95,1});
+    add_class(pl, "qy-appmenu-title");
     gtk_box_pack_start(GTK_BOX(vbox), pl, FALSE, FALSE, 0);
     grid_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
     gtk_box_pack_start(GTK_BOX(vbox), grid_box, FALSE, FALSE, 0);
@@ -217,7 +271,7 @@ int main(int argc, char **argv) {
     GtkWidget *fl = gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(fl), g_strdup_printf("<b>%s</b>", TR("常用")));
     gtk_widget_set_halign(fl, GTK_ALIGN_START);
-    gtk_widget_override_color(fl, GTK_STATE_FLAG_NORMAL, &(GdkRGBA){0.95,0.95,0.95,1});
+    add_class(fl, "qy-appmenu-title");
     gtk_box_pack_start(GTK_BOX(vbox), fl, FALSE, FALSE, 0);
     freq_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
     gtk_box_pack_start(GTK_BOX(vbox), freq_box, FALSE, FALSE, 0);
@@ -227,7 +281,7 @@ int main(int argc, char **argv) {
     GtkWidget *bottom = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
     GtkWidget *user = gtk_label_new("● root");
     gtk_widget_set_halign(user, GTK_ALIGN_START);
-    gtk_widget_override_color(user, GTK_STATE_FLAG_NORMAL, &(GdkRGBA){0.9,0.9,0.9,1});
+    add_class(user, "qy-appmenu-user");
     gtk_box_pack_start(GTK_BOX(bottom), user, TRUE, TRUE, 0);
     GtkWidget *set_btn = gtk_button_new_with_label("⚙");
     gtk_button_set_relief(GTK_BUTTON(set_btn), GTK_RELIEF_NONE);

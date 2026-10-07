@@ -26,6 +26,8 @@ static const pair tbl[] = {
     { "搜索…", "Search…" },
     { "搜索", "Search" },
     { "无匹配应用", "No matching apps" },
+    { "搜索应用...", "Search apps..." },
+    { "固定", "Pinned" },
     /* 设置 */
     { "关于", "About" },
     { "显示", "Display" },
