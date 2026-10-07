@@ -420,3 +420,11 @@ notebook tab:checked {
     font-weight: bold;
     font-size: 13px;
 }
+
+/* ---------- 桌面图标: 图片查看 ---------- */
+.c-view {
+    background-color: #8B5CF6;
+}
+.c-view:hover {
+    background-color: #a78bfa;
+}

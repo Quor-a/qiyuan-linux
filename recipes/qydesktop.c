@@ -636,6 +636,10 @@ static void build_desktop(void) {
                   desktop_icon(">_", "c-term", TR("终端"), "weston-terminal"), x, y + dy * 3);
     gtk_fixed_put(GTK_FIXED(desktop_fixed),
                   desktop_icon("⚙", "c-settings", TR("设置"), "qysettings"), x, y + dy * 4);
+    gtk_fixed_put(GTK_FIXED(desktop_fixed),
+                  desktop_icon("▦", "c-mon", TR("系统监视"), "qymon"), x, y + dy * 5);
+    gtk_fixed_put(GTK_FIXED(desktop_fixed),
+                  desktop_icon("▣", "c-view", TR("图片查看"), "qyview"), x, y + dy * 6);
 
     gtk_widget_show_all(win);
 }
