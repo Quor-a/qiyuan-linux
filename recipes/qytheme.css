@@ -190,3 +190,58 @@ entry {
     background-color: rgba(255, 255, 255, 0.12);
     color: #ffffff;
 }
+
+/* ---------- 文件管理器 qyfiles ---------- */
+treeview {
+    background-color: #121826;
+    color: #f5f6f7;
+}
+treeview:selected {
+    background-color: #e95420;
+    color: #ffffff;
+}
+treeview:hover {
+    background-color: #1c2331;
+}
+.qy-files-side {
+    background-image: none;
+    background-color: transparent;
+    border: none;
+    border-radius: 8px;
+    color: #f5f6f7;
+    font-size: 13px;
+    padding: 4px 10px;
+    margin: 1px 0;
+}
+.qy-files-side:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+.qy-files-toolbar {
+    background-color: #1a2130;
+    border-radius: 8px;
+    padding: 4px;
+}
+.qy-files-toolbar .qy-btn {
+    background-image: none;
+    background-color: transparent;
+    border: none;
+    border-radius: 6px;
+    color: #f5f6f7;
+    font-size: 12px;
+    padding: 3px 10px;
+}
+.qy-files-toolbar .qy-btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+.qy-files-toolbar .qy-btn-danger {
+    background-color: rgba(233, 84, 32, 0.25);
+    color: #ffb4a0;
+}
+.qy-files-toolbar .qy-btn-danger:hover {
+    background-color: rgba(233, 84, 32, 0.45);
+    color: #ffffff;
+}
+.qy-files-status {
+    color: #9aa3b2;
+    font-size: 12px;
+}

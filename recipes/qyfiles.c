@@ -15,6 +15,36 @@ static char **g_argv = NULL;
 static void chdir_to(const char *path);
 static void chdir_trash(void);
 
+/* v2.0 主题 + 工具栏状态按钮 */
+static void load_theme(void) {
+    GtkCssProvider *p = gtk_css_provider_new();
+    if (gtk_css_provider_load_from_path(p, "/usr/share/themes/qiyuan/gtk-3.0/gtk.css", NULL)) {
+        gtk_style_context_add_provider_for_screen(
+            gdk_screen_get_default(), GTK_STYLE_PROVIDER(p),
+            GTK_STYLE_PROVIDER_PRIORITY_USER);
+    }
+    g_object_unref(p);
+}
+
+static void add_class(GtkWidget *w, const char *cls) {
+    gtk_style_context_add_class(gtk_widget_get_style_context(w), cls);
+}
+
+/* 工具栏按钮（按 普通目录 / 回收站 切换可见性） */
+static GtkWidget *b_mk = NULL, *b_del = NULL, *b_ren = NULL;
+static GtkWidget *b_res = NULL, *b_pur = NULL, *b_emp = NULL;
+
+static void set_mode_buttons(void) {
+    if (!b_mk) return;
+    gboolean trash = in_trash;
+    gtk_widget_set_visible(b_mk, !trash);
+    gtk_widget_set_visible(b_del, !trash);
+    gtk_widget_set_visible(b_ren, !trash);
+    gtk_widget_set_visible(b_res, trash);
+    gtk_widget_set_visible(b_pur, trash);
+    gtk_widget_set_visible(b_emp, trash);
+}
+
 /* ---------- freedesktop Trash 规范: ~/.local/share/Trash/files + info ---------- */
 static void trash_dir(char *files, size_t fl, char *info, size_t il) {
     const char *home = g_get_home_dir();
@@ -244,6 +274,8 @@ static void on_side(GtkButton *b, gpointer ud) {
 
 static GtkWidget *side_button(const char *label, const char *target, GtkWidget *box) {
     GtkWidget *b = gtk_button_new_with_label(label);
+    gtk_button_set_relief(GTK_BUTTON(b), GTK_RELIEF_NONE);
+    add_class(b, "qy-files-side");
     char *t = g_strdup(target);
     g_signal_connect(b, "clicked", G_CALLBACK(on_side), t);
     gtk_box_pack_start(GTK_BOX(box), b, FALSE, FALSE, 1);
@@ -272,6 +304,7 @@ static gboolean on_popup(GtkWidget *w, GdkEventButton *ev, gpointer ud) {
 /* ---------- 导航 ---------- */
 static void chdir_to(const char *path) {
     in_trash = 0;
+    set_mode_buttons();
     GtkListStore *store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(view)));
     gtk_list_store_clear(store);
     GDir *dir = g_dir_open(path, 0, NULL);
@@ -294,6 +327,7 @@ static void chdir_to(const char *path) {
 
 static void chdir_trash(void) {
     in_trash = 1;
+    set_mode_buttons();
     char files[4096], info[4096];
     trash_dir(files, sizeof files, info, sizeof info);
     GtkListStore *store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(view)));
@@ -340,6 +374,7 @@ static void on_up(GtkButton *b, gpointer ud) {
 static void on_home(GtkButton *b, gpointer ud) { chdir_to(g_get_home_dir()); }
 
 static void activate(GtkApplication *app, gpointer ud) {
+    load_theme();
     GtkWidget *win = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(win), TR("启元文件管理器"));
     GdkGeometry geo = { .max_width = 1920, .max_height = 1080 };
@@ -369,22 +404,33 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(hpane), vbox, TRUE, TRUE, 0);
 
     GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
-    gtk_box_pack_start(GTK_BOX(vbox), hbox, FALSE, FALSE, 2);
+    GtkWidget *toolbar = gtk_event_box_new();
+    gtk_container_add(GTK_CONTAINER(toolbar), hbox);
+    add_class(toolbar, "qy-files-toolbar");
+    gtk_box_pack_start(GTK_BOX(vbox), toolbar, FALSE, FALSE, 2);
     GtkWidget *b_home = gtk_button_new_with_label(TR("主目录"));
+    add_class(b_home, "qy-btn");
     g_signal_connect(b_home, "clicked", G_CALLBACK(on_home), NULL);
     GtkWidget *b_up = gtk_button_new_with_label(TR("上一级"));
+    add_class(b_up, "qy-btn");
     g_signal_connect(b_up, "clicked", G_CALLBACK(on_up), NULL);
-    GtkWidget *b_mk = gtk_button_new_with_label(TR("新建文件夹"));
+    b_mk = gtk_button_new_with_label(TR("新建文件夹"));
+    add_class(b_mk, "qy-btn");
     g_signal_connect(b_mk, "clicked", G_CALLBACK(do_mkdir), NULL);
-    GtkWidget *b_del = gtk_button_new_with_label(TR("删除"));
+    b_del = gtk_button_new_with_label(TR("删除"));
+    add_class(b_del, "qy-btn");
     g_signal_connect(b_del, "clicked", G_CALLBACK(do_delete), NULL);
-    GtkWidget *b_ren = gtk_button_new_with_label(TR("重命名"));
+    b_ren = gtk_button_new_with_label(TR("重命名"));
+    add_class(b_ren, "qy-btn");
     g_signal_connect(b_ren, "clicked", G_CALLBACK(do_rename), NULL);
-    GtkWidget *b_res = gtk_button_new_with_label(TR("还原"));
+    b_res = gtk_button_new_with_label(TR("还原"));
+    add_class(b_res, "qy-btn qy-btn-danger");
     g_signal_connect(b_res, "clicked", G_CALLBACK(do_restore), NULL);
-    GtkWidget *b_pur = gtk_button_new_with_label(TR("彻底删除"));
+    b_pur = gtk_button_new_with_label(TR("彻底删除"));
+    add_class(b_pur, "qy-btn qy-btn-danger");
     g_signal_connect(b_pur, "clicked", G_CALLBACK(do_purge), NULL);
-    GtkWidget *b_emp = gtk_button_new_with_label(TR("清空回收站"));
+    b_emp = gtk_button_new_with_label(TR("清空回收站"));
+    add_class(b_emp, "qy-btn qy-btn-danger");
     g_signal_connect(b_emp, "clicked", G_CALLBACK(do_empty_trash), NULL);
     gtk_box_pack_start(GTK_BOX(hbox), b_home, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_up, FALSE, FALSE, 0);
@@ -409,6 +455,7 @@ static void activate(GtkApplication *app, gpointer ud) {
 
     status = gtk_label_new(TR("位置: /"));
     gtk_widget_set_halign(status, GTK_ALIGN_START);
+    add_class(status, "qy-files-status");
     gtk_box_pack_start(GTK_BOX(vbox), status, FALSE, FALSE, 2);
 
     gtk_widget_show_all(win);
