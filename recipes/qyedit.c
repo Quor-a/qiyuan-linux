@@ -6,7 +6,27 @@
 
 static GtkWidget *text_view = NULL;
 static GtkWidget *win = NULL;
+static GtkWidget *status_label = NULL;
 static gchar *current_path = NULL;
+
+/* ---------- 状态栏: 行 / 列 / 字符数 ---------- */
+static void update_status(GtkTextBuffer *b) {
+    GtkTextIter it;
+    gtk_text_buffer_get_iter_at_mark(b, &it, gtk_text_buffer_get_insert(b));
+    int line = gtk_text_iter_get_line(&it) + 1;
+    int col  = gtk_text_iter_get_line_offset(&it) + 1;
+    GtkTextIter start, end;
+    gtk_text_buffer_get_bounds(b, &start, &end);
+    int chars = gtk_text_iter_get_offset(&end);
+    char buf[128];
+    g_snprintf(buf, sizeof buf, TR("行 %d · 列 %d · %d 字符"), line, col, chars);
+    gtk_label_set_text(GTK_LABEL(status_label), buf);
+}
+
+static void on_mark_set(GtkTextBuffer *b, GtkTextIter *loc, GtkTextMark *mark, gpointer ud) {
+    if (mark == gtk_text_buffer_get_insert(b))
+        update_status(b);
+}
 
 static void set_title(void) {
     gchar *t = g_strdup_printf(TR("%s - 启元文本编辑器"), current_path ? g_path_get_basename(current_path) : TR("未命名"));
@@ -92,6 +112,15 @@ int main(int argc, char **argv) {
     GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
     gtk_container_add(GTK_CONTAINER(scroll), text_view);
     gtk_box_pack_start(GTK_BOX(vbox), scroll, TRUE, TRUE, 0);
+
+    status_label = gtk_label_new("");
+    qy_add_class(status_label, "qy-editor-status");
+    gtk_widget_set_halign(status_label, GTK_ALIGN_START);
+    gtk_box_pack_start(GTK_BOX(vbox), status_label, FALSE, FALSE, 2);
+
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
+    g_signal_connect(buffer, "changed", G_CALLBACK(update_status), NULL);
+    g_signal_connect(buffer, "mark-set", G_CALLBACK(on_mark_set), NULL);
 
     if (current_path) {
         gchar *text = NULL;

@@ -428,3 +428,11 @@ notebook tab:checked {
 .c-view:hover {
     background-color: #a78bfa;
 }
+
+/* ---------- 文本编辑器状态栏 ---------- */
+.qy-editor-status {
+    font-size: 12px;
+    color: #9CA3AF;
+    padding: 2px 8px;
+    background-color: #1c2331;
+}
