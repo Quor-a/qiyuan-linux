@@ -4,7 +4,7 @@
 """
 
 name = "harfbuzz"
-version = "10.3.0"
+version = "10.2.0"
 release = 1
 summary = "文字塑形引擎（复杂文本排版）"
 license = "MIT"
