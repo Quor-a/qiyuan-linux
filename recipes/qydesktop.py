@@ -6,7 +6,7 @@
 
 name = "qydesktop"
 version = "0.1.0"
-release = 7
+release = 8
 summary = "启元桌面 shell（GTK3）"
 license = "MIT"
 
@@ -52,6 +52,17 @@ def build(ctx):
     shutil.copy(Path(__file__).parent / "qystore.desktop", Path(ctx.srcdir) / "qystore.desktop")
     shutil.copy(Path(__file__).parent / "qynet.unit", Path(ctx.srcdir) / "qynet.unit")
     shutil.copy(Path(__file__).parent / "start-qynet.sh", Path(ctx.srcdir) / "start-qynet.sh")
+    # v1.9.6: 补入此前只在 sysroot 手工存在的脚本/单元源码，使构建可复现
+    shutil.copy(Path(__file__).parent / "start-qydesktop.sh", Path(ctx.srcdir) / "start-qydesktop.sh")
+    shutil.copy(Path(__file__).parent / "start-sshd.sh", Path(ctx.srcdir) / "start-sshd.sh")
+    shutil.copy(Path(__file__).parent / "start-udevd.sh", Path(ctx.srcdir) / "start-udevd.sh")
+    shutil.copy(Path(__file__).parent / "start-weston.sh", Path(ctx.srcdir) / "start-weston.sh")
+    shutil.copy(Path(__file__).parent / "qyselftest.sh", Path(ctx.srcdir) / "qyselftest.sh")
+    shutil.copy(Path(__file__).parent / "sshd.unit", Path(ctx.srcdir) / "sshd.unit")
+    shutil.copy(Path(__file__).parent / "udevd.unit", Path(ctx.srcdir) / "udevd.unit")
+    shutil.copy(Path(__file__).parent / "weston.unit", Path(ctx.srcdir) / "weston.unit")
+    shutil.copy(Path(__file__).parent / "zz-selftest.unit", Path(ctx.srcdir) / "zz-selftest.unit")
+    shutil.copy(Path(__file__).parent / "qydesktop.unit", Path(ctx.srcdir) / "qydesktop.unit")
     for _f in ("qyl10n.c", "qyl10n.h", "qysetup.c", "qysudo.c", "qyusers.c", "qywelcome.c",
                "qyuseradd.sh", "qyinstall.sh", "qyinitpw.sh", "qyboot.unit", "qysudoers"):
         shutil.copy(Path(__file__).parent / _f, Path(ctx.srcdir) / _f)
@@ -108,3 +119,10 @@ def package(ctx):
     # 软件中心 desktop entry (v1.9.5):
     ctx.run("mkdir -p {}/usr/share/applications".format(ctx.destdir))
     ctx.install_file("qystore.desktop", "usr/share/applications/qystore.desktop")
+    # v1.9.6: 补入此前只在 sysroot 手工存在的启动脚本与自启单元（源码已入库）
+    for _s in ("start-qydesktop.sh", "start-sshd.sh", "start-udevd.sh",
+               "start-weston.sh", "qyselftest.sh"):
+        ctx.run("cp {0} {1}/usr/bin/{0} && chmod 0755 {1}/usr/bin/{0}".format(_s, ctx.destdir))
+    for _u in ("qydesktop.unit", "sshd.unit", "udevd.unit", "weston.unit",
+               "zz-selftest.unit"):
+        ctx.install_file(_u, "etc/qyinit.d/" + _u)

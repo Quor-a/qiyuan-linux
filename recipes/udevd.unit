@@ -1,0 +1,4 @@
+[Unit]
+Description=eudev daemon + trigger
+ExecStart=/usr/bin/start-udevd.sh
+Restart=on-failure
