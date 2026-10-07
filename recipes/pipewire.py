@@ -24,8 +24,11 @@ compression = "gz"
 def build(ctx):
     # meson 必须 out-of-tree：源码目录里构建会污染源码树，
     # 且重新配置时旧产物会干扰依赖判定
+    # 关闭 session manager / 文档 / 测试：wireplumber.wrap 会去 gitlab
+    # 克隆（构建机断网且极慢），且启元用自研会话组件，不需要它。
     ctx.run("rm -rf build && mkdir -p build")
-    ctx.run("cd build && meson setup .. --prefix=/usr --prefix=/usr -Ddocs=disabled -Dtests=disabled")
+    ctx.run("cd build && meson setup .. --prefix=/usr -Ddocs=disabled "
+            "-Dtests=disabled -Dsession-managers=[] -Dpipewire-alsa=disabled")
 
 
 def package(ctx):

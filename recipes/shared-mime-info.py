@@ -43,7 +43,11 @@ def package(ctx):
         "DESTDIR={1} ninja install".format(S, ctx.destdir)
     )
     # 生成编译版 MIME 数据库（GIO 内容嗅探依赖它；缺了会导致 gdk-pixbuf 无法识别 PNG）
+    # 注意：update-mime-database 在 DESTDIR 安装里会被 strip 掉动态链接环境，
+    # 且本包 -Dupdate-mimedb=false 不装它——直接用构建树里刚编出来的那个
+    # （相对路径基于源码目录，构建树在其下的 build/）。
     ctx.run(
-        "export PATH={0}/usr/bin:$PATH; export LD_LIBRARY_PATH={0}/usr/lib/x86_64-linux-gnu:{0}/usr/lib:{0}/lib; "
-        "{0}/usr/bin/update-mime-database {1}/usr/share/mime".format(S, ctx.destdir)
+        "LD_LIBRARY_PATH={0}/usr/lib/x86_64-linux-gnu:{0}/usr/lib:{0}/lib "
+        "$LD_LIBRARY_PATH build/src/update-mime-database {1}/usr/share/mime".format(
+            S, ctx.destdir)
     )
