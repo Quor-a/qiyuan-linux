@@ -211,18 +211,31 @@ static gboolean on_draw(GtkWidget *da, cairo_t *cr, gpointer ud) {
         draw_series(cr, mem_hist, hist_n, 0.45, 0.65, 0.95, w, h / 2 - 4);   /* MEM 蓝 */
         draw_series(cr, disk_hist, hist_n, 0.20, 0.83, 0.60, w, h / 2 - 4); /* DISK 绿 */
     }
-    /* 图例文字 */
-    cairo_set_source_rgb(cr, 0.9, 0.9, 0.9);
-    cairo_select_font_face(cr, "sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_NORMAL);
+    /* 图例文字（带彩色方块） */
     cairo_set_font_size(cr, 12);
     double last_cpu = hist_n ? cpu_hist[hist_n - 1] : 0;
     double last_mem = hist_n ? mem_hist[hist_n - 1] : 0;
     double last_disk = hist_n ? disk_hist[hist_n - 1] : 0;
-    cairo_move_to(cr, 8, 18);
+    /* CPU 橙方块 + 文字 */
+    cairo_set_source_rgb(cr, 0.95, 0.55, 0.15);
+    cairo_rectangle(cr, 8, 8, 10, 10);
+    cairo_fill(cr);
+    cairo_set_source_rgb(cr, 0.9, 0.9, 0.9);
+    cairo_move_to(cr, 24, 18);
     cairo_show_text(cr, g_strdup_printf("CPU %3.0f%%", last_cpu * 100));
-    cairo_move_to(cr, 8, h / 2.0 + 14);
+    /* MEM 蓝方块 + 文字 */
+    cairo_set_source_rgb(cr, 0.45, 0.65, 0.95);
+    cairo_rectangle(cr, 8, h / 2.0 + 4, 10, 10);
+    cairo_fill(cr);
+    cairo_set_source_rgb(cr, 0.9, 0.9, 0.9);
+    cairo_move_to(cr, 24, h / 2.0 + 14);
     cairo_show_text(cr, g_strdup_printf("MEM %3.0f%% of %lu MB", last_mem * 100, mem_total_kb / 1024));
-    cairo_move_to(cr, w - 130, h / 2.0 + 14);
+    /* DISK 绿方块 + 文字 */
+    cairo_set_source_rgb(cr, 0.20, 0.83, 0.60);
+    cairo_rectangle(cr, w - 140, h / 2.0 + 4, 10, 10);
+    cairo_fill(cr);
+    cairo_set_source_rgb(cr, 0.9, 0.9, 0.9);
+    cairo_move_to(cr, w - 126, h / 2.0 + 14);
     cairo_show_text(cr, g_strdup_printf("DISK %3.0f%%", last_disk * 100));
     return FALSE;
 }
