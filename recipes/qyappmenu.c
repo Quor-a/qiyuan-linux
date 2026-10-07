@@ -259,10 +259,26 @@ static void rebuild(gboolean filtered) {
     }
     gtk_widget_show_all(menu_win);
     gtk_widget_set_visible(freq_title, shown > 0);
+    gtk_widget_grab_focus(search_entry);   /* 打开即聚焦搜索框 */
 }
 
 static void on_search_changed(GtkEditable *e, gpointer ud) {
     rebuild(TRUE);
+}
+
+/* 回车启动第一个匹配应用 */
+static void on_search_activate(GtkEntry *e, gpointer ud) {
+    const char *q = gtk_entry_get_text(e);
+    if (!q || !q[0]) return;
+    for (int i = 0; i < NAPPS; i++) {
+        if (app_matches(&apps[i], q)) {
+            apps[i].launches++;
+            freq_save();
+            launch_cmd(apps[i].cmdline);
+            gtk_widget_hide(menu_win);
+            return;
+        }
+    }
 }
 
 /* ---------- 电源按钮 ---------- */
@@ -306,6 +322,7 @@ int main(int argc, char **argv) {
     search_entry = gtk_search_entry_new();
     gtk_entry_set_placeholder_text(GTK_ENTRY(search_entry), TR("搜索应用..."));
     g_signal_connect(search_entry, "search-changed", G_CALLBACK(on_search_changed), NULL);
+    g_signal_connect(search_entry, "activate", G_CALLBACK(on_search_activate), NULL);
     gtk_box_pack_start(GTK_BOX(search_row), search_entry, TRUE, TRUE, 0);
     GtkWidget *close_btn = gtk_button_new_with_label("✕");
     gtk_button_set_relief(GTK_BUTTON(close_btn), GTK_RELIEF_NONE);
