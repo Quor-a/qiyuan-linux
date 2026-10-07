@@ -34,6 +34,14 @@ static void set_title(void) {
     g_free(t);
 }
 
+static void do_new(GtkWidget *w, gpointer ud) {
+    GtkTextBuffer *b = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
+    gtk_text_buffer_set_text(b, "", -1);
+    g_free(current_path);
+    current_path = NULL;
+    set_title();
+}
+
 static void do_open(GtkWidget *w, gpointer ud) {
     GtkWidget *dlg = gtk_file_chooser_dialog_new(TR("打开文件"), GTK_WINDOW(win),
         GTK_FILE_CHOOSER_ACTION_OPEN, TR("_取消"), GTK_RESPONSE_CANCEL, TR("_打开"), GTK_RESPONSE_ACCEPT, NULL);
@@ -106,6 +114,22 @@ int main(int argc, char **argv) {
     gtk_menu_item_set_submenu(GTK_MENU_ITEM(file_item), file_menu);
     gtk_menu_shell_append(GTK_MENU_SHELL(mb), file_item);
     gtk_box_pack_start(GTK_BOX(vbox), mb, FALSE, FALSE, 0);
+
+    /* 工具栏：新建 / 打开 / 保存 */
+    GtkWidget *tb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
+    GtkWidget *b_new  = gtk_button_new_with_label(TR("新建"));
+    GtkWidget *b_open = gtk_button_new_with_label(TR("打开"));
+    GtkWidget *b_save = gtk_button_new_with_label(TR("保存"));
+    qy_add_class(b_new, "qy-editor-btn");
+    qy_add_class(b_open, "qy-editor-btn");
+    qy_add_class(b_save, "qy-editor-btn");
+    g_signal_connect(b_new,  "clicked", G_CALLBACK(do_new), NULL);
+    g_signal_connect(b_open, "clicked", G_CALLBACK(do_open), NULL);
+    g_signal_connect(b_save, "clicked", G_CALLBACK(do_save), NULL);
+    gtk_box_pack_start(GTK_BOX(tb), b_new, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(tb), b_open, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(tb), b_save, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox), tb, FALSE, FALSE, 3);
 
     text_view = gtk_text_view_new();
     gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(text_view), GTK_WRAP_WORD_CHAR);

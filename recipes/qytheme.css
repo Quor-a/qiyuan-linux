@@ -455,3 +455,27 @@ notebook tab:checked {
 .qy-about-btn:hover {
     background-color: #ff6b3d;
 }
+
+/* ---------- 编辑器工具栏按钮 ---------- */
+.qy-editor-btn {
+    background-color: #1c2331;
+    color: #d6d9de;
+    border: 1px solid #2a3441;
+    border-radius: 4px;
+    padding: 2px 10px;
+    font-size: 12px;
+}
+.qy-editor-btn:hover {
+    background-color: #2a3441;
+    color: #ffffff;
+}
+
+/* ---------- 文本编辑器主体深色 ---------- */
+textview {
+    background-color: #0f1622;
+}
+textview text {
+    background-color: #0f1622;
+    color: #e6e6e6;
+    caret-color: #E95420;
+}
