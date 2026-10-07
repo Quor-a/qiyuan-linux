@@ -1,13 +1,13 @@
-"""qydesktop —— 启元桌面 shell（GTK3 顶栏 + 桌面窗口）
+"""qydesktop —— 启元桌面 shell（GTK3 单窗口桌面：顶栏 + Dock + 壁纸桌面）
 
-源码：recipes/qydesktop.c（随仓库自带，无外部下载）
+源码：recipes/qydesktop.c、recipes/qytheme.css、recipes/weston.ini（随仓库自带）
 许可证：MIT
 """
 
 name = "qydesktop"
 version = "0.1.0"
-release = 8
-summary = "启元桌面 shell（GTK3）"
+release = 9
+summary = "启元桌面 shell（GTK3 单窗口 + 主题）"
 license = "MIT"
 
 source = []
@@ -66,6 +66,9 @@ def build(ctx):
     for _f in ("qyl10n.c", "qyl10n.h", "qysetup.c", "qysudo.c", "qyusers.c", "qywelcome.c",
                "qyuseradd.sh", "qyinstall.sh", "qyinitpw.sh", "qyboot.unit", "qysudoers"):
         shutil.copy(Path(__file__).parent / _f, Path(ctx.srcdir) / _f)
+    # v2.0: 桌面主题 CSS + weston 配置（panel 禁用，顶栏由 qydesktop 提供）
+    shutil.copy(Path(__file__).parent / "qytheme.css", Path(ctx.srcdir) / "qytheme.css")
+    shutil.copy(Path(__file__).parent / "weston.ini", Path(ctx.srcdir) / "weston.ini")
     ctx.run(
         "export PATH={0}/usr/bin:$PATH; export PKG_CONFIG_PATH={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; "
         "export PKG_CONFIG_SYSROOT_DIR={0}; export PKG_CONFIG_LIBDIR={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; "
@@ -119,6 +122,11 @@ def package(ctx):
     # 软件中心 desktop entry (v1.9.5):
     ctx.run("mkdir -p {}/usr/share/applications".format(ctx.destdir))
     ctx.install_file("qystore.desktop", "usr/share/applications/qystore.desktop")
+    # v2.0: 桌面主题 CSS（qydesktop 启动时加载）+ weston 配置
+    ctx.run("mkdir -p {}/usr/share/themes/qiyuan/gtk-3.0".format(ctx.destdir))
+    ctx.install_file("qytheme.css", "usr/share/themes/qiyuan/gtk-3.0/gtk.css")
+    ctx.run("mkdir -p {}/etc/xdg/weston".format(ctx.destdir))
+    ctx.install_file("weston.ini", "etc/xdg/weston/weston.ini")
     # v1.9.6: 补入此前只在 sysroot 手工存在的启动脚本与自启单元（源码已入库）
     for _s in ("start-qydesktop.sh", "start-sshd.sh", "start-udevd.sh",
                "start-weston.sh", "qyselftest.sh"):

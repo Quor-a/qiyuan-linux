@@ -231,6 +231,22 @@ static const pair tbl[] = {
     { "个软件包", "packages" },
     { "已安装", "installed" },
     { "依赖", "Depends" },
+    /* 桌面 v2.0 */
+    { "文件", "Files" },
+    { "软件中心", "App Center" },
+    { "显示应用", "Show Apps" },
+    { "主文件夹", "Home" },
+    { "回收站", "Trash" },
+    { "新建文件夹", "New Folder" },
+    { "打开终端", "Open Terminal" },
+    { "刷新壁纸", "Refresh Wallpaper" },
+    { "关于启元", "About Qiyuan" },
+    { "启元 Linux 桌面 v2.0", "Qiyuan Linux Desktop v2.0" },
+    { "GTK3 单窗口桌面壳层 · weston + 自研任务栏补丁", "GTK3 single-window desktop shell · weston + custom taskbar patch" },
+    { "系统", "System" },
+    { "取消", "Cancel" },
+    { "重启", "Reboot" },
+    { "关机", "Power Off" },
 };
 
 #define NTBL ((int)(sizeof tbl / sizeof tbl[0]))

@@ -578,3 +578,37 @@ pango 通过；闭包内 checksum_pending 已清零。
 | 包仓库规模 | **96 包**，openssl 3.5.0、curl 8.13 链路展开中（weston/qydesktop 桌面壳） |
 
 下一步：weston + qydesktop 桌面壳出包 → live initramfs → mkiso → QEMU 启动验证新截图。
+
+---
+
+### 桌面 v2.0（单窗口桌面壳层重构，2026-10 实测）
+
+| 新桌面 v2.0（顶栏 + Dock + 桌面图标，weston x11/pixman 渲染） |
+|---|
+| ![桌面 v2.0](docs/screenshots/desktop-v2.png) |
+
+本轮把桌面从「三个独立顶层窗口（bar/dock/desktop）依赖 `gtk_window_move` 定位」重构为
+**单一全屏 DESKTOP 窗口**——Wayland 下 `gtk_window_move` 被合成器忽略导致 bar/dock
+错位的问题彻底消除：
+
+- **架构**：顶栏 + 左侧 Dock + 壁纸桌面图标合入一个 `GtkFixed` 全屏窗口，层序天然正确
+- **顶栏**：⊞ 应用菜单按钮 + **真实窗口任务栏**（读 weston 合成器补丁的 `/tmp/xdg/qy-windows`，
+  点击写 `/tmp/xdg/qy-focus` 激活窗口）+ 居中时钟 + 右侧电源按钮（关机/重启对话框）
+- **Dock**：圆角半透明面板 + 4 个品牌色圆角图标（文件/终端/设置/软件中心）+
+  运行指示灯（`/proc` comm 轮询）+ 底部应用网格
+- **桌面图标**：主文件夹/回收站/软件中心/终端/设置（彩色圆形按钮 + 白色标签，点击拉起应用）
+- **右键菜单**：新建文件夹 / 打开终端 / 刷新壁纸 / 关于启元
+- **主题**：新增 `recipes/qytheme.css`（GTK CSS 深色主题，品牌橙 `#E95420` + 紫 `#77216F`），
+  安装到 `/usr/share/themes/qiyuan/gtk-3.0/gtk.css`，qydesktop 启动时加载
+- **weston 配置**：`recipes/weston.ini` 纳入仓库，`panel-position=none` 禁用重复的
+  weston 面板，顶栏统一由 qydesktop 提供
+- **多语言**：qyl10n 表新增 15 个桌面词条（文件/软件中心/主文件夹/回收站/关机/重启…）
+
+构建产物：`qydesktop 0.1.0-9`。验证方式：weston x11 后端 + pixman 渲染，逐区域像素色板
+核对顶栏/时钟/任务栏/Dock 四色图标/桌面五图标全部就位。
+
+### 下一步开发
+
+- 应用启动器 qyappmenu 升级（搜索框 + 分类网格）
+- qyfiles 文件管理器图标视图与主题接入
+- 窗口任务栏补丁联动 qywinop 关闭/最小化按钮
