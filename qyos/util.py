@@ -178,6 +178,21 @@ def fetch(url: str, dest_dir: Path, expected: str | None = None,
                 headers["Range"] = f"bytes={have}-"
             req = urllib.request.Request(u, headers=headers)
             try:
+                try:
+                    with urllib.request.urlopen(req, timeout=timeout) as r:
+                        pass
+                except urllib.error.HTTPError as e:
+                    if e.code == 416 and tmp.exists() and tmp.stat().st_size > 0:
+                        # .part 已收到头：说明上次其实传完了（校验/命名环节被打断），
+                        # 整体校验后直接收下，校验失败才真正重下。
+                        log("warn", f"416（.part 可能已完整）: {name}，校验中")
+                        if expected is None or sha256_file(tmp) == expected:
+                            tmp.replace(target)
+                            break
+                        tmp.unlink(missing_ok=True)
+                        have = 0
+                        continue
+                    raise
                 with urllib.request.urlopen(req, timeout=timeout) as r:
                     # 服务器不支持 Range 却回了 200：从头写，不能追加
                     mode = "ab" if (have and r.status == 206) else "wb"
