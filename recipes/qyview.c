@@ -8,6 +8,7 @@
 #include <string.h>
 #include <glib/gstdio.h>
 #include "qytheme.h"
+#include "qyl10n.h"
 
 static void add_class(GtkWidget *w, const char *cls) {
     gtk_style_context_add_class(gtk_widget_get_style_context(w), cls);
@@ -96,6 +97,11 @@ static void on_next(GtkButton *b, gpointer ud) {
     if (!dir_files || dir_files->len == 0) return;
     int n = (dir_idx + 1) % (int)dir_files->len;
     load_by_index(GTK_WIDGET(ud), n);
+}
+
+static void on_fit(GtkButton *b, gpointer ud) {
+    zoom = 1.0; pan_x = pan_y = 0;
+    gtk_widget_queue_draw(GTK_WIDGET(ud));
 }
 
 static gboolean on_draw(GtkWidget *da, cairo_t *cr, gpointer ud) {
@@ -191,11 +197,15 @@ static void activate(GtkApplication *app, gpointer ud) {
     add_class(page_label, "qy-view-nav-label");
     GtkWidget *b_next = gtk_button_new_with_label("下一张 ▶");
     add_class(b_next, "qy-view-nav-btn");
+    GtkWidget *b_fit = gtk_button_new_with_label(TR("适应窗口"));
+    add_class(b_fit, "qy-view-nav-btn");
     gtk_box_pack_start(GTK_BOX(nav), b_prev, FALSE, FALSE, 0);
     gtk_box_set_center_widget(GTK_BOX(nav), page_label);
     gtk_box_pack_end(GTK_BOX(nav), b_next, FALSE, FALSE, 0);
+    gtk_box_pack_end(GTK_BOX(nav), b_fit, FALSE, FALSE, 0);
     g_signal_connect(b_prev, "clicked", G_CALLBACK(on_prev), da);
     g_signal_connect(b_next, "clicked", G_CALLBACK(on_next), da);
+    g_signal_connect(b_fit, "clicked", G_CALLBACK(on_fit), da);
     gtk_box_pack_start(GTK_BOX(vbox), nav, FALSE, FALSE, 0);
 
     gtk_widget_show_all(win);

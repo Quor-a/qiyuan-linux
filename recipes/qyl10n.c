@@ -273,6 +273,7 @@ static const pair tbl[] = {
     { "桌面版本", "Desktop Version" },
     { "壁纸", "Wallpaper" },
     { "程序化生成 · 自动轮换", "Procedural · auto-rotate" },
+    { "适应窗口", "Fit Window" },
 };
 
 #define NTBL ((int)(sizeof tbl / sizeof tbl[0]))
