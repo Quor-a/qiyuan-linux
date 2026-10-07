@@ -870,3 +870,11 @@ sysroot 工具链，PASS）。
 - 验证：qysettings 关于页顶部可检出橙色 `#E95420` Logo 色块
 
 构建产物：`qydesktop 0.1.0-38`。
+
+### 图片查看器：窗口标题显示当前文件名（v0.1.0-39，2026-10 实测）
+
+- **qyview 窗口标题**由固定「启元图片查看器」改为当前图片文件名
+  （切换上/下一张时同步更新），任务栏按钮随文件名变化
+- 验证：`qyview /root/Pictures/test.png` 启动后，qy-windows 中窗口标题为 `test.png`
+
+构建产物：`qydesktop 0.1.0-39`。

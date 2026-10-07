@@ -20,6 +20,7 @@ static int dir_idx = -1;
 static double zoom = 1.0;
 static double pan_x = 0, pan_y = 0;
 static GtkWidget *page_label = NULL;   /* 底部页码标签 */
+static GtkWindow *g_win = NULL;        /* 主窗口: 标题显示当前文件名 */
 
 static const char *IMG_EXT[] = {".png",".jpg",".jpeg",".bmp",".gif",".webp",".xpm", NULL};
 
@@ -70,6 +71,7 @@ static void load_by_index(GtkWidget *da, int idx) {
     gchar *full = g_build_filename(cur_dir, (gchar*)dir_files->pdata[idx], NULL);
     if (load_path(full)) {
         dir_idx = idx;
+        if (g_win) gtk_window_set_title(g_win, (gchar *)dir_files->pdata[idx]);
         if (page_label) {
             gchar buf[32];
             g_snprintf(buf, sizeof buf, "%d / %d", dir_idx + 1, dir_files->len);
@@ -151,6 +153,7 @@ static gboolean on_button(GtkWidget *w, GdkEventButton *ev, gpointer ud) {
 static void activate(GtkApplication *app, gpointer ud) {
     qy_load_theme();
     GtkWidget *win = gtk_application_window_new(app);
+    g_win = GTK_WINDOW(win);
     gtk_window_set_title(GTK_WINDOW(win), "启元图片查看器");
     gtk_window_set_default_size(GTK_WINDOW(win), 700, 500);
 
