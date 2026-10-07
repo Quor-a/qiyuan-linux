@@ -32,6 +32,7 @@ static AppEntry apps[] = {
 static GtkWidget *menu_win = NULL;
 static GtkWidget *grid_box = NULL;    /* 固定应用网格容器 */
 static GtkWidget *freq_box = NULL;    /* 常用列表容器 */
+static GtkWidget *freq_title = NULL;  /* 常用标题(空时隐藏) */
 static GtkWidget *search_entry = NULL;
 
 /* ---------- 启动 ---------- */
@@ -257,6 +258,7 @@ static void rebuild(gboolean filtered) {
         shown++;
     }
     gtk_widget_show_all(menu_win);
+    gtk_widget_set_visible(freq_title, shown > 0);
 }
 
 static void on_search_changed(GtkEditable *e, gpointer ud) {
@@ -326,6 +328,7 @@ int main(int argc, char **argv) {
     gtk_label_set_markup(GTK_LABEL(fl), g_strdup_printf("<b>%s</b>", TR("常用")));
     gtk_widget_set_halign(fl, GTK_ALIGN_START);
     add_class(fl, "qy-appmenu-title");
+    freq_title = fl;
     gtk_box_pack_start(GTK_BOX(vbox), fl, FALSE, FALSE, 0);
     freq_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 3);
     gtk_box_pack_start(GTK_BOX(vbox), freq_box, FALSE, FALSE, 0);
