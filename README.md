@@ -878,3 +878,12 @@ sysroot 工具链，PASS）。
 - 验证：`qyview /root/Pictures/test.png` 启动后，qy-windows 中窗口标题为 `test.png`
 
 构建产物：`qydesktop 0.1.0-39`。
+
+### 系统监视器 v4：信息栏增加 CPU 频率（v0.1.0-40，2026-10 实测）
+
+- 信息栏末尾追加 `· CPU 2.40 GHz`（读取 `/proc/cpuinfo` 的 `cpu MHz`，
+  ≥1GHz 显示 GHz、否则 MHz）
+- 与运行时间/负载/进程数同栏展示，新增 `read_cpu_mhz()` 读取函数
+- 验证：qymon 信息栏文字宽度因新增 CPU 频率片段而变宽
+
+构建产物：`qydesktop 0.1.0-40`。

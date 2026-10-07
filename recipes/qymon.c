@@ -26,6 +26,22 @@ static unsigned long mem_total_kb = 1;
 static GtkWidget *cpu_label = NULL, *mem_label = NULL, *info_label = NULL;
 static GtkWidget *disk_label = NULL;
 
+/* 读取当前 CPU 频率 (MHz) */
+static double read_cpu_mhz(void) {
+    FILE *f = fopen("/proc/cpuinfo", "r");
+    if (!f) return 0;
+    char buf[256];
+    double mhz = 0;
+    while (fgets(buf, sizeof buf, f)) {
+        if (strncmp(buf, "cpu MHz", 7) == 0) {
+            char *c = strchr(buf, ':');
+            if (c) { mhz = atof(c + 1); break; }
+        }
+    }
+    fclose(f);
+    return mhz;
+}
+
 static gboolean tick(gpointer ud) {
     /* --- CPU: /proc/stat 首行 cpu  user nice system idle iowait irq softirq steal --- */
     FILE *f = fopen("/proc/stat", "r");
@@ -81,8 +97,17 @@ static gboolean tick(gpointer ud) {
         }
         int d = (int)up;
         char info[256];
-        g_snprintf(info, sizeof info, TR("运行 %d天 %02d:%02d · 负载 %.2f %.2f %.2f · 进程 %ld/%ld"),
-                   d / 86400, (d % 86400) / 3600, (d % 3600) / 60, l1, l5, l15, run, total);
+        double mhz = read_cpu_mhz();
+        char freq[32] = "";
+        if (mhz >= 1000) g_snprintf(freq, sizeof freq, "%.2f GHz", mhz / 1000.0);
+        else if (mhz > 0) g_snprintf(freq, sizeof freq, "%d MHz", (int)mhz);
+        g_snprintf(info, sizeof info,
+                    TR("运行 %d天 %02d:%02d · 负载 %.2f %.2f %.2f · 进程 %ld/%ld"),
+                    d / 86400, (d % 86400) / 3600, (d % 3600) / 60, l1, l5, l15, run, total);
+        if (freq[0]) {
+            size_t L = strlen(info);
+            g_snprintf(info + L, sizeof info - L, " · CPU %s", freq);
+        }
         if (info_label) gtk_label_set_text(GTK_LABEL(info_label), info);
     }
     /* --- 大数字百分比标签 --- */
