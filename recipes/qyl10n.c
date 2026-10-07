@@ -74,6 +74,11 @@ static const pair tbl[] = {
     { "完成配置", "Finish Setup" },
     /* 监视 */
     { "CPU", "CPU" },
+    { "CPU 型号", "CPU Model" },
+    { "CPU 核心数", "CPU Cores" },
+    { "天", "d" },
+    { "运行时间", "Uptime" },
+    { "负载均值", "Load Average" },
     { "内存", "Memory" },
     { "内存 %d%%", "MEM %d%%" },
     { "运行 %d天 %02d:%02d · 负载 %.2f %.2f %.2f · 进程 %ld/%ld",

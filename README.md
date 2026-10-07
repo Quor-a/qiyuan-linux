@@ -756,3 +756,33 @@ sysroot 工具链，PASS）。
 - 验证：用测试图片目录启动 qyview，窗口底部渲染出页码 `1 / N` 与两个导航按钮
 
 构建产物：`qydesktop 0.1.0-23`。
+
+### 系统设置·关于本机页增强（v0.1.0-24，2026-10 实测）
+
+- **新增硬件/状态信息**：「关于」页在原有 操作系统/内核/架构/主机名/内存 之外，
+  新增 **CPU 型号**（解析 `/proc/cpuinfo` model name）、**CPU 核心数**（sysconf）、
+  **运行时间**（`/proc/uptime` 格式化为 `X天 HH:MM:SS`）与 **负载均值**
+  （`/proc/loadavg` 1/5/15 分钟）
+- 全部走 TR() 多语言，补全 l10n 词条（CPU 型号 / CPU 核心数 / 运行时间 / 负载均值 / 天）
+- 验证：chroot 中启动 qysettings，关于页渲染出全部信息行
+
+构建产物：`qydesktop 0.1.0-24`。
+
+#### 修复：GtkNotebook 内容区浅色问题（v0.1.0-26）
+
+- 发现 qysettings（唯一使用 GtkNotebook 的应用）标签栏已随主题变暗，但
+  **笔记本内容区仍是默认浅色**（GTK 的 stack 自带白色背景）
+- 新增 `notebook stack { background-color: #10151f; }`，内容区与标签栏、窗口
+  统一为深色底；关于页文字变浅色，可读性一致
+- 验证：重新截图后 qysettings 关于页内容区为深色背景 + 浅色文字
+
+构建产物：`qydesktop 0.1.0-26`。
+
+#### 最终验证（v0.1.0-27）
+
+- 选中标签：品牌橙 `#E95420`（1706px），标签栏深色 `#1C2331`（10020px）
+- 内容区：深色 `#10151F`（169834px）+ 浅色文字（1799px），关于页 11 行信息
+- 修复要点：`notebook stack` 深色背景 + `notebook tab` 增加 `background-image: none`
+  （否则 GTK 默认主题的渐变图会盖住背景色，导致 `:checked` 橙色不生效）
+
+构建产物：`qydesktop 0.1.0-27`。截图 `docs/screenshots/qysettings-about-v2.png`。

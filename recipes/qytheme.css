@@ -277,13 +277,25 @@ toolbar button {
 notebook {
     background-color: #10151f;
 }
+notebook header {
+    background-color: #10151f;
+    border: none;
+}
+notebook header tabs {
+    background-color: #10151f;
+}
+notebook stack {
+    background-color: #10151f;
+}
 notebook tab {
+    background-image: none;
     background-color: #1c2331;
     color: #c9cdd4;
     border-radius: 8px 8px 0 0;
     padding: 4px 14px;
 }
 notebook tab:checked {
+    background-image: none;
     background-color: #e95420;
     color: #ffffff;
 }
