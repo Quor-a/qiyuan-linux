@@ -26,11 +26,13 @@ for t in gcc make pkg-config meson ninja bison flex autoconf automake libtoolize
          gperf gettext g-ir-scanner cmake; do
   need "$t"
 done
+# 内核 objtool 需要 gelf.h（libelf-dev）；mesa 需要 llvm pkgconfig
+[ -f /usr/include/gelf.h ] || { echo "缺少头文件: gelf.h (libelf-dev)"; MISSING=1; }
 [ "$MISSING" = 0 ] || {
   echo
   echo "在 Debian/Ubuntu 上执行："
   echo "  sudo apt-get install -y build-essential pkg-config bison flex autoconf automake libtool \\"
-  echo "       gperf gettext gobject-introspection libglib2.0-dev-bin llvm-dev"
+  echo "       gperf gettext gobject-introspection libglib2.0-dev-bin llvm-dev libelf-dev"
   echo "  # meson/ninja 若宿主仓库过旧，用 uv 装："
   echo "  uv venv ~/.venvs/qybuild && VIRTUAL_ENV=~/.venvs/qybuild uv pip install meson ninja"
   echo "  sudo ln -sf ~/.venvs/qybuild/bin/meson /usr/local/bin/meson"

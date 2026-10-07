@@ -563,4 +563,18 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 | 15 个配方补真实校验和 | cmake/desktop-file-utils/flac/glslang/libXfont2/libarchive/libogg/libsamplerate/libsndfile/libvorbis/libxkbfile/meson/opus/pipewire/xorg-server：真实上游 URL + 实测 sha256 |
 
 进度：**GTK3 3.24.43 已完整构建出包**（harfbuzz 10.3.0 含 g-ir-scanner introspection 全链通过）；
-pango 通过；闭包内 checksum_pending 已清零。剩余：pipewire（构建中）→ bluez → xorg-server → ISO。
+pango 通过；闭包内 checksum_pending 已清零。
+
+### 真机构建里程碑（v1.9.5 后第二轮迭代）
+
+| 里程碑 | 说明 |
+|---|---|
+| **desktop-env 闭包 89 包全绿** | GTK3/pango/cairo/mesa/X11 全系列/dbus/polkit+pam/pipewire 一次事务提交 |
+| **Linux 内核 6.16.1 真机编译成功** | 15 分钟，bzImage + modules（修 objtool 缺 gelf.h：宿主需 libelf-dev） |
+| **xorg-server 21.1.16 出包** | 新增 libxcvt/libpciaccess 配方；-Dsecure-rpc=false（宿主无 libtirpc） |
+| 新配方 3 个 | libfontenc 1.1.8、libxcvt 0.1.2、libpciaccess 0.18.1（0.18 起改 meson） |
+| pipewire 构建修复 | -Dsession-managers=[] 关闭 wireplumber 子项目 git 克隆（断网环境必挂） |
+| 大文件下载治理 | 8 段并行 Range 下载 + sha256 校验（kernel 152MB / openssl 53MB 均靠此通过） |
+| 包仓库规模 | **96 包**，openssl 3.5.0、curl 8.13 链路展开中（weston/qydesktop 桌面壳） |
+
+下一步：weston + qydesktop 桌面壳出包 → live initramfs → mkiso → QEMU 启动验证新截图。
