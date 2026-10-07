@@ -19,6 +19,7 @@ static void add_class(GtkWidget *w, const char *cls) {
 
 static double cpu_hist[NHIST];  /* 0..1 */
 static double mem_hist[NHIST];  /* 0..1 */
+static double disk_hist[NHIST]; /* 0..1 */
 static int hist_n = 0;
 static char line_buf[256];
 static long prev_total = 0, prev_idle = 0;
@@ -92,10 +93,12 @@ static gboolean tick(gpointer ud) {
             if (usage < 0) usage = 0; if (usage > 1) usage = 1;
             prev_total = total; prev_idle = idle + iow;
             if (hist_n < NHIST) {
-                cpu_hist[hist_n] = usage; mem_hist[hist_n] = -1; hist_n++;
+                cpu_hist[hist_n] = usage; mem_hist[hist_n] = -1;
+                disk_hist[hist_n] = -1; hist_n++;
             } else {
                 memmove(cpu_hist, cpu_hist + 1, sizeof(double) * (NHIST - 1));
                 memmove(mem_hist, mem_hist + 1, sizeof(double) * (NHIST - 1));
+                memmove(disk_hist, disk_hist + 1, sizeof(double) * (NHIST - 1));
                 cpu_hist[NHIST - 1] = usage;
             }
         }
@@ -165,6 +168,7 @@ static gboolean tick(gpointer ud) {
     if (statvfs("/", &sv) == 0 && sv.f_blocks > 0) {
         disk = 1.0 - (double)sv.f_bavail / (double)sv.f_blocks;
         if (disk < 0) disk = 0; if (disk > 1) disk = 1;
+        if (hist_n > 0) disk_hist[hist_n - 1] = disk;
     }
     g_snprintf(big, sizeof big, TR("磁盘 %d%%"), (int)(disk * 100 + 0.5));
     if (disk_label) gtk_label_set_text(GTK_LABEL(disk_label), big);
@@ -205,6 +209,7 @@ static gboolean on_draw(GtkWidget *da, cairo_t *cr, gpointer ud) {
     if (hist_n > 1) {
         draw_series(cr, cpu_hist, hist_n, 0.95, 0.55, 0.15, w, h / 2 - 4);   /* CPU 橙 */
         draw_series(cr, mem_hist, hist_n, 0.45, 0.65, 0.95, w, h / 2 - 4);   /* MEM 蓝 */
+        draw_series(cr, disk_hist, hist_n, 0.20, 0.83, 0.60, w, h / 2 - 4); /* DISK 绿 */
     }
     /* 图例文字 */
     cairo_set_source_rgb(cr, 0.9, 0.9, 0.9);
@@ -212,10 +217,13 @@ static gboolean on_draw(GtkWidget *da, cairo_t *cr, gpointer ud) {
     cairo_set_font_size(cr, 12);
     double last_cpu = hist_n ? cpu_hist[hist_n - 1] : 0;
     double last_mem = hist_n ? mem_hist[hist_n - 1] : 0;
+    double last_disk = hist_n ? disk_hist[hist_n - 1] : 0;
     cairo_move_to(cr, 8, 18);
     cairo_show_text(cr, g_strdup_printf("CPU %3.0f%%", last_cpu * 100));
     cairo_move_to(cr, 8, h / 2.0 + 14);
     cairo_show_text(cr, g_strdup_printf("MEM %3.0f%% of %lu MB", last_mem * 100, mem_total_kb / 1024));
+    cairo_move_to(cr, w - 130, h / 2.0 + 14);
+    cairo_show_text(cr, g_strdup_printf("DISK %3.0f%%", last_disk * 100));
     return FALSE;
 }
 
