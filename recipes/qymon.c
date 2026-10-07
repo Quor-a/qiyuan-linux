@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/statvfs.h>
 
 #define NHIST 120   /* 曲线历史点数 */
 
@@ -23,6 +24,7 @@ static char line_buf[256];
 static long prev_total = 0, prev_idle = 0;
 static unsigned long mem_total_kb = 1;
 static GtkWidget *cpu_label = NULL, *mem_label = NULL, *info_label = NULL;
+static GtkWidget *disk_label = NULL;
 
 static gboolean tick(gpointer ud) {
     /* --- CPU: /proc/stat 首行 cpu  user nice system idle iowait irq softirq steal --- */
@@ -91,6 +93,15 @@ static gboolean tick(gpointer ud) {
     if (cpu_label) gtk_label_set_text(GTK_LABEL(cpu_label), big);
     g_snprintf(big, sizeof big, TR("内存 %d%%"), (int)(last_mem * 100 + 0.5));
     if (mem_label) gtk_label_set_text(GTK_LABEL(mem_label), big);
+    /* 磁盘使用率: statvfs("/") */
+    struct statvfs sv;
+    double disk = 0.0;
+    if (statvfs("/", &sv) == 0 && sv.f_blocks > 0) {
+        disk = 1.0 - (double)sv.f_bavail / (double)sv.f_blocks;
+        if (disk < 0) disk = 0; if (disk > 1) disk = 1;
+    }
+    g_snprintf(big, sizeof big, TR("磁盘 %d%%"), (int)(disk * 100 + 0.5));
+    if (disk_label) gtk_label_set_text(GTK_LABEL(disk_label), big);
     gtk_widget_queue_draw(GTK_WIDGET(ud));
     return G_SOURCE_CONTINUE;
 }
@@ -155,7 +166,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_widget_set_margin_bottom(vbox, 8);
     gtk_container_add(GTK_CONTAINER(win), vbox);
 
-    /* 顶部大数字: CPU 与 内存 */
+    /* 顶部大数字: CPU / 内存 / 磁盘 */
     GtkWidget *hrow = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 24);
     cpu_label = gtk_label_new("CPU 0%");
     add_class(cpu_label, "qy-mon-cpu");
@@ -163,8 +174,12 @@ static void activate(GtkApplication *app, gpointer ud) {
     g_snprintf(lbl, sizeof lbl, "%s 0%%", TR("内存"));
     mem_label = gtk_label_new(lbl);
     add_class(mem_label, "qy-mon-mem");
+    g_snprintf(lbl, sizeof lbl, "%s 0%%", TR("磁盘"));
+    disk_label = gtk_label_new(lbl);
+    add_class(disk_label, "qy-mon-disk");
     gtk_box_pack_start(GTK_BOX(hrow), cpu_label, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hrow), mem_label, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(hrow), disk_label, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), hrow, FALSE, FALSE, 0);
 
     /* 实时曲线区 */

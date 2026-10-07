@@ -367,3 +367,9 @@ notebook tab:checked {
     color: #E95420;
     padding: 6px 2px 2px 2px;
 }
+
+.qy-mon-disk {
+    font-size: 32px;
+    font-weight: bold;
+    color: #34D399;
+}
