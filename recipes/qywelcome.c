@@ -84,6 +84,12 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_container_set_border_width(GTK_CONTAINER(win), 16);
 
     GtkWidget *v = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+    GtkWidget *logo = gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(logo), "<span size='xx-large' weight='bold'>启元 Qiyuan</span>");
+    gtk_widget_set_halign(logo, GTK_ALIGN_CENTER);
+    qy_add_class(logo, "qy-about-logo");
+    gtk_box_pack_start(GTK_BOX(v), logo, FALSE, FALSE, 4);
+
     GtkWidget *title = gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(title),
         TR2("<span size='x-large' weight='bold'>欢迎使用启元 Linux</span>\n只需几步，完成初始配置","<span size='x-large' weight='bold'>Welcome to Qiyuan Linux</span>\nA few steps to set up"));
