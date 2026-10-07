@@ -308,7 +308,7 @@ static void chdir_to(const char *path) {
     GtkListStore *store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(view)));
     gtk_list_store_clear(store);
     GDir *dir = g_dir_open(path, 0, NULL);
-    gint n = 0;
+    gint n = 0, ndir = 0, nfile = 0;
     if (!dir) return;
     const gchar *name;
     while ((name = g_dir_read_name(dir))) {
@@ -319,9 +319,10 @@ static void chdir_to(const char *path) {
         gtk_list_store_append(store, &it);
         gtk_list_store_set(store, &it, 0, isdir ? TR("[目录]") : TR("[文件]"), 1, name, -1);
         n++;
+        if (isdir) ndir++; else nfile++;
     }
     g_dir_close(dir);
-    gchar *msg = g_strdup_printf(TR("位置: %s"), path);
+    gchar *msg = g_strdup_printf(TR("位置: %s · %d 项"), path, n);
     if (n == 0) {
         char tmp[512];
         g_snprintf(tmp, sizeof tmp, "%s — %s", msg, TR("此文件夹为空"));

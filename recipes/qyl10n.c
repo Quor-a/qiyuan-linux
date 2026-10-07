@@ -267,6 +267,7 @@ static const pair tbl[] = {
     { "六", "Sat" },
     { "周%s %s", "%s %s" },
     { "新建", "New" },
+    { "位置: %s · %d 项", "Location: %s · %d items" },
 };
 
 #define NTBL ((int)(sizeof tbl / sizeof tbl[0]))
