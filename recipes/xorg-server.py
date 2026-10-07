@@ -9,9 +9,8 @@ release = 1
 summary = "X.org 显示服务器"
 license = "MIT AND X11 AND BSD-3-Clause"
 
-source = ["https://example.org/src/xorg-server-21.1.16.tar.xz"]
-sha256 = []
-checksum_pending = True
+source = ["https://www.x.org/releases/individual/xserver/xorg-server-21.1.16.tar.xz"]
+sha256 = ["b14a116d2d805debc5b5b2aac505a279e69b217dae2fae2dfcb62400471a9970"]
 
 depends = ["pixman", "mesa", "libXfont2", "libxkbfile", "libxshmfence", "libdrm", "libudev", "libinput", "dbus"]
 makedepends = ["meson", "ninja", "xorgproto", "flex", "bison", "pixman", "mesa", "libXfont2", "libxkbfile", "libxshmfence", "libdrm", "libudev", "libinput", "dbus"]

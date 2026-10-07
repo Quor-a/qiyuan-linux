@@ -11,12 +11,8 @@ summary = "音频文件读写库"
 homepage = ""
 license = "LGPL-2.1-or-later"
 
-# 远程源码的 sha256 尚未填回，构建前会被拒绝：
-# 静默接受未校验的远程源码等于给供应链攻击敞开大门。
-# 在能联网的构建机上执行：qybuild --fetch-checksums libsndfile
-source = ["https://example.org/src/libsndfile-1.2.2.tar.xz"]
-sha256 = []
-checksum_pending = True
+source = ["https://github.com/libsndfile/libsndfile/releases/download/1.2.2/libsndfile-1.2.2.tar.xz"]
+sha256 = ["3799ca9924d3125038880367bf1468e53a1b7e3686a934f098b7e1d286cdb80e"]
 
 depends = ["libsamplerate", "flac", "libogg", "libvorbis", "opus"]
 makedepends = ["libsamplerate", "flac", "libogg", "libvorbis", "opus"]

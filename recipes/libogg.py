@@ -11,12 +11,8 @@ summary = "Ogg 容器格式库"
 homepage = ""
 license = "BSD-3-Clause"
 
-# 远程源码的 sha256 尚未填回，构建前会被拒绝：
-# 静默接受未校验的远程源码等于给供应链攻击敞开大门。
-# 在能联网的构建机上执行：qybuild --fetch-checksums libogg
-source = ["https://example.org/src/libogg-1.3.5.tar.xz"]
-sha256 = []
-checksum_pending = True
+source = ["https://downloads.xiph.org/releases/ogg/libogg-1.3.5.tar.xz"]
+sha256 = ["c4d91be36fc8e54deae7575241e03f4211eb102afb3fc0775fbbc1b740016705"]
 
 depends = []
 makedepends = []

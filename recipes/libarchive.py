@@ -11,12 +11,8 @@ summary = "多格式归档读写库"
 homepage = ""
 license = "BSD-2-Clause"
 
-# 远程源码的 sha256 尚未填回，构建前会被拒绝：
-# 静默接受未校验的远程源码等于给供应链攻击敞开大门。
-# 在能联网的构建机上执行：qybuild --fetch-checksums libarchive
-source = ["https://example.org/src/libarchive-3.7.8.tar.xz"]
-sha256 = []
-checksum_pending = True
+source = ["https://www.libarchive.org/downloads/libarchive-3.7.8.tar.xz"]
+sha256 = ["32a51747527e01f50d0e06abad0fe0b95b6fa40b8fc173c48b8bd97d0f743330"]
 
 depends = ["zlib", "xz", "zstd", "openssl", "libxml2"]
 makedepends = ["zlib", "xz", "zstd", "openssl", "libxml2"]

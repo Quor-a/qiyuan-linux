@@ -544,5 +544,23 @@ udevd 缺席会让 libinput 枚举不到输入设备、qyinit unit `After=` 暂�
 
 ### 下一步开发
 
-2. **软件中心**：qypkg GUI（浏览/安装/卸载仓库包）
+2. **qybuild 桌面栈真机构建收尾**（进行中）：GTK3 3.24.43 已出包；pipewire/bluez/xorg-server 等剩余闭包逐个填回真实上游 URL + sha256 后继续；目标产出可启动 ISO 并 QEMU 实证
 3. **更多应用接入 TR()**（qyfiles/qysettings/qyusers/qywelcome 等界面文案中英化）
+
+### 构建系统循环测试记录（v1.9.5 后）
+
+本轮针对 `desktop-env`（GTK3 桌面栈）闭包做真机构建迭代，每轮失败→定位根因→修复→回归：
+
+| 修复 | 说明 |
+|---|---|
+| builder pkgconfig 注入 | `_inject_pkgconfig` 无条件把 sysroot 全部 pkgconfig 目录注入 `PKG_CONFIG_PATH`（原先仅在库目录存在时设置，导致 libXau 找不到 xext.pc 等） |
+| fetch 断点续传 | 构建机出口链路常在传大文件时中断；`fetch()` 加 `-C -` 续传 + 4 次重试；单测 `tests/resume_download.py`（PASS）覆盖"首传被掐断→续传完成→sha256 一致" |
+| run_triggers 非致命 | 触发器失败不再让安装事务整体失败 |
+| 构建机准备脚本 | `scripts/prepare-build-host.sh`：g-ir-scanner/compiler/generate 符号链接进 sysroot、gdump.c 等 introspection share 数据、LLVM pkgconfig（mesa） |
+| freetype/cairo/fontconfig gir | upstream 不生成 gir，手写最小 gir（XML 校验通过）满足 pango/harfbuzz introspection include 解析 |
+| hicolor-icon-theme | 0.18 起改 meson 构建；补真实 URL + sha256 |
+| 元包去占位源码 | gui-base/desktop-env/audio/toolchain 声明 `source = []`，不再误报"远程源码缺少 sha256" |
+| 15 个配方补真实校验和 | cmake/desktop-file-utils/flac/glslang/libXfont2/libarchive/libogg/libsamplerate/libsndfile/libvorbis/libxkbfile/meson/opus/pipewire/xorg-server：真实上游 URL + 实测 sha256 |
+
+进度：**GTK3 3.24.43 已完整构建出包**（harfbuzz 10.3.0 含 g-ir-scanner introspection 全链通过）；
+pango 通过；闭包内 checksum_pending 已清零。剩余：pipewire（构建中）→ bluez → xorg-server → ISO。

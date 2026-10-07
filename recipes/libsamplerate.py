@@ -11,12 +11,8 @@ summary = "采样率转换库"
 homepage = ""
 license = "BSD-2-Clause"
 
-# 远程源码的 sha256 尚未填回，构建前会被拒绝：
-# 静默接受未校验的远程源码等于给供应链攻击敞开大门。
-# 在能联网的构建机上执行：qybuild --fetch-checksums libsamplerate
-source = ["https://example.org/src/libsamplerate-0.2.2.tar.xz"]
-sha256 = []
-checksum_pending = True
+source = ["https://github.com/libsndfile/libsamplerate/releases/download/0.2.2/libsamplerate-0.2.2.tar.xz"]
+sha256 = ["3258da280511d24b49d6b08615bbe824d0cacc9842b0e4caf11c52cf2b043893"]
 
 depends = []
 makedepends = []

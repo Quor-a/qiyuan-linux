@@ -11,12 +11,8 @@ summary = "键盘描述文件解析库"
 homepage = ""
 license = "MIT"
 
-# 远程源码的 sha256 尚未填回，构建前会被拒绝：
-# 静默接受未校验的远程源码等于给供应链攻击敞开大门。
-# 在能联网的构建机上执行：qybuild --fetch-checksums libxkbfile
-source = ["https://example.org/src/libxkbfile-1.1.3.tar.xz"]
-sha256 = []
-checksum_pending = True
+source = ["https://www.x.org/releases/individual/lib/libxkbfile-1.1.3.tar.xz"]
+sha256 = ["a9b63eea997abb9ee6a8b4fbb515831c841f471af845a09de443b28003874bec"]
 
 depends = ["libX11"]
 makedepends = ["libX11"]

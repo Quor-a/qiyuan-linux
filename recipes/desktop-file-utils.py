@@ -9,9 +9,8 @@ release = 1
 summary = ".desktop 文件校验与安装工具"
 license = "GPL-2.0-or-later"
 
-source = ["https://example.org/src/desktop-file-utils-0.28.tar.xz"]
-sha256 = []
-checksum_pending = True
+source = ["https://www.freedesktop.org/software/desktop-file-utils/releases/desktop-file-utils-0.28.tar.xz"]
+sha256 = ["4401d4e231d842c2de8242395a74a395ca468cd96f5f610d822df33594898a70"]
 
 depends = ["glib"]
 makedepends = ["meson", "ninja", "glib"]

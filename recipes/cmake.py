@@ -11,12 +11,8 @@ summary = "跨平台构建系统"
 homepage = ""
 license = "BSD-3-Clause"
 
-# 远程源码的 sha256 尚未填回，构建前会被拒绝：
-# 静默接受未校验的远程源码等于给供应链攻击敞开大门。
-# 在能联网的构建机上执行：qybuild --fetch-checksums cmake
-source = ["https://example.org/src/cmake-3.31.6.tar.xz"]
-sha256 = []
-checksum_pending = True
+source = ["https://github.com/Kitware/CMake/archive/refs/tags/v3.31.6.tar.gz"]
+sha256 = ["a325dc0566c1421c611dd7507dabd2706419081af8126273dc436d4b1066873c"]
 
 depends = ["curl", "libarchive", "zlib", "expat"]
 makedepends = ["openssl", "curl", "libarchive", "zlib", "expat"]

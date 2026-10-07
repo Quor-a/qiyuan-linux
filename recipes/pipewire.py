@@ -9,9 +9,8 @@ release = 1
 summary = "音视频服务器与路由（兼容 PulseAudio/JACK）"
 license = "MIT AND LGPL-2.1-or-later AND Apache-2.0"
 
-source = ["https://example.org/src/pipewire-1.4.1.tar.xz"]
-sha256 = []
-checksum_pending = True
+source = ["https://gitlab.freedesktop.org/pipewire/pipewire/-/archive/1.4.1/pipewire-1.4.1.tar.gz"]
+sha256 = ["1eba67c6e5acfa23e32d70bdbabab5a3d221c4bfbb12e17aa29fd5051c095fa4"]
 
 depends = ["alsa-lib", "glib", "libudev", "libsndfile", "dbus"]
 makedepends = ["meson", "ninja", "python", "alsa-lib", "glib", "libudev", "libsndfile", "dbus"]

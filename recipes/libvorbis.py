@@ -11,12 +11,8 @@ summary = "Vorbis 音频编解码库"
 homepage = ""
 license = "BSD-3-Clause"
 
-# 远程源码的 sha256 尚未填回，构建前会被拒绝：
-# 静默接受未校验的远程源码等于给供应链攻击敞开大门。
-# 在能联网的构建机上执行：qybuild --fetch-checksums libvorbis
-source = ["https://example.org/src/libvorbis-1.3.7.tar.xz"]
-sha256 = []
-checksum_pending = True
+source = ["https://downloads.xiph.org/releases/vorbis/libvorbis-1.3.7.tar.xz"]
+sha256 = ["b33cc4934322bcbf6efcbacf49e3ca01aadbea4114ec9589d1b1e9d20f72954b"]
 
 depends = ["libogg"]
 makedepends = ["libogg"]

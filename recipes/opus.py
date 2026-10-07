@@ -11,12 +11,8 @@ summary = "Opus 音频编解码库"
 homepage = ""
 license = "BSD-3-Clause"
 
-# 远程源码的 sha256 尚未填回，构建前会被拒绝：
-# 静默接受未校验的远程源码等于给供应链攻击敞开大门。
-# 在能联网的构建机上执行：qybuild --fetch-checksums opus
-source = ["https://example.org/src/opus-1.5.2.tar.xz"]
-sha256 = []
-checksum_pending = True
+source = ["https://downloads.xiph.org/releases/opus/opus-1.5.2.tar.gz"]
+sha256 = ["65c1d2f78b9f2fb20082c38cbe47c951ad5839345876e46941612ee87f9a7ce1"]
 
 depends = []
 makedepends = []

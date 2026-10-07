@@ -11,12 +11,8 @@ summary = "无损音频编解码器"
 homepage = ""
 license = "GPL-2.0-or-later AND BSD-3-Clause"
 
-# 远程源码的 sha256 尚未填回，构建前会被拒绝：
-# 静默接受未校验的远程源码等于给供应链攻击敞开大门。
-# 在能联网的构建机上执行：qybuild --fetch-checksums flac
-source = ["https://example.org/src/flac-1.5.0.tar.xz"]
-sha256 = []
-checksum_pending = True
+source = ["https://downloads.xiph.org/releases/flac/flac-1.5.0.tar.xz"]
+sha256 = ["f2c1c76592a82ffff8413ba3c4a1299b6c7ab06c734dee03fd88630485c2b920"]
 
 depends = ["libogg"]
 makedepends = ["libogg"]

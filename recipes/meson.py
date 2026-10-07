@@ -11,12 +11,8 @@ summary = "构建系统（很多现代项目改用 meson）"
 homepage = ""
 license = "Apache-2.0"
 
-# 远程源码的 sha256 尚未填回，构建前会被拒绝：
-# 静默接受未校验的远程源码等于给供应链攻击敞开大门。
-# 在能联网的构建机上执行：qybuild --fetch-checksums meson
-source = ["https://example.org/src/meson-1.7.0.tar.xz"]
-sha256 = []
-checksum_pending = True
+source = ["https://github.com/mesonbuild/meson/releases/download/1.7.0/meson-1.7.0.tar.gz"]
+sha256 = ["08efbe84803eed07f863b05092d653a9d348f7038761d900412fddf56deb0284"]
 
 depends = ["python"]
 makedepends = ["ninja", "python"]

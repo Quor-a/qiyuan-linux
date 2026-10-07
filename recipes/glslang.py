@@ -11,12 +11,8 @@ summary = "GLSL 着色器编译器（mesa 构建依赖）"
 homepage = ""
 license = "BSD-3-Clause AND MIT AND Apache-2.0"
 
-# 远程源码的 sha256 尚未填回，构建前会被拒绝：
-# 静默接受未校验的远程源码等于给供应链攻击敞开大门。
-# 在能联网的构建机上执行：qybuild --fetch-checksums glslang
-source = ["https://example.org/src/glslang-15.1.0.tar.xz"]
-sha256 = []
-checksum_pending = True
+source = ["https://github.com/KhronosGroup/glslang/archive/refs/tags/15.1.0.tar.gz"]
+sha256 = ["4bdcd8cdb330313f0d4deed7be527b0ac1c115ff272e492853a6e98add61b4bc"]
 
 depends = []
 makedepends = ["cmake", "ninja", "python"]

@@ -11,12 +11,8 @@ summary = "X 服务器字体库"
 homepage = ""
 license = "MIT"
 
-# 远程源码的 sha256 尚未填回，构建前会被拒绝：
-# 静默接受未校验的远程源码等于给供应链攻击敞开大门。
-# 在能联网的构建机上执行：qybuild --fetch-checksums libXfont2
-source = ["https://example.org/src/libXfont2-2.0.7.tar.xz"]
-sha256 = []
-checksum_pending = True
+source = ["https://www.x.org/releases/individual/lib/libXfont2-2.0.7.tar.xz"]
+sha256 = ["8b7b82fdeba48769b69433e8e3fbb984a5f6bf368b0d5f47abeec49de3e58efb"]
 
 depends = ["freetype", "fontconfig"]
 makedepends = ["freetype", "fontconfig"]
