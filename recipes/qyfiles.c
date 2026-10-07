@@ -314,10 +314,22 @@ static void chdir_to(const char *path) {
     while ((name = g_dir_read_name(dir))) {
         gchar *full = g_build_filename(path, name, NULL);
         gboolean isdir = g_file_test(full, G_FILE_TEST_IS_DIR);
+        char sizestr[32] = "—";
+        if (!isdir) {
+            struct stat st;
+            if (stat(full, &st) == 0) {
+                if (st.st_size >= 1024 * 1024)
+                    g_snprintf(sizestr, sizeof sizestr, "%.1f MB", st.st_size / 1024.0 / 1024.0);
+                else if (st.st_size >= 1024)
+                    g_snprintf(sizestr, sizeof sizestr, "%.1f KB", st.st_size / 1024.0);
+                else
+                    g_snprintf(sizestr, sizeof sizestr, "%ld B", (long)st.st_size);
+            }
+        }
         g_free(full);
         GtkTreeIter it;
         gtk_list_store_append(store, &it);
-        gtk_list_store_set(store, &it, 0, isdir ? TR("[目录]") : TR("[文件]"), 1, name, -1);
+        gtk_list_store_set(store, &it, 0, isdir ? TR("[目录]") : TR("[文件]"), 1, name, 2, sizestr, -1);
         n++;
         if (isdir) ndir++; else nfile++;
     }
@@ -351,9 +363,9 @@ static void chdir_trash(void) {
             GtkTreeIter it;
             gtk_list_store_append(store, &it);
             if (read_trashinfo(ti, orig, sizeof orig)) {
-                gtk_list_store_set(store, &it, 0, orig, 1, name, -1);
+                gtk_list_store_set(store, &it, 0, orig, 1, name, 2, TR("—"), -1);
             } else {
-                gtk_list_store_set(store, &it, 0, TR("(无元数据)"), 1, name, -1);
+                gtk_list_store_set(store, &it, 0, TR("(无元数据)"), 1, name, 2, TR("—"), -1);
             }
             g_free(ti);
             n++;
@@ -466,12 +478,14 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(hbox), b_pur, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_emp, FALSE, FALSE, 0);
 
-    GtkListStore *store = gtk_list_store_new(2, G_TYPE_STRING, G_TYPE_STRING);
+    GtkListStore *store = gtk_list_store_new(3, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
     view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
     GtkCellRenderer *r1 = gtk_cell_renderer_text_new();
     gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view), -1, TR("类型/原位置"), r1, "text", 0, NULL);
     GtkCellRenderer *r2 = gtk_cell_renderer_text_new();
     gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view), -1, TR("名称"), r2, "text", 1, NULL);
+    GtkCellRenderer *r3 = gtk_cell_renderer_text_new();
+    gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view), -1, TR("大小"), r3, "text", 2, NULL);
     GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
     gtk_container_add(GTK_CONTAINER(scroll), view);
     gtk_box_pack_start(GTK_BOX(vbox), scroll, TRUE, TRUE, 0);
