@@ -378,6 +378,11 @@ static void on_activated(GtkTreeView *tv, GtkTreePath *path, GtkTreeViewColumn *
     g_free(name); g_free(full);
 }
 
+static void on_refresh(GtkButton *b, gpointer ud) {
+    if (in_trash) chdir_trash();
+    else chdir_to(cwd);
+}
+
 static void on_up(GtkButton *b, gpointer ud) {
     if (in_trash) { chdir_to("/"); return; }
     gchar *parent = g_path_get_dirname(cwd);
@@ -424,6 +429,9 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_container_add(GTK_CONTAINER(toolbar), hbox);
     add_class(toolbar, "qy-files-toolbar");
     gtk_box_pack_start(GTK_BOX(vbox), toolbar, FALSE, FALSE, 2);
+    GtkWidget *b_ref = gtk_button_new_with_label(TR("刷新"));
+    add_class(b_ref, "qy-btn");
+    g_signal_connect(b_ref, "clicked", G_CALLBACK(on_refresh), NULL);
     GtkWidget *b_home = gtk_button_new_with_label(TR("主目录"));
     add_class(b_home, "qy-btn");
     g_signal_connect(b_home, "clicked", G_CALLBACK(on_home), NULL);
@@ -448,6 +456,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     b_emp = gtk_button_new_with_label(TR("清空回收站"));
     add_class(b_emp, "qy-btn qy-btn-danger");
     g_signal_connect(b_emp, "clicked", G_CALLBACK(do_empty_trash), NULL);
+    gtk_box_pack_start(GTK_BOX(hbox), b_ref, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_home, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_up, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_mk, FALSE, FALSE, 0);
