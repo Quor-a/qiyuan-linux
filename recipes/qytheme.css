@@ -386,3 +386,14 @@ notebook tab:checked {
     font-size: 12px;
     color: #E5E7EB;
 }
+
+/* ---------- 首启向导系统信息区 ---------- */
+.qy-welcome-info {
+    background-color: #1c2331;
+    border-radius: 6px;
+    padding: 8px 10px;
+}
+.qy-welcome-info-row {
+    font-size: 12px;
+    color: #c9cdd4;
+}

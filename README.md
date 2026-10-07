@@ -843,3 +843,13 @@ sysroot 工具链，PASS）。
   青色 #0A7EA4 图标色块
 
 构建产物：`qydesktop 0.1.0-35`。
+
+### 首启向导：本机信息展示（v0.1.0-36，2026-10 实测）
+
+- **qywelcome 首启配置向导**在表单下方新增「系统信息」卡片：
+  系统 / 内核版本 / CPU 型号 / 内存 / 磁盘占用
+- 数据来自 `uname()`、`/proc/cpuinfo`、`/proc/meminfo`、`statvfs("/")`
+- 新增 `qy-welcome-info`（深色卡片）与 `qy-welcome-info-row` 主题类
+- 验证：qywelcome 窗口内可检出深色信息卡片与多行信息文字
+
+构建产物：`qydesktop 0.1.0-36`。
