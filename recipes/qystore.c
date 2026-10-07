@@ -67,6 +67,19 @@ static int json_str(const char *js, const char *key, char *out, size_t outsz) {
     return 0;
 }
 
+/* 读取 JSON 数字字段（如 "size": 98209） */
+static long json_num(const char *js, const char *key) {
+    char pat[64];
+    snprintf(pat, sizeof pat, "\"%s\"", key);
+    const char *k = strstr(js, pat);
+    if (!k) return -1;
+    k = strchr(k + strlen(pat), ':');
+    if (!k) return -1;
+    k++;
+    while (*k == ' ' || *k == '\t') k++;
+    return atol(k);
+}
+
 static char *slurp(const char *path, size_t *len) {
     FILE *f = fopen(path, "rb");
     if (!f) return NULL;
@@ -257,9 +270,11 @@ static void show_row(GtkTreeView *tv, GtkTreeIter *itp) {
     char txt[1024];
     char *js = pkg_meta(file ? file : "");
     if (js) {
-        char desc[512] = "", deps[256] = "";
+        char desc[512] = "", deps[256] = "", sizestr[64] = "";
         json_str(js, "description", desc, sizeof desc);
         if (!desc[0]) json_str(js, "summary", desc, sizeof desc);
+        long sz = json_num(js, "size");
+        if (sz > 0) human_size(sz, sizestr, sizeof sizestr);
         /* depends 数组首段扫名字 */
         const char *dp = strstr(js, "\"depends\"");
         if (dp) {
@@ -279,9 +294,10 @@ static void show_row(GtkTreeView *tv, GtkTreeIter *itp) {
             deps[j] = 0;
         }
         free(js);
-        snprintf(txt, sizeof txt, "%s-%s\n%s\n%s: %s",
+        snprintf(txt, sizeof txt, "%s-%s\n%s\n%s: %s\n%s: %s",
                  g_name, ver ? ver : "", desc,
-                 TR("依赖"), deps);
+                 TR("依赖"), deps,
+                 TR("大小"), sizestr[0] ? sizestr : "-");
     } else {
         snprintf(txt, sizeof txt, "%s-%s", g_name, ver ? ver : "");
     }
