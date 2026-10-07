@@ -403,11 +403,13 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_widget_set_size_request(side, 120, -1);
     gtk_container_set_border_width(GTK_CONTAINER(side), 4);
     const char *home = g_get_home_dir();
-    static char p_home[512], p_docs[512], p_dl[512];
+    static char p_home[512], p_docs[512], p_dl[512], p_pics[512];
     snprintf(p_home, sizeof p_home, "%s", home);
     snprintf(p_docs, sizeof p_docs, TR("%s/文档"), home);
     snprintf(p_dl, sizeof p_dl, TR("%s/下载"), home);
+    snprintf(p_pics, sizeof p_pics, TR("%s/图片"), home);
     side_button(TR("主目录"), p_home, side);
+    side_button(TR("图片"), p_pics, side);
     side_button(TR("文档"), p_docs, side);
     side_button(TR("下载"), p_dl, side);
     side_button(TR("根目录 /"), "/", side);
