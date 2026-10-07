@@ -6,7 +6,7 @@
 
 name = "qydesktop"
 version = "0.1.0"
-release = 62
+release = 63
 summary = "启元桌面 shell（GTK3 单窗口 + 主题）"
 license = "MIT"
 
@@ -129,6 +129,9 @@ def package(ctx):
     ctx.install_file("qytheme.css", "usr/share/themes/qiyuan/gtk-3.0/gtk.css")
     ctx.run("mkdir -p {}/etc/xdg/weston".format(ctx.destdir))
     ctx.install_file("weston.ini", "etc/xdg/weston/weston.ini")
+    # v2.x: 桌面版本文件（qysettings 关于页显示）
+    ctx.run("mkdir -p {}/usr/share".format(ctx.destdir))
+    ctx.run(f"printf '{version}-{release}' > {ctx.destdir}/usr/share/qydesktop-version")
     # v1.9.6: 补入此前只在 sysroot 手工存在的启动脚本与自启单元（源码已入库）
     for _s in ("start-qydesktop.sh", "start-sshd.sh", "start-udevd.sh",
                "start-weston.sh", "qyselftest.sh"):

@@ -148,6 +148,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     sysinfo(&si);
     gchar *mem = g_strdup_printf("%.1f MB", si.totalram / 1024.0 / 1024.0);
     gchar *osrel = read_first_line("/etc/qiyuan-release");
+    gchar *deskver = read_first_line("/usr/share/qydesktop-version");
     gchar *cpumodel = read_cpu_model();
     gchar *cpucores = g_strdup_printf("%ld", sysconf(_SC_NPROCESSORS_ONLN));
     gchar *uptime = read_uptime();
@@ -167,8 +168,9 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(v1), row(TR("运行时间"), uptime), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v1), row(TR("负载均值"), load), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v1), row(TR("桌面环境"), "qydesktop (GTK3)"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(v1), row(TR("桌面版本"), deskver ? deskver : TR("未知")), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v1), row(TR("显示协议"), "Wayland (weston)"), FALSE, FALSE, 0);
-    g_free(mem); g_free(osrel); g_free(cpumodel); g_free(cpucores);
+    g_free(mem); g_free(osrel); g_free(deskver); g_free(cpumodel); g_free(cpucores);
     g_free(uptime); g_free(load);
 
     /* 关于页快捷启动 */
