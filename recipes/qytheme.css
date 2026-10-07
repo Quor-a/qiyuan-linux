@@ -261,6 +261,10 @@ button:hover {
 button:active {
     background-color: #e95420;
 }
+button:checked {
+    background-color: #e95420;
+    color: #ffffff;
+}
 toolbar {
     background-color: #1a2130;
     border: none;

@@ -22,6 +22,9 @@ static GtkWidget *info_label;
 static GtkWidget *btn_act;
 static GtkWidget *count_label;
 static char g_file[512] = "", g_name[128] = "", g_status[32] = "";
+static char g_filter[256] = "";      /* 当前搜索词 */
+static int g_status_filter = 0;       /* 0=全部 1=已安装 2=可安装 */
+static GtkWidget *b_all = NULL, *b_inst = NULL, *b_avail = NULL;
 
 static int is_installed(const char *name) {
     char p[300];
@@ -162,7 +165,7 @@ static void update_count_label(void) {
     gtk_label_set_text(GTK_LABEL(count_label), buf);
 }
 
-static void load_repo(const char *filter) {
+static void load_repo(const char *filter, int status_filter) {
     gtk_list_store_clear(store);
     size_t len = 0;
     char *js = slurp(REPO_INDEX, &len);
@@ -212,7 +215,10 @@ static void load_repo(const char *filter) {
             w = strstr(w, "\"size\"");
             if (w && w < p) { size = strtol(strchr(w, ':') + 1, NULL, 10); w += 6; }
         }
-        if (!name[0] || (filter && filter[0] && !strstr(name, filter))) continue;
+        if (!name[0]) continue;
+        if (filter && filter[0] && !strstr(name, filter)) continue;
+        if (status_filter == 1 && !is_installed(name)) continue;
+        if (status_filter == 2 && is_installed(name)) continue;
         char sz[32], status[64];
         human_size(size, sz, sizeof sz);
         snprintf(status, sizeof status, "%s", is_installed(name) ? TR("✓ 已安装") : TR("可安装"));
@@ -225,9 +231,8 @@ static void load_repo(const char *filter) {
 }
 
 static void refresh_row_status(void) {
-    /* 重载仓库以刷新已装标记 */
-    const gchar *f = NULL;
-    load_repo(f);
+    /* 重载仓库以刷新已装标记（保留当前搜索与状态筛选） */
+    load_repo(g_filter, g_status_filter);
 }
 
 static void show_row(GtkTreeView *tv, GtkTreeIter *itp);
@@ -320,7 +325,28 @@ static void on_act(GtkWidget *w, gpointer ud) {
 
 static void on_search(GtkSearchEntry *e, gpointer ud) {
     (void)ud;
-    load_repo(gtk_entry_get_text(GTK_ENTRY(e)));
+    g_strlcpy(g_filter, gtk_entry_get_text(GTK_ENTRY(e)), sizeof g_filter);
+    load_repo(g_filter, g_status_filter);
+}
+
+/* 状态筛选按钮：0 全部 / 1 已安装 / 2 可安装 */
+static void on_filter_clicked(GtkWidget *w, gpointer ud) {
+    g_status_filter = GPOINTER_TO_INT(ud);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(b_all), g_status_filter == 0);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(b_inst), g_status_filter == 1);
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(b_avail), g_status_filter == 2);
+    load_repo(g_filter, g_status_filter);
+}
+
+/* 状态列颜色: 已安装绿 / 可安装橙 */
+static void status_color_cb(GtkTreeViewColumn *col, GtkCellRenderer *renderer,
+                            GtkTreeModel *model, GtkTreeIter *iter, gpointer data) {
+    (void)col; (void)data;
+    gchar *name = NULL;
+    gtk_tree_model_get(model, iter, C_NAME, &name, -1);
+    g_object_set(renderer, "foreground",
+                 (name && is_installed(name)) ? "#6ee7a0" : "#ffb38a", NULL);
+    g_free(name);
 }
 
 int main(int argc, char **argv) {
@@ -340,16 +366,38 @@ int main(int argc, char **argv) {
     g_signal_connect(search, "search-changed", G_CALLBACK(on_search), NULL);
     gtk_box_pack_start(GTK_BOX(vbox), search, FALSE, FALSE, 0);
 
+    /* 状态筛选行: 全部 / 已安装 / 可安装 */
+    GtkWidget *filter_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+    b_all = gtk_toggle_button_new_with_label(TR("全部"));
+    b_inst = gtk_toggle_button_new_with_label(TR("已安装"));
+    b_avail = gtk_toggle_button_new_with_label(TR("可安装"));
+    gtk_toggle_button_set_active(GTK_TOGGLE_BUTTON(b_all), TRUE);
+    g_signal_connect(b_all, "clicked", G_CALLBACK(on_filter_clicked), GINT_TO_POINTER(0));
+    g_signal_connect(b_inst, "clicked", G_CALLBACK(on_filter_clicked), GINT_TO_POINTER(1));
+    g_signal_connect(b_avail, "clicked", G_CALLBACK(on_filter_clicked), GINT_TO_POINTER(2));
+    gtk_box_pack_start(GTK_BOX(filter_row), b_all, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(filter_row), b_inst, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(filter_row), b_avail, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox), filter_row, FALSE, FALSE, 0);
+
     store = gtk_list_store_new(C_N, G_TYPE_STRING, G_TYPE_STRING,
                                G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
     GtkWidget *sw = gtk_scrolled_window_new(NULL, NULL);
     gtk_widget_set_vexpand(sw, TRUE);
     GtkTreeView *tv = GTK_TREE_VIEW(gtk_tree_view_new_with_model(GTK_TREE_MODEL(store)));
     const char *titles[C_FILE] = { TR("名称"), TR("版本"), TR("大小"), TR("状态") };
-    for (int c = 0; c < C_FILE; c++) {
+    for (int c = 0; c < C_FILE - 1; c++) {
         GtkCellRenderer *r = gtk_cell_renderer_text_new();
         GtkTreeViewColumn *col = gtk_tree_view_column_new_with_attributes(
             titles[c], r, "text", c, NULL);
+        gtk_tree_view_append_column(tv, col);
+    }
+    /* 状态列: 已安装绿 / 可安装橙 */
+    {
+        GtkCellRenderer *r = gtk_cell_renderer_text_new();
+        GtkTreeViewColumn *col = gtk_tree_view_column_new_with_attributes(
+            titles[C_FILE - 1], r, "text", C_STATUS, NULL);
+        gtk_tree_view_column_set_cell_data_func(col, r, status_color_cb, NULL, NULL);
         gtk_tree_view_append_column(tv, col);
     }
     gtk_tree_view_set_headers_visible(tv, TRUE);
@@ -369,7 +417,7 @@ int main(int argc, char **argv) {
     g_signal_connect(btn_act, "clicked", G_CALLBACK(on_act), NULL);
     gtk_box_pack_start(GTK_BOX(vbox), btn_act, FALSE, FALSE, 0);
 
-    load_repo(NULL);
+    load_repo(NULL, 0);
     /* 自动选中首行, 打开即显示详情 */
     {
         GtkTreeIter first;
