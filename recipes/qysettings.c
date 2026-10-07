@@ -1,8 +1,10 @@
 /* qysettings - 启元系统设置 (GTK3) */
 #include "qyl10n.h"
+#include "qytheme.h"
 #include <gtk/gtk.h>
 #include <sys/utsname.h>
 #include <sys/sysinfo.h>
+#include <unistd.h>
 
 /* ---------- 语言页回调 ---------- */
 /* 同步 weston 顶栏时钟格式（顶栏由 weston 补丁渲染，读 weston.ini 的
@@ -60,6 +62,52 @@ static gchar *read_first_line(const char *path) {
     return g_strdup(TR("未知"));
 }
 
+static gchar *read_cpu_model(void) {
+    FILE *f = fopen("/proc/cpuinfo", "r");
+    if (!f) return g_strdup(TR("未知"));
+    gchar *line = NULL;
+    size_t cap = 0;
+    ssize_t n;
+    gchar *model = g_strdup(TR("未知"));
+    while ((n = getline(&line, &cap, f)) != -1) {
+        if (g_str_has_prefix(line, "model name")) {
+            char *v = strchr(line, ':');
+            if (v) {
+                v++;
+                while (*v == ' ' || *v == '\t') v++;
+                char *p = strchr(v, '\n');
+                if (p) *p = 0;
+                g_free(model);
+                model = g_strdup(v);
+            }
+            break;
+        }
+    }
+    g_free(line);
+    fclose(f);
+    return model;
+}
+
+static gchar *read_uptime(void) {
+    FILE *f = fopen("/proc/uptime", "r");
+    if (!f) return g_strdup("--");
+    double up = 0;
+    fscanf(f, "%lf", &up);
+    fclose(f);
+    int d = (int)up;
+    return g_strdup_printf("%d%s %02d:%02d:%02d", d / 86400, TR("天"),
+                            (d % 86400) / 3600, (d % 3600) / 60, d % 60);
+}
+
+static gchar *read_load(void) {
+    FILE *f = fopen("/proc/loadavg", "r");
+    if (!f) return g_strdup("--");
+    double l1 = 0, l5 = 0, l15 = 0;
+    fscanf(f, "%lf %lf %lf", &l1, &l5, &l15);
+    fclose(f);
+    return g_strdup_printf("%.2f  %.2f  %.2f", l1, l5, l15);
+}
+
 static GtkWidget *row(const char *k, const char *v) {
     GtkWidget *h = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
     GtkWidget *kl = gtk_label_new(k);
@@ -74,6 +122,7 @@ static GtkWidget *row(const char *k, const char *v) {
 }
 
 static void activate(GtkApplication *app, gpointer ud) {
+    qy_load_theme();
     GtkWidget *win = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(win), TR("启元系统设置"));
     GdkGeometry geo = { .max_width = 1920, .max_height = 1080 };
@@ -92,14 +141,28 @@ static void activate(GtkApplication *app, gpointer ud) {
     sysinfo(&si);
     gchar *mem = g_strdup_printf("%.1f MB", si.totalram / 1024.0 / 1024.0);
     gchar *osrel = read_first_line("/etc/qiyuan-release");
+    gchar *cpumodel = read_cpu_model();
+    gchar *cpucores = g_strdup_printf("%ld", sysconf(_SC_NPROCESSORS_ONLN));
+    gchar *uptime = read_uptime();
+    gchar *load = read_load();
+    GtkWidget *logo = gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(logo), "<span size='xx-large' weight='bold'>启元 Qiyuan</span>");
+    gtk_widget_set_halign(logo, GTK_ALIGN_CENTER);
+    qy_add_class(logo, "qy-about-logo");
+    gtk_box_pack_start(GTK_BOX(v1), logo, FALSE, FALSE, 8);
     gtk_box_pack_start(GTK_BOX(v1), row(TR("操作系统"), osrel), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v1), row(TR("内核版本"), u.release), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v1), row(TR("处理器架构"), u.machine), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(v1), row(TR("CPU 型号"), cpumodel), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(v1), row(TR("CPU 核心数"), cpucores), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v1), row(TR("主机名"), u.nodename), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v1), row(TR("内存总量"), mem), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(v1), row(TR("运行时间"), uptime), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(v1), row(TR("负载均值"), load), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v1), row(TR("桌面环境"), "qydesktop (GTK3)"), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v1), row(TR("显示协议"), "Wayland (weston)"), FALSE, FALSE, 0);
-    g_free(mem); g_free(osrel);
+    g_free(mem); g_free(osrel); g_free(cpumodel); g_free(cpucores);
+    g_free(uptime); g_free(load);
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), v1, gtk_label_new(TR("关于")));
 
     /* 显示 */

@@ -1,0 +1,4 @@
+[Unit]
+Description=Weston compositor (headless)
+ExecStart=/usr/bin/start-weston.sh
+Restart=on-failure

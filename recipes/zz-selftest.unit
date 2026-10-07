@@ -1,0 +1,5 @@
+[Unit]
+Description=Boot self-test (diagnostics to console)
+After=qydesktop
+ExecStart=/usr/bin/qyselftest.sh
+Restart=no

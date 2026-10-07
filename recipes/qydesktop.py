@@ -1,13 +1,13 @@
-"""qydesktop —— 启元桌面 shell（GTK3 顶栏 + 桌面窗口）
+"""qydesktop —— 启元桌面 shell（GTK3 单窗口桌面：顶栏 + Dock + 壁纸桌面）
 
-源码：recipes/qydesktop.c（随仓库自带，无外部下载）
+源码：recipes/qydesktop.c、recipes/qytheme.css、recipes/weston.ini（随仓库自带）
 许可证：MIT
 """
 
 name = "qydesktop"
 version = "0.1.0"
-release = 7
-summary = "启元桌面 shell（GTK3）"
+release = 48
+summary = "启元桌面 shell（GTK3 单窗口 + 主题）"
 license = "MIT"
 
 source = []
@@ -52,27 +52,43 @@ def build(ctx):
     shutil.copy(Path(__file__).parent / "qystore.desktop", Path(ctx.srcdir) / "qystore.desktop")
     shutil.copy(Path(__file__).parent / "qynet.unit", Path(ctx.srcdir) / "qynet.unit")
     shutil.copy(Path(__file__).parent / "start-qynet.sh", Path(ctx.srcdir) / "start-qynet.sh")
+    # v1.9.6: 补入此前只在 sysroot 手工存在的脚本/单元源码，使构建可复现
+    shutil.copy(Path(__file__).parent / "start-qydesktop.sh", Path(ctx.srcdir) / "start-qydesktop.sh")
+    shutil.copy(Path(__file__).parent / "start-sshd.sh", Path(ctx.srcdir) / "start-sshd.sh")
+    shutil.copy(Path(__file__).parent / "start-udevd.sh", Path(ctx.srcdir) / "start-udevd.sh")
+    shutil.copy(Path(__file__).parent / "start-weston.sh", Path(ctx.srcdir) / "start-weston.sh")
+    shutil.copy(Path(__file__).parent / "qyselftest.sh", Path(ctx.srcdir) / "qyselftest.sh")
+    shutil.copy(Path(__file__).parent / "sshd.unit", Path(ctx.srcdir) / "sshd.unit")
+    shutil.copy(Path(__file__).parent / "udevd.unit", Path(ctx.srcdir) / "udevd.unit")
+    shutil.copy(Path(__file__).parent / "weston.unit", Path(ctx.srcdir) / "weston.unit")
+    shutil.copy(Path(__file__).parent / "zz-selftest.unit", Path(ctx.srcdir) / "zz-selftest.unit")
+    shutil.copy(Path(__file__).parent / "qydesktop.unit", Path(ctx.srcdir) / "qydesktop.unit")
     for _f in ("qyl10n.c", "qyl10n.h", "qysetup.c", "qysudo.c", "qyusers.c", "qywelcome.c",
                "qyuseradd.sh", "qyinstall.sh", "qyinitpw.sh", "qyboot.unit", "qysudoers"):
         shutil.copy(Path(__file__).parent / _f, Path(ctx.srcdir) / _f)
+    # v2.0: 桌面主题 CSS + weston 配置（panel 禁用，顶栏由 qydesktop 提供）
+    shutil.copy(Path(__file__).parent / "qytheme.css", Path(ctx.srcdir) / "qytheme.css")
+    shutil.copy(Path(__file__).parent / "qytheme.c", Path(ctx.srcdir) / "qytheme.c")
+    shutil.copy(Path(__file__).parent / "qytheme.h", Path(ctx.srcdir) / "qytheme.h")
+    shutil.copy(Path(__file__).parent / "weston.ini", Path(ctx.srcdir) / "weston.ini")
     ctx.run(
         "export PATH={0}/usr/bin:$PATH; export PKG_CONFIG_PATH={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; "
         "export PKG_CONFIG_SYSROOT_DIR={0}; export PKG_CONFIG_LIBDIR={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; "
         "export LD_LIBRARY_PATH={0}/usr/lib/x86_64-linux-gnu:{0}/usr/lib:{0}/lib; "
-        "gcc qydesktop.c qyl10n.c -o qydesktop $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
-        "gcc qyfiles.c qyl10n.c -o qyfiles $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
-        "gcc qysettings.c qyl10n.c -o qysettings $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
-        "gcc qyusers.c qyl10n.c -o qyusers $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
-        "gcc qywelcome.c qyl10n.c -o qywelcome $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
-        "gcc qysetup.c qyl10n.c -o qysetup $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qydesktop.c qytheme.c qyl10n.c -o qydesktop $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qyfiles.c qytheme.c qyl10n.c -o qyfiles $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qysettings.c qytheme.c qyl10n.c -o qysettings $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qyusers.c qytheme.c qyl10n.c -o qyusers $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qywelcome.c qytheme.c qyl10n.c -o qywelcome $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qysetup.c qytheme.c qyl10n.c -o qysetup $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
         "gcc qysudo.c -o qysudo -O2 -lcrypt && "
-        "gcc qyappmenu.c qyl10n.c -o qyappmenu $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
-        "gcc qyedit.c qyl10n.c -o qyedit $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
-        "gcc qymon.c qyl10n.c -o qymon $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
-        "gcc qyview.c qyl10n.c -o qyview $(pkg-config --cflags --libs gtk+-3.0 gdk-pixbuf-2.0) -O2 -ljpeg -lmount && "
+        "gcc qyappmenu.c qytheme.c qyl10n.c -o qyappmenu $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qyedit.c qytheme.c qyl10n.c -o qyedit $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qymon.c qytheme.c qyl10n.c -o qymon $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qyview.c qytheme.c qyl10n.c -o qyview $(pkg-config --cflags --libs gtk+-3.0 gdk-pixbuf-2.0) -O2 -ljpeg -lmount && "
         "gcc qyctl.c -o qyctl -O2 -Wall && "
-        "gcc qyarc.c qyl10n.c -o qyarc $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
-        "gcc qystore.c qyl10n.c -o qystore $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qyarc.c qytheme.c qyl10n.c -o qyarc $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qystore.c qytheme.c qyl10n.c -o qystore $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
         "gcc qypkg-inst.c -o qypkg-inst -O2".format(ctx.sysroot)
     )
 
@@ -108,3 +124,15 @@ def package(ctx):
     # 软件中心 desktop entry (v1.9.5):
     ctx.run("mkdir -p {}/usr/share/applications".format(ctx.destdir))
     ctx.install_file("qystore.desktop", "usr/share/applications/qystore.desktop")
+    # v2.0: 桌面主题 CSS（qydesktop 启动时加载）+ weston 配置
+    ctx.run("mkdir -p {}/usr/share/themes/qiyuan/gtk-3.0".format(ctx.destdir))
+    ctx.install_file("qytheme.css", "usr/share/themes/qiyuan/gtk-3.0/gtk.css")
+    ctx.run("mkdir -p {}/etc/xdg/weston".format(ctx.destdir))
+    ctx.install_file("weston.ini", "etc/xdg/weston/weston.ini")
+    # v1.9.6: 补入此前只在 sysroot 手工存在的启动脚本与自启单元（源码已入库）
+    for _s in ("start-qydesktop.sh", "start-sshd.sh", "start-udevd.sh",
+               "start-weston.sh", "qyselftest.sh"):
+        ctx.run("cp {0} {1}/usr/bin/{0} && chmod 0755 {1}/usr/bin/{0}".format(_s, ctx.destdir))
+    for _u in ("qydesktop.unit", "sshd.unit", "udevd.unit", "weston.unit",
+               "zz-selftest.unit"):
+        ctx.install_file(_u, "etc/qyinit.d/" + _u)

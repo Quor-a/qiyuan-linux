@@ -3,6 +3,7 @@
  * 提权: 经 qysudo 执行写操作 (wheel 用户密码校验)
  */
 #include "qyl10n.h"
+#include "qytheme.h"
 #include <gtk/gtk.h>
 #include <stdio.h>
 #include <string.h>
@@ -221,6 +222,7 @@ static void on_refresh_clicked(GtkButton *b, gpointer ud) {
 }
 
 static void activate(GtkApplication *app, gpointer ud) {
+    qy_load_theme();
     win = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(win), TR("启元用户管理"));
     gtk_window_set_default_size(GTK_WINDOW(win), 520, 420);

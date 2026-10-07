@@ -3,9 +3,12 @@
  * 触发: qydesktop.unit 启动前由 qyinit 调 (或 qydesktop 检测未标记则拉起)
  */
 #include "qyl10n.h"
+#include "qytheme.h"
 #include <gtk/gtk.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/utsname.h>
+#include <sys/statvfs.h>
 
 static GtkWidget *win = NULL;
 static GtkWidget *hn_e, *un_e, *pw_e, *pw2_e, *tz_e;
@@ -14,13 +17,79 @@ static GtkWidget *status_lb;
 static void set_status(const char *m) { gtk_label_set_text(GTK_LABEL(status_lb), m); }
 static void on_finish_clicked(GtkButton *b, gpointer ud);
 
+static void read_proc_line(const char *path, const char *key, char *out, size_t outsz) {
+    out[0] = 0;
+    FILE *f = fopen(path, "r");
+    if (!f) return;
+    char buf[512];
+    while (fgets(buf, sizeof buf, f)) {
+        if (key && strncmp(buf, key, strlen(key)) == 0) {
+            char *colon = strchr(buf, ':');
+            char *nl = strchr(buf, '\n');
+            if (nl) *nl = 0;
+            g_strlcpy(out, colon ? colon + 2 : buf, outsz);
+            break;
+        }
+    }
+    fclose(f);
+}
+
+/* 本机信息: 内核 / CPU 型号 / 内存 / 磁盘 */
+static void sysinfo_rows(GtkWidget *v) {
+    char kern[128] = "-", cpu[256] = "-", mem[128] = "-", disk[128] = "-";
+    struct utsname uts;
+    if (uname(&uts) == 0) g_strlcpy(kern, uts.release, sizeof kern);
+    read_proc_line("/proc/cpuinfo", "model name", cpu, sizeof cpu);
+    read_proc_line("/proc/meminfo", "MemTotal", mem, sizeof mem);
+    if (mem[0]) {
+        char *p = strchr(mem, 'k');
+        if (p) *p = 0;
+        char tmp[64];
+        g_snprintf(tmp, sizeof tmp, "%s", mem);
+        double gb = atof(tmp) / (1024.0 * 1024.0);
+        g_snprintf(mem, sizeof mem, "%.2f GB", gb);
+    }
+    struct statvfs sv;
+    if (statvfs("/", &sv) == 0 && sv.f_blocks > 0) {
+        double usage = 1.0 - (double)sv.f_bavail / (double)sv.f_blocks;
+        double total_gb = (double)sv.f_blocks * (double)sv.f_frsize / (1024.0 * 1024.0 * 1024.0);
+        g_snprintf(disk, sizeof disk, "%d%% (%.0f GB)", (int)(usage * 100 + 0.5), total_gb);
+    }
+
+    const char *rows[][2] = {
+        { TR("系统"), "启元 Linux" },
+        { TR("内核"), kern },
+        { TR("CPU 型号"), cpu },
+        { TR("内存"), mem },
+        { TR("磁盘"), disk },
+    };
+    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
+    qy_add_class(box, "qy-welcome-info");
+    for (int i = 0; i < 5; i++) {
+        GtkWidget *row = gtk_label_new(NULL);
+        gtk_label_set_markup(GTK_LABEL(row), g_strdup_printf(
+            "<b>%s:</b>  %s", rows[i][0], rows[i][1]));
+        gtk_widget_set_halign(row, GTK_ALIGN_START);
+        qy_add_class(row, "qy-welcome-info-row");
+        gtk_box_pack_start(GTK_BOX(box), row, FALSE, FALSE, 0);
+    }
+    gtk_box_pack_start(GTK_BOX(v), box, FALSE, FALSE, 4);
+}
+
 static void activate(GtkApplication *app, gpointer ud) {
+    qy_load_theme();
     win = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(win), TR("欢迎使用启元 Linux"));
     gtk_window_set_default_size(GTK_WINDOW(win), 480, 420);
     gtk_container_set_border_width(GTK_CONTAINER(win), 16);
 
     GtkWidget *v = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+    GtkWidget *logo = gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(logo), "<span size='xx-large' weight='bold'>启元 Qiyuan</span>");
+    gtk_widget_set_halign(logo, GTK_ALIGN_CENTER);
+    qy_add_class(logo, "qy-about-logo");
+    gtk_box_pack_start(GTK_BOX(v), logo, FALSE, FALSE, 4);
+
     GtkWidget *title = gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(title),
         TR2("<span size='x-large' weight='bold'>欢迎使用启元 Linux</span>\n只需几步，完成初始配置","<span size='x-large' weight='bold'>Welcome to Qiyuan Linux</span>\nA few steps to set up"));
@@ -59,6 +128,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(v), title, FALSE, FALSE, 4);
     gtk_box_pack_start(GTK_BOX(v), grid, TRUE, TRUE, 4);
     gtk_box_pack_start(GTK_BOX(v), hint, FALSE, FALSE, 0);
+    sysinfo_rows(v);
     gtk_box_pack_start(GTK_BOX(v), fin, FALSE, FALSE, 4);
     gtk_box_pack_start(GTK_BOX(v), status_lb, FALSE, FALSE, 0);
     gtk_container_add(GTK_CONTAINER(win), v);
