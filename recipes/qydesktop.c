@@ -270,6 +270,50 @@ static GtkWidget *desktop_icon(const char *glyph, const char *css,
 
 /* ---------- 壁纸（供菜单刷新） ---------- */
 static GdkPixbuf *wallpaper = NULL;
+static guint wall_seed = 0;
+
+/* 程序化生成品牌壁纸: 深蓝→深紫渐变 + 橙/紫柔光圆斑（种子不同图案不同） */
+static GdkPixbuf *gen_wallpaper(guint seed) {
+    int w = 1600, h = 900;
+    cairo_surface_t *surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, w, h);
+    cairo_t *cr = cairo_create(surf);
+    /* 基底垂直渐变 */
+    cairo_pattern_t *pat = cairo_pattern_create_linear(0, 0, 0, h);
+    cairo_pattern_add_color_stop_rgb(pat, 0, 0.045 + (seed % 2) * 0.015, 0.058, 0.13);
+    cairo_pattern_add_color_stop_rgb(pat, 1, 0.12 + (seed % 3) * 0.02, 0.055 + (seed % 2) * 0.02, 0.155);
+    cairo_set_source(cr, pat);
+    cairo_paint(cr);
+    cairo_pattern_destroy(pat);
+    /* 橙色柔光圆斑 */
+    srand(seed);
+    for (int i = 0; i < 8; i++) {
+        double cx = rand() % w, cy = rand() % h;
+        double rad = 60 + rand() % 240;
+        cairo_pattern_t *rg = cairo_pattern_create_radial(cx, cy, 10, cx, cy, rad);
+        cairo_pattern_add_color_stop_rgba(rg, 0, 0.91, 0.33, 0.13, 0.26);
+        cairo_pattern_add_color_stop_rgba(rg, 1, 0.91, 0.33, 0.13, 0);
+        cairo_set_source(cr, rg);
+        cairo_arc(cr, cx, cy, rad, 0, 2 * G_PI);
+        cairo_fill(cr);
+        cairo_pattern_destroy(rg);
+    }
+    /* 紫色柔光圆斑 */
+    for (int i = 0; i < 6; i++) {
+        double cx = rand() % w, cy = rand() % h;
+        double rad = 50 + rand() % 200;
+        cairo_pattern_t *rg = cairo_pattern_create_radial(cx, cy, 10, cx, cy, rad);
+        cairo_pattern_add_color_stop_rgba(rg, 0, 0.47, 0.13, 0.44, 0.24);
+        cairo_pattern_add_color_stop_rgba(rg, 1, 0.47, 0.13, 0.44, 0);
+        cairo_set_source(cr, rg);
+        cairo_arc(cr, cx, cy, rad, 0, 2 * G_PI);
+        cairo_fill(cr);
+        cairo_pattern_destroy(rg);
+    }
+    cairo_destroy(cr);
+    GdkPixbuf *pb = gdk_pixbuf_get_from_surface(surf, 0, 0, w, h);
+    cairo_surface_destroy(surf);
+    return pb;
+}
 
 /* ---------- 桌面右键菜单 ---------- */
 static void menu_new_folder(GtkMenuItem *mi, gpointer ud) {
@@ -288,7 +332,8 @@ static void menu_new_folder(GtkMenuItem *mi, gpointer ud) {
 static void menu_open_terminal(GtkMenuItem *mi, gpointer ud) { launch_cmd("weston-terminal"); }
 static void menu_refresh_wallpaper(GtkMenuItem *mi, gpointer ud) {
     if (wallpaper) g_object_unref(wallpaper);
-    wallpaper = gdk_pixbuf_new_from_file(QY_WALL, NULL);
+    wall_seed++;                       /* 每次刷新换一张新图案 */
+    wallpaper = gen_wallpaper(wall_seed);
     if (desktop_fixed) gtk_widget_queue_draw(desktop_fixed);
 }
 
@@ -442,7 +487,13 @@ static void build_dock(void) {
 
 /* ---------- 桌面窗口 ---------- */
 static void build_desktop(void) {
-    wallpaper = gdk_pixbuf_new_from_file(QY_WALL, NULL);
+    const char *seed_env = getenv("QY_WALL_SEED");   /* 演示/测试: 指定生成种子 */
+    if (seed_env && seed_env[0]) {
+        wallpaper = gen_wallpaper((guint)strtoul(seed_env, NULL, 10));
+    } else {
+        wallpaper = gdk_pixbuf_new_from_file(QY_WALL, NULL);
+        if (!wallpaper) wallpaper = gen_wallpaper(0);   /* 文件缺失回退到程序化生成 */
+    }
     GtkWidget *win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(win), "qydesktop");
     gtk_window_set_decorated(GTK_WINDOW(win), FALSE);
