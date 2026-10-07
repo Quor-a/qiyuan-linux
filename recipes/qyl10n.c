@@ -78,7 +78,7 @@ static const pair tbl[] = {
     { "进程", "Processes" },
     { "磁盘", "Disk" },
     /* v1.9.4 全应用接入 (自动生成) */
-    { "%m月%d日 %H:%M", "%m/%d %H:%M" },
+    { "%m月%d日 %H:%M:%S", "%m/%d %H:%M:%S" },
     { "%s - 启元文本编辑器", "%s - Qiyuan Editor" },
     { "%s — %d 项", "%s — %d items" },
     { "%s — 单文件压缩", "%s — single-file" },

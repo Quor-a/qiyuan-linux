@@ -119,7 +119,7 @@ static gboolean tick(gpointer data) {
     time_t t = time(NULL);
     struct tm tm_;
     localtime_r(&t, &tm_);
-    strftime(buf, sizeof buf, TR("%m月%d日 %H:%M"), &tm_);
+    strftime(buf, sizeof buf, TR("%m月%d日 %H:%M:%S"), &tm_);
     gtk_label_set_text(GTK_LABEL(clock_label), buf);
     return G_SOURCE_CONTINUE;
 }
