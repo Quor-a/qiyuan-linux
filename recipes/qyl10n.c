@@ -75,6 +75,9 @@ static const pair tbl[] = {
     /* 监视 */
     { "CPU", "CPU" },
     { "内存", "Memory" },
+    { "内存 %d%%", "MEM %d%%" },
+    { "运行 %d天 %02d:%02d · 负载 %.2f %.2f %.2f · 进程 %ld/%ld",
+      "Up %dd %02d:%02d · Load %.2f %.2f %.2f · Proc %ld/%ld" },
     { "进程", "Processes" },
     { "磁盘", "Disk" },
     /* v1.9.4 全应用接入 (自动生成) */
