@@ -258,6 +258,14 @@ static const pair tbl[] = {
     { "取消", "Cancel" },
     { "重启", "Reboot" },
     { "关机", "Power Off" },
+    { "日", "Sun" },
+    { "一", "Mon" },
+    { "二", "Tue" },
+    { "三", "Wed" },
+    { "四", "Thu" },
+    { "五", "Fri" },
+    { "六", "Sat" },
+    { "周%s %s", "%s %s" },
 };
 
 #define NTBL ((int)(sizeof tbl / sizeof tbl[0]))

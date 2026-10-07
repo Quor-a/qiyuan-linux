@@ -137,7 +137,10 @@ static gboolean tick(gpointer data) {
     struct tm tm_;
     localtime_r(&t, &tm_);
     strftime(buf, sizeof buf, TR("%m月%d日 %H:%M:%S"), &tm_);
-    gtk_label_set_text(GTK_LABEL(clock_label), buf);
+    const char *wd[] = { TR("日"), TR("一"), TR("二"), TR("三"), TR("四"), TR("五"), TR("六") };
+    char full[96];
+    g_snprintf(full, sizeof full, TR("周%s %s"), wd[tm_.tm_wday], buf);
+    gtk_label_set_text(GTK_LABEL(clock_label), full);
     return G_SOURCE_CONTINUE;
 }
 
