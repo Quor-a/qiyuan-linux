@@ -1,5 +1,6 @@
 /* qyedit - 启元文本编辑器 (GTK3, 打开/编辑/保存, 中文界面) */
 #include "qyl10n.h"
+#include "qytheme.h"
 #include <gtk/gtk.h>
 #include <string.h>
 
@@ -57,6 +58,7 @@ static void do_save_as(GtkWidget *w, gpointer ud) {
 
 int main(int argc, char **argv) {
     gtk_init(&argc, &argv);
+    qy_load_theme();
 
     win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_default_size(GTK_WINDOW(win), 720, 520);

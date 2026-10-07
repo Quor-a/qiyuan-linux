@@ -4,6 +4,7 @@
  * 架构: 单文件, 与 qyfiles 同款编译方式 (gcc + pkg-config gtk+-3.0)
  */
 #include "qyl10n.h"
+#include "qytheme.h"
 #include <gtk/gtk.h>
 #include <stdio.h>
 #include <string.h>
@@ -110,6 +111,7 @@ static gboolean on_draw(GtkWidget *da, cairo_t *cr, gpointer ud) {
 }
 
 static void activate(GtkApplication *app, gpointer ud) {
+    qy_load_theme();
     GtkWidget *win = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(win), TR("启元系统监视器"));
     gtk_window_set_default_size(GTK_WINDOW(win), 520, 340);

@@ -7,6 +7,7 @@
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <string.h>
 #include <glib/gstdio.h>
+#include "qytheme.h"
 
 static GdkPixbuf *pix = NULL;          /* 原始图 */
 static gchar *cur_dir = NULL;          /* 当前图所在目录 */
@@ -126,6 +127,7 @@ static gboolean on_button(GtkWidget *w, GdkEventButton *ev, gpointer ud) {
 }
 
 static void activate(GtkApplication *app, gpointer ud) {
+    qy_load_theme();
     GtkWidget *win = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(win), "启元图片查看器");
     gtk_window_set_default_size(GTK_WINDOW(win), 700, 500);

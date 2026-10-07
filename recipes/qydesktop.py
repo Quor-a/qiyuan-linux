@@ -6,7 +6,7 @@
 
 name = "qydesktop"
 version = "0.1.0"
-release = 12
+release = 13
 summary = "启元桌面 shell（GTK3 单窗口 + 主题）"
 license = "MIT"
 
@@ -68,25 +68,27 @@ def build(ctx):
         shutil.copy(Path(__file__).parent / _f, Path(ctx.srcdir) / _f)
     # v2.0: 桌面主题 CSS + weston 配置（panel 禁用，顶栏由 qydesktop 提供）
     shutil.copy(Path(__file__).parent / "qytheme.css", Path(ctx.srcdir) / "qytheme.css")
+    shutil.copy(Path(__file__).parent / "qytheme.c", Path(ctx.srcdir) / "qytheme.c")
+    shutil.copy(Path(__file__).parent / "qytheme.h", Path(ctx.srcdir) / "qytheme.h")
     shutil.copy(Path(__file__).parent / "weston.ini", Path(ctx.srcdir) / "weston.ini")
     ctx.run(
         "export PATH={0}/usr/bin:$PATH; export PKG_CONFIG_PATH={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; "
         "export PKG_CONFIG_SYSROOT_DIR={0}; export PKG_CONFIG_LIBDIR={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; "
         "export LD_LIBRARY_PATH={0}/usr/lib/x86_64-linux-gnu:{0}/usr/lib:{0}/lib; "
-        "gcc qydesktop.c qyl10n.c -o qydesktop $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
-        "gcc qyfiles.c qyl10n.c -o qyfiles $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
-        "gcc qysettings.c qyl10n.c -o qysettings $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
-        "gcc qyusers.c qyl10n.c -o qyusers $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
-        "gcc qywelcome.c qyl10n.c -o qywelcome $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
-        "gcc qysetup.c qyl10n.c -o qysetup $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qydesktop.c qytheme.c qyl10n.c -o qydesktop $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qyfiles.c qytheme.c qyl10n.c -o qyfiles $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qysettings.c qytheme.c qyl10n.c -o qysettings $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qyusers.c qytheme.c qyl10n.c -o qyusers $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qywelcome.c qytheme.c qyl10n.c -o qywelcome $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qysetup.c qytheme.c qyl10n.c -o qysetup $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
         "gcc qysudo.c -o qysudo -O2 -lcrypt && "
-        "gcc qyappmenu.c qyl10n.c -o qyappmenu $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
-        "gcc qyedit.c qyl10n.c -o qyedit $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
-        "gcc qymon.c qyl10n.c -o qymon $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
-        "gcc qyview.c qyl10n.c -o qyview $(pkg-config --cflags --libs gtk+-3.0 gdk-pixbuf-2.0) -O2 -ljpeg -lmount && "
+        "gcc qyappmenu.c qytheme.c qyl10n.c -o qyappmenu $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qyedit.c qytheme.c qyl10n.c -o qyedit $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qymon.c qytheme.c qyl10n.c -o qymon $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qyview.c qytheme.c qyl10n.c -o qyview $(pkg-config --cflags --libs gtk+-3.0 gdk-pixbuf-2.0) -O2 -ljpeg -lmount && "
         "gcc qyctl.c -o qyctl -O2 -Wall && "
-        "gcc qyarc.c qyl10n.c -o qyarc $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
-        "gcc qystore.c qyl10n.c -o qystore $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qyarc.c qytheme.c qyl10n.c -o qyarc $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qystore.c qytheme.c qyl10n.c -o qystore $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
         "gcc qypkg-inst.c -o qypkg-inst -O2".format(ctx.sysroot)
     )
 

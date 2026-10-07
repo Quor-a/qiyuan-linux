@@ -642,3 +642,18 @@ pango 通过；闭包内 checksum_pending 已清零。
 
 构建产物：`qydesktop 0.1.0-12`。验证：回收站模式截图中检测到危险按钮红色背景 4680px +
 深色列表区 ~40 万像素。
+
+### 全应用统一主题接入（v0.1.0-13，2026-10 实测）
+
+新增公共主题助手 `recipes/qytheme.c/h`：任何 GTK3 应用调用 `qy_load_theme()` 即加载
+`qytheme.css` 深色主题，`qy_add_class()` 便捷添加 CSS 类。本轮一次性接入全部 GUI 应用：
+
+**文件管理器 qyfiles / 系统设置 qysettings / 软件中心 qystore / 系统监视 qymon /
+文本编辑 qyedit / 图片查看 qyview / 压缩管理 qyarc / 用户管理 qyusers /
+系统安装 qysetup / 首启向导 qywelcome**（qydesktop/qyappmenu 已在 v2.0 接入）。
+
+主题 CSS 同步补充**全局控件样式**：按钮（深色底+悬停高亮+按下品牌橙）、
+工具栏、Notebook 标签页（选中橙底）——所有接入应用一屏深色统一观感。
+
+构建产物：`qydesktop 0.1.0-13`。验证：12 个 GTK 应用全部用 `qytheme.c` 编译通过（本地
+sysroot 工具链，PASS）。

@@ -3,6 +3,7 @@
  * 触发: qydesktop.unit 启动前由 qyinit 调 (或 qydesktop 检测未标记则拉起)
  */
 #include "qyl10n.h"
+#include "qytheme.h"
 #include <gtk/gtk.h>
 #include <stdio.h>
 #include <string.h>
@@ -15,6 +16,7 @@ static void set_status(const char *m) { gtk_label_set_text(GTK_LABEL(status_lb),
 static void on_finish_clicked(GtkButton *b, gpointer ud);
 
 static void activate(GtkApplication *app, gpointer ud) {
+    qy_load_theme();
     win = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(win), TR("欢迎使用启元 Linux"));
     gtk_window_set_default_size(GTK_WINDOW(win), 480, 420);

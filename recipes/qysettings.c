@@ -1,5 +1,6 @@
 /* qysettings - 启元系统设置 (GTK3) */
 #include "qyl10n.h"
+#include "qytheme.h"
 #include <gtk/gtk.h>
 #include <sys/utsname.h>
 #include <sys/sysinfo.h>
@@ -74,6 +75,7 @@ static GtkWidget *row(const char *k, const char *v) {
 }
 
 static void activate(GtkApplication *app, gpointer ud) {
+    qy_load_theme();
     GtkWidget *win = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(win), TR("启元系统设置"));
     GdkGeometry geo = { .max_width = 1920, .max_height = 1080 };

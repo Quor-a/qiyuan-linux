@@ -3,6 +3,7 @@
  * 界面: 磁盘列表 → 确认 → 后台安装（VTE 风格日志区，禁止窗口关闭直到完成）
  */
 #include "qyl10n.h"
+#include "qytheme.h"
 #include <gtk/gtk.h>
 #include <string.h>
 #include <glib/gstdio.h>
@@ -178,6 +179,7 @@ static void do_install(GtkWidget *w, gpointer ud) {
 }
 
 static void activate(GtkApplication *app, gpointer ud) {
+    qy_load_theme();
     win = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(win), TR("启元系统安装器"));
     gtk_window_set_default_size(GTK_WINDOW(win), 640, 480);

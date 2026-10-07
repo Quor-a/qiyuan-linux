@@ -9,6 +9,7 @@
 #include <unistd.h>
 
 #include "qyl10n.h"
+#include "qytheme.h"
 
 #define REPO_INDEX "/usr/share/qyrepo/index.json"
 #define REPO_DIR   "/usr/share/qyrepo/pkgs"
@@ -324,6 +325,7 @@ static void on_search(GtkSearchEntry *e, gpointer ud) {
 
 int main(int argc, char **argv) {
     gtk_init(&argc, &argv);
+    qy_load_theme();
 
     GtkWidget *win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(win), TR("启元软件中心"));
