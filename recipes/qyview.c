@@ -105,7 +105,13 @@ static gboolean on_draw(GtkWidget *da, cairo_t *cr, gpointer ud) {
     if (!pix) return FALSE;
     int iw = gdk_pixbuf_get_width(pix), ih = gdk_pixbuf_get_height(pix);
     double fit = 1.0;
-    if (iw && ih) fit = 1.0;
+    /* 打开大图时自动缩小适应窗口（小图保持原始尺寸） */
+    if (iw && ih) {
+        double fx = (double)a.width / (double)iw;
+        double fy = (double)a.height / (double)ih;
+        fit = fx < fy ? fx : fy;
+        if (fit > 1.0) fit = 1.0;
+    }
     double z = zoom * fit;
     double dw = iw * z, dh = ih * z;
     /* 居中 + 平移 */
