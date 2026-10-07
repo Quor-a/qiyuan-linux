@@ -520,10 +520,15 @@ static void build_bar(void) {
     GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_container_add(GTK_CONTAINER(bar), hbox);
 
-    /* 左侧应用菜单按钮 */
-    GtkWidget *app_btn = gtk_button_new_with_label("⊞");
+    /* 左侧应用菜单按钮（品牌 Logo） */
+    GtkWidget *app_btn = gtk_button_new();
     gtk_button_set_relief(GTK_BUTTON(app_btn), GTK_RELIEF_NONE);
-    add_class(app_btn, "qy-bar-btn");
+    add_class(app_btn, "qy-logo-btn");
+    GtkWidget *app_hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
+    gtk_container_add(GTK_CONTAINER(app_btn), app_hb);
+    GtkWidget *app_txt = gtk_label_new("启元");
+    add_class(app_txt, "qy-logo-text");
+    gtk_box_pack_start(GTK_BOX(app_hb), app_txt, FALSE, FALSE, 0);
     g_signal_connect(app_btn, "clicked", G_CALLBACK(on_appmenu_clicked), NULL);
     gtk_widget_set_tooltip_text(app_btn, TR("显示应用"));
     gtk_box_pack_start(GTK_BOX(hbox), app_btn, FALSE, FALSE, 6);

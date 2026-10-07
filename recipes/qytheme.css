@@ -405,3 +405,18 @@ notebook tab:checked {
     padding: 10px 26px;
     border-radius: 12px;
 }
+
+/* ---------- 顶栏「启元」品牌 Logo 按钮 ---------- */
+.qy-logo-btn {
+    background-color: #E95420;
+    border-radius: 6px;
+    padding: 2px 12px;
+}
+.qy-logo-btn:hover {
+    background-color: #ff6b3d;
+}
+.qy-logo-text {
+    color: #ffffff;
+    font-weight: bold;
+    font-size: 13px;
+}
