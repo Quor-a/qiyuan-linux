@@ -57,6 +57,8 @@ static AppEntry apps[] = {
     { "终端",   ">_", "c-term",     "weston-terminal",  "weston-termi", 0, NULL },
     { "设置",   "⚙", "c-settings", "qysettings",       "qysettings",   0, NULL },
     { "软件中心", "▦", "c-store",    "qystore",          "qystore",      0, NULL },
+    { "监视",   "▦", "c-mon",     "qymon",             "qymon",        0, NULL },
+    { "回收站", "🗑", "c-trash",   "qyfiles --trash",   "qyfiles",      0, NULL },
 };
 #define NAPPS ((int)(sizeof apps / sizeof apps[0]))
 
@@ -330,6 +332,10 @@ static void menu_new_folder(GtkMenuItem *mi, gpointer ud) {
 }
 
 static void menu_open_terminal(GtkMenuItem *mi, gpointer ud) { launch_cmd("weston-terminal"); }
+static void menu_open_files(GtkMenuItem *mi, gpointer ud) { launch_cmd("qyfiles"); }
+static void menu_open_settings(GtkMenuItem *mi, gpointer ud) { launch_cmd("qysettings"); }
+static void menu_open_monitor(GtkMenuItem *mi, gpointer ud) { launch_cmd("qymon"); }
+static void menu_open_trash(GtkMenuItem *mi, gpointer ud) { launch_cmd("qyfiles --trash"); }
 static void menu_refresh_wallpaper(GtkMenuItem *mi, gpointer ud) {
     if (wallpaper) g_object_unref(wallpaper);
     wall_seed++;                       /* 每次刷新换一张新图案 */
@@ -359,6 +365,23 @@ static gboolean desk_button_press(GtkWidget *w, GdkEventButton *ev, gpointer ud)
         mi = gtk_menu_item_new_with_label(TR("打开终端"));
         add_class(mi, "qy-menu-item");
         g_signal_connect(mi, "activate", G_CALLBACK(menu_open_terminal), NULL);
+        gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
+        gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
+        mi = gtk_menu_item_new_with_label(TR("文件管理器"));
+        add_class(mi, "qy-menu-item");
+        g_signal_connect(mi, "activate", G_CALLBACK(menu_open_files), NULL);
+        gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
+        mi = gtk_menu_item_new_with_label(TR("系统设置"));
+        add_class(mi, "qy-menu-item");
+        g_signal_connect(mi, "activate", G_CALLBACK(menu_open_settings), NULL);
+        gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
+        mi = gtk_menu_item_new_with_label(TR("系统监视"));
+        add_class(mi, "qy-menu-item");
+        g_signal_connect(mi, "activate", G_CALLBACK(menu_open_monitor), NULL);
+        gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
+        mi = gtk_menu_item_new_with_label(TR("回收站"));
+        add_class(mi, "qy-menu-item");
+        g_signal_connect(mi, "activate", G_CALLBACK(menu_open_trash), NULL);
         gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
         gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
         mi = gtk_menu_item_new_with_label(TR("刷新壁纸"));

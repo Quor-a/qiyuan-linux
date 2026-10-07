@@ -91,6 +91,8 @@ entry {
 .c-settings:hover { background-color: #8e2a84; }
 .c-store    { background-color: #0A7EA4; }
 .c-store:hover { background-color: #0c92be; }
+.c-mon      { background-color: #F59E0B; }
+.c-mon:hover  { background-color: #ffb32e; }
 .c-home     { background-color: #E9A820; }
 .c-home:hover  { background-color: #f5b942; }
 .c-trash    { background-color: #6B7280; }
