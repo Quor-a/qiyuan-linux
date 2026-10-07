@@ -39,4 +39,5 @@ def package(ctx):
     ctx.run("cp busybox {}/usr/bin/busybox".format(ctx.destdir))
     ctx.run("chmod 755 {}/usr/bin/busybox".format(ctx.destdir))
     ctx.run("ln -sf busybox {}/usr/bin/udhcpc".format(ctx.destdir))
-    ctx.run("ln -sf busybox {}/bin/sh".format(ctx.destdir))
+    ctx.run("ln -sf busybox {}/usr/bin/hostname".format(ctx.destdir))
+    ctx.run("ln -sf /usr/bin/busybox {}/bin/sh".format(ctx.destdir))
