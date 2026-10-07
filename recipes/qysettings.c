@@ -145,6 +145,11 @@ static void activate(GtkApplication *app, gpointer ud) {
     gchar *cpucores = g_strdup_printf("%ld", sysconf(_SC_NPROCESSORS_ONLN));
     gchar *uptime = read_uptime();
     gchar *load = read_load();
+    GtkWidget *logo = gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(logo), "<span size='xx-large' weight='bold'>启元 Qiyuan</span>");
+    gtk_widget_set_halign(logo, GTK_ALIGN_CENTER);
+    qy_add_class(logo, "qy-about-logo");
+    gtk_box_pack_start(GTK_BOX(v1), logo, FALSE, FALSE, 8);
     gtk_box_pack_start(GTK_BOX(v1), row(TR("操作系统"), osrel), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v1), row(TR("内核版本"), u.release), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v1), row(TR("处理器架构"), u.machine), FALSE, FALSE, 0);

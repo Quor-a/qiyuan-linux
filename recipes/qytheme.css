@@ -397,3 +397,11 @@ notebook tab:checked {
     font-size: 12px;
     color: #c9cdd4;
 }
+
+/* ---------- 设置-关于页品牌 Logo ---------- */
+.qy-about-logo {
+    background-color: #E95420;
+    color: #ffffff;
+    padding: 10px 26px;
+    border-radius: 12px;
+}
