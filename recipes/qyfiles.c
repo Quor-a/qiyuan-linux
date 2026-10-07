@@ -308,6 +308,7 @@ static void chdir_to(const char *path) {
     GtkListStore *store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(view)));
     gtk_list_store_clear(store);
     GDir *dir = g_dir_open(path, 0, NULL);
+    gint n = 0;
     if (!dir) return;
     const gchar *name;
     while ((name = g_dir_read_name(dir))) {
@@ -317,9 +318,16 @@ static void chdir_to(const char *path) {
         GtkTreeIter it;
         gtk_list_store_append(store, &it);
         gtk_list_store_set(store, &it, 0, isdir ? TR("[目录]") : TR("[文件]"), 1, name, -1);
+        n++;
     }
     g_dir_close(dir);
     gchar *msg = g_strdup_printf(TR("位置: %s"), path);
+    if (n == 0) {
+        char tmp[512];
+        g_snprintf(tmp, sizeof tmp, "%s — %s", msg, TR("此文件夹为空"));
+        g_free(msg);
+        msg = g_strdup(tmp);
+    }
     gtk_label_set_text(GTK_LABEL(status), msg);
     g_free(msg);
     g_strlcpy(cwd, path, sizeof cwd);
@@ -333,6 +341,7 @@ static void chdir_trash(void) {
     GtkListStore *store = GTK_LIST_STORE(gtk_tree_view_get_model(GTK_TREE_VIEW(view)));
     gtk_list_store_clear(store);
     GDir *dir = g_dir_open(files, 0, NULL);
+    gint n = 0;
     if (dir) {
         const gchar *name;
         while ((name = g_dir_read_name(dir))) {
@@ -346,10 +355,14 @@ static void chdir_trash(void) {
                 gtk_list_store_set(store, &it, 0, TR("(无元数据)"), 1, name, -1);
             }
             g_free(ti);
+            n++;
         }
         g_dir_close(dir);
     }
-    gtk_label_set_text(GTK_LABEL(status), TR("位置: 回收站 (工具栏: 还原 / 彻底删除 / 清空)"));
+    if (n == 0)
+        gtk_label_set_text(GTK_LABEL(status), TR("回收站为空"));
+    else
+        gtk_label_set_text(GTK_LABEL(status), TR("位置: 回收站 (工具栏: 还原 / 彻底删除 / 清空)"));
     g_strlcpy(cwd, files, sizeof cwd);
 }
 
