@@ -443,3 +443,15 @@ notebook tab:checked {
     border-radius: 8px;
     border: 1px solid #2a3441;
 }
+
+/* ---------- 设置-关于页快捷启动按钮 ---------- */
+.qy-about-btn {
+    background-color: #E95420;
+    color: #ffffff;
+    border-radius: 6px;
+    padding: 4px 12px;
+    font-size: 12px;
+}
+.qy-about-btn:hover {
+    background-color: #ff6b3d;
+}

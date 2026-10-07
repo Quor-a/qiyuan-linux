@@ -713,7 +713,11 @@ sysroot 工具链，PASS）。
 - 验证：预写 `文件管理器 5 / 终端 3 / 软件中心 2` 后启动菜单，菜单区文字像素
   3423 → 4947，常用行成功渲染
 
-构建产物：`qydesktop 0.1.0-19`。截图 `docs/screenshots/appmenu-freq-v2.png`。
+构建产物：`qydesktop 0.1.0-19`。截图 `doc
+
+![开始菜单常用列表持久化](docs/screenshots/appmenu-freq-v2.png)
+![开始菜单常用列表持久化](docs/screenshots/appmenu-freq-v2.png)
+s/screenshots/appmenu-freq-v2.png`。
 
 ### Dock 扩充 + 右键菜单常用入口（v0.1.0-20，2026-10 实测）
 
@@ -724,7 +728,11 @@ sysroot 工具链，PASS）。
   系统监视 / 回收站」四个常用应用入口，分隔线分组
 - 全部走 TR() 多语言（词条已存在）
 
-构建产物：`qydesktop 0.1.0-20`。验证：Dock 区可同时检出橙色/黑/紫/青/琥珀/灰六色图标块。
+构建产物：`qydesktop 0
+
+![Dock 扩充](docs/screenshots/desktop-dock6.png)
+![Dock 扩充](docs/screenshots/desktop-dock6.png)
+.1.0-20`。验证：Dock 区可同时检出橙色/黑/紫/青/琥珀/灰六色图标块。
 
 ### 顶栏时钟显示秒（v0.1.0-21，2026-10 实测）
 
@@ -733,6 +741,8 @@ sysroot 工具链，PASS）。
 - 验证：截图中顶栏时钟区文字宽度明显增加（秒数位）
 
 构建产物：`qydesktop 0.1.0-21`。
+
+![顶栏时钟显示秒](docs/screenshots/desktop-clock-sec.png)
 
 ### 系统监视器 v2：大数字百分比 + 运行/负载信息栏（v0.1.0-22，2026-10 实测）
 
@@ -746,6 +756,8 @@ sysroot 工具链，PASS）。
 
 构建产物：`qydesktop 0.1.0-22`。
 
+![系统监视器 v2](docs/screenshots/qymon-v2.png)
+
 ### 图片查看器底部导航栏（v0.1.0-23，2026-10 实测）
 
 - **可见导航**：qyview 新增底部导航栏「◀ 上一张 | 1 / N | 下一张 ▶」，鼠标点击即可
@@ -757,6 +769,8 @@ sysroot 工具链，PASS）。
 
 构建产物：`qydesktop 0.1.0-23`。
 
+![图片查看器底部导航栏](docs/screenshots/qyview-nav-v2.png)
+
 ### 系统设置·关于本机页增强（v0.1.0-24，2026-10 实测）
 
 - **新增硬件/状态信息**：「关于」页在原有 操作系统/内核/架构/主机名/内存 之外，
@@ -767,6 +781,8 @@ sysroot 工具链，PASS）。
 - 验证：chroot 中启动 qysettings，关于页渲染出全部信息行
 
 构建产物：`qydesktop 0.1.0-24`。
+
+![系统设置·关于本机页增强](docs/screenshots/qysettings-about-v2.png)
 
 #### 修复：GtkNotebook 内容区浅色问题（v0.1.0-26）
 
@@ -785,7 +801,9 @@ sysroot 工具链，PASS）。
 - 修复要点：`notebook stack` 深色背景 + `notebook tab` 增加 `background-image: none`
   （否则 GTK 默认主题的渐变图会盖住背景色，导致 `:checked` 橙色不生效）
 
-构建产物：`qydesktop 0.1.0-27`。截图 `docs/screenshots/qysettings-about-v2.png`。
+构建产物：`qydesktop 0.1.0-27`。截图 `docs/screenshots/qysetti
+![最终验证（v0.1.0-27](docs/screenshots/qysettings-about-v2.png)
+ngs-about-v2.png`。
 
 ### 顶栏 CPU/内存实时小部件（v0.1.0-28，2026-10 实测）
 
@@ -795,6 +813,8 @@ sysroot 工具链，PASS）。
 - 验证：顶栏右侧可检出小部件文字，且 2 秒前后资源数值变化（像素差异>0）
 
 构建产物：`qydesktop 0.1.0-28`。
+
+![顶栏 CPU/内存实时小部件](docs/screenshots/desktop-mon-widget.png)
 
 ### 开始菜单应用分类分组（v0.1.0-29，2026-10 实测）
 
@@ -806,6 +826,8 @@ sysroot 工具链，PASS）。
 
 构建产物：`qydesktop 0.1.0-29`。
 
+![开始菜单应用分类分组](docs/screenshots/appmenu-categories.png)
+
 ### 壁纸自动轮换（v0.1.0-30，2026-10 实测）
 
 - **定时换壁纸**：qydesktop 默认每 600 秒自动生成一张新壁纸（`rotate_wallpaper()`），
@@ -814,6 +836,8 @@ sysroot 工具链，PASS）。
 - 验证：以 `QY_WALL_INTERVAL=45` 启动，50 秒后桌面背景直方图与初始不同（已轮换）
 
 构建产物：`qydesktop 0.1.0-30`。
+
+![壁纸自动轮换](docs/screenshots/desktop-wall-rotation.png)
 
 ### 系统监视器 v3：磁盘使用率大数字（v0.1.0-31，2026-10 实测）
 
@@ -824,6 +848,8 @@ sysroot 工具链，PASS）。
 
 构建产物：`qydesktop 0.1.0-31`。
 
+![系统监视器 v3](docs/screenshots/qymon-v3.png)
+
 ### 开始菜单：无常用记录时自动隐藏「常用」区（v0.1.0-32，2026-10 实测）
 
 - 首次使用（无 `~/.config/qiyuan/appmenu-freq`）时，菜单只显示「固定」分类网格，
@@ -832,6 +858,8 @@ sysroot 工具链，PASS）。
 - 验证：无记录时菜单高度较短；写入 2 条常用记录后菜单变高、「常用」标题出现
 
 构建产物：`qydesktop 0.1.0-32`。
+
+![无常用记录时自动隐藏](docs/screenshots/appmenu-freq-hide.png)
 
 ### 任务栏窗口按钮图标化（v0.1.0-35，2026-10 实测）
 
@@ -844,6 +872,8 @@ sysroot 工具链，PASS）。
 
 构建产物：`qydesktop 0.1.0-35`。
 
+![任务栏窗口按钮图标化](docs/screenshots/taskbar-icons.png)
+
 ### 首启向导：本机信息展示（v0.1.0-36，2026-10 实测）
 
 - **qywelcome 首启配置向导**在表单下方新增「系统信息」卡片：
@@ -854,6 +884,8 @@ sysroot 工具链，PASS）。
 
 构建产物：`qydesktop 0.1.0-36`。
 
+![首启向导：本机信息展示](docs/screenshots/qywelcome-info.png)
+
 ### 软件中心：详情面板显示软件包大小（v0.1.0-37，2026-10 实测）
 
 - **包详情新增「大小」行**：读取包元数据 JSON 的 `size` 字段（数字），
@@ -863,6 +895,8 @@ sysroot 工具链，PASS）。
 
 构建产物：`qydesktop 0.1.0-37`。
 
+![详情面板显示软件包大小](docs/screenshots/qystore-size.png)
+
 ### 系统设置：关于页品牌 Logo（v0.1.0-38，2026-10 实测）
 
 - 「关于」页顶部新增 **品牌 Logo 区**：橙色圆角块 + 白色粗体「启元 Qiyuan」
@@ -870,6 +904,8 @@ sysroot 工具链，PASS）。
 - 验证：qysettings 关于页顶部可检出橙色 `#E95420` Logo 色块
 
 构建产物：`qydesktop 0.1.0-38`。
+
+![系统设置：关于页品牌 Logo](docs/screenshots/qysettings-about-logo.png)
 
 ### 图片查看器：窗口标题显示当前文件名（v0.1.0-39，2026-10 实测）
 
@@ -888,6 +924,8 @@ sysroot 工具链，PASS）。
 
 构建产物：`qydesktop 0.1.0-40`。
 
+![系统监视器 v4](docs/screenshots/qymon-v4.png)
+
 ### 顶栏「启元」品牌 Logo 按钮（v0.1.0-41，2026-10 实测）
 
 - **开始菜单按钮品牌化**：由符号 `⊞` 改为橙色圆角「启元」白色粗体 Logo
@@ -896,6 +934,8 @@ sysroot 工具链，PASS）。
 - 验证：顶栏左上可检出橙色 `#E95420` Logo 块 + 白色「启元」文字
 
 构建产物：`qydesktop 0.1.0-41`。
+
+![顶栏「启元」品牌 Logo 按钮](docs/screenshots/desktop-logo-btn.png)
 
 ### 开始菜单键盘友好增强（v0.1.0-42，2026-10 实测）
 
@@ -906,6 +946,8 @@ sysroot 工具链，PASS）。
 
 构建产物：`qydesktop 0.1.0-42`。
 
+![开始菜单键盘友好增强](docs/screenshots/appmenu-autofocus.png)
+
 ### 桌面图标扩充：系统监视 + 图片查看（v0.1.0-43，2026-10 实测）
 
 - **桌面图标 5 → 7**：新增「系统监视」（琥珀 `#F59E0B`）与
@@ -915,6 +957,8 @@ sysroot 工具链，PASS）。
 
 构建产物：`qydesktop 0.1.0-43`。
 
+![桌面图标扩充](docs/screenshots/desktop-7icons.png)
+
 ### 首启向导：品牌 Logo 区（v0.1.0-44，2026-10 实测）
 
 - **qywelcome 顶部新增「启元 Qiyuan」橙色圆角 Logo**（与设置页关于页一致），
@@ -922,6 +966,8 @@ sysroot 工具链，PASS）。
 - 验证：qywelcome 窗口顶部可检出橙色 `#E95420` Logo 块
 
 构建产物：`qydesktop 0.1.0-44`。
+
+![首启向导：品牌 Logo 区](docs/screenshots/qywelcome-logo.png)
 
 ### 图片查看：标题含分类关键词 + 任务栏紫色图标（v0.1.0-45，2026-10 实测）
 
@@ -932,6 +978,8 @@ sysroot 工具链，PASS）。
 
 构建产物：`qydesktop 0.1.0-45`。
 
+![图片查看：标题含分类关键词](docs/screenshots/taskbar-view-icon.png)
+
 ### 文件管理器：空目录/空回收站友好提示（v0.1.0-46，2026-10 实测）
 
 - **空目录**：状态栏显示 `位置: <路径> — 此文件夹为空`
@@ -940,6 +988,8 @@ sysroot 工具链，PASS）。
 - 验证：`qyfiles --trash` 在空回收站下状态栏显示「回收站为空」文字
 
 构建产物：`qydesktop 0.1.0-46`。
+
+![文件管理器：空目录/空回收站](docs/screenshots/qyfiles-trash-empty.png)
 
 ### 文本编辑器：底部状态栏（行/列/字符数）（v0.1.0-47，2026-10 实测）
 
@@ -950,6 +1000,8 @@ sysroot 工具链，PASS）。
 
 构建产物：`qydesktop 0.1.0-47`。
 
+![文本编辑器：底部状态栏](docs/screenshots/qyedit-status.png)
+
 ### 软件中心：详情面板卡片化（v0.1.0-48，2026-10 实测）
 
 - **qystore 详情区域改为深色圆角卡片**（新增 `qy-store-card` 主题类：
@@ -958,6 +1010,8 @@ sysroot 工具链，PASS）。
 - 验证：qystore 窗口底部渲染出深色卡片背景块
 
 构建产物：`qydesktop 0.1.0-48`。
+
+![软件中心：详情面板卡片化](docs/screenshots/qystore-card.png)
 
 ### 顶栏：CPU/内存迷你资源条（v0.1.0-52，2026-10 实测）
 
@@ -968,6 +1022,8 @@ sysroot 工具链，PASS）。
 
 构建产物：`qydesktop 0.1.0-52`。
 
+![顶栏：CPU/内存迷你资源条](docs/screenshots/desktop-monbar.png)
+
 ### 系统监视器 v5：信息栏增加网络收发速率（v0.1.0-53，2026-10 实测）
 
 - 信息栏末尾追加 `· ↓XKB/s ↑YKB/s`（读 `/proc/net/dev` 首个非 lo 接口，
@@ -975,4 +1031,18 @@ sysroot 工具链，PASS）。
 - 新增 `read_net_speed()` 差分读取函数
 - 验证：信息栏文字跨度由 v4 的 321px 增至 454px（新增网络速率片段）
 
-构建产物：`qydesktop 0.1.0-53`。
+构建产物：`qydesktop 0.1.0-54`。
+
+![系统监视器 v5](docs/screenshots/qymon-v5-net.png)
+![系统监视器 v5](docs/screenshots/qymon-v5-net.png)
+
+
+### 系统设置：关于页快捷启动按钮（v0.1.0-54，2026-10 实测）
+
+- 「关于」页信息行下方新增三个品牌橙色快捷按钮：
+  **打开系统监视 / 打开软件中心 / 打开文件管理器**（`.qy-about-btn` 主题类）
+- 点击通过 `g_spawn_command_line_async` 启动对应应用，与开始菜单一致
+- 验证：关于页底部检出三个独立橙色按钮（x 176-271 / 280-375 / 384-491），
+  每个按钮内含白色按钮文字
+
+构建产物：`qydesktop 0.1.0-54`。

@@ -121,6 +121,13 @@ static GtkWidget *row(const char *k, const char *v) {
     return h;
 }
 
+/* 从设置启动其他应用 */
+static void launch_app(GtkButton *b, gpointer cmd) {
+    char buf[128];
+    g_snprintf(buf, sizeof buf, "%s &", (const char *)cmd);
+    g_spawn_command_line_async(buf, NULL);
+}
+
 static void activate(GtkApplication *app, gpointer ud) {
     qy_load_theme();
     GtkWidget *win = gtk_application_window_new(app);
@@ -163,6 +170,23 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(v1), row(TR("显示协议"), "Wayland (weston)"), FALSE, FALSE, 0);
     g_free(mem); g_free(osrel); g_free(cpumodel); g_free(cpucores);
     g_free(uptime); g_free(load);
+
+    /* 关于页快捷启动 */
+    GtkWidget *btn_hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+    GtkWidget *b_mon = gtk_button_new_with_label(TR("打开系统监视"));
+    qy_add_class(b_mon, "qy-about-btn");
+    g_signal_connect(b_mon, "clicked", G_CALLBACK(launch_app), (gpointer)"qymon");
+    GtkWidget *b_store = gtk_button_new_with_label(TR("打开软件中心"));
+    qy_add_class(b_store, "qy-about-btn");
+    g_signal_connect(b_store, "clicked", G_CALLBACK(launch_app), (gpointer)"qystore");
+    GtkWidget *b_files = gtk_button_new_with_label(TR("打开文件管理器"));
+    qy_add_class(b_files, "qy-about-btn");
+    g_signal_connect(b_files, "clicked", G_CALLBACK(launch_app), (gpointer)"qyfiles");
+    gtk_box_pack_start(GTK_BOX(btn_hb), b_mon, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(btn_hb), b_store, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(btn_hb), b_files, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(v1), btn_hb, FALSE, FALSE, 10);
+
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), v1, gtk_label_new(TR("关于")));
 
     /* 显示 */
