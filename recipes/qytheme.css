@@ -326,3 +326,18 @@ notebook tab:checked {
     font-size: 12px;
     color: #9CA3AF;
 }
+
+/* ---------- 图片查看器 ---------- */
+.qy-view-nav {
+    background-color: #141924;
+    border-top: 1px solid #2A2E3A;
+}
+.qy-view-nav-btn {
+    min-height: 30px;
+    padding: 2px 18px;
+    font-size: 13px;
+}
+.qy-view-nav-label {
+    font-size: 13px;
+    color: #D1D5DB;
+}

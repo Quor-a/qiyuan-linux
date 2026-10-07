@@ -9,12 +9,17 @@
 #include <glib/gstdio.h>
 #include "qytheme.h"
 
+static void add_class(GtkWidget *w, const char *cls) {
+    gtk_style_context_add_class(gtk_widget_get_style_context(w), cls);
+}
+
 static GdkPixbuf *pix = NULL;          /* 原始图 */
 static gchar *cur_dir = NULL;          /* 当前图所在目录 */
 static GPtrArray *dir_files = NULL;    /* 同目录图片文件列表 */
 static int dir_idx = -1;
 static double zoom = 1.0;
 static double pan_x = 0, pan_y = 0;
+static GtkWidget *page_label = NULL;   /* 底部页码标签 */
 
 static const char *IMG_EXT[] = {".png",".jpg",".jpeg",".bmp",".gif",".webp",".xpm", NULL};
 
@@ -65,9 +70,26 @@ static void load_by_index(GtkWidget *da, int idx) {
     gchar *full = g_build_filename(cur_dir, (gchar*)dir_files->pdata[idx], NULL);
     if (load_path(full)) {
         dir_idx = idx;
+        if (page_label) {
+            gchar buf[32];
+            g_snprintf(buf, sizeof buf, "%d / %d", dir_idx + 1, dir_files->len);
+            gtk_label_set_text(GTK_LABEL(page_label), buf);
+        }
         gtk_widget_queue_draw(da);
     }
     g_free(full);
+}
+
+static void on_prev(GtkButton *b, gpointer ud) {
+    if (!dir_files || dir_files->len == 0) return;
+    int n = (dir_idx - 1 + (int)dir_files->len) % (int)dir_files->len;
+    load_by_index(GTK_WIDGET(ud), n);
+}
+
+static void on_next(GtkButton *b, gpointer ud) {
+    if (!dir_files || dir_files->len == 0) return;
+    int n = (dir_idx + 1) % (int)dir_files->len;
+    load_by_index(GTK_WIDGET(ud), n);
 }
 
 static gboolean on_draw(GtkWidget *da, cairo_t *cr, gpointer ud) {
@@ -131,14 +153,38 @@ static void activate(GtkApplication *app, gpointer ud) {
     GtkWidget *win = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(win), "启元图片查看器");
     gtk_window_set_default_size(GTK_WINDOW(win), 700, 500);
+
+    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_container_add(GTK_CONTAINER(win), vbox);
+
+    /* 图片绘制区 */
     GtkWidget *da = gtk_drawing_area_new();
-    gtk_container_add(GTK_CONTAINER(win), da);
+    gtk_box_pack_start(GTK_BOX(vbox), da, TRUE, TRUE, 0);
     g_signal_connect(da, "draw", G_CALLBACK(on_draw), NULL);
     g_signal_connect(da, "scroll-event", G_CALLBACK(on_scroll), NULL);
     g_signal_connect(da, "key-press-event", G_CALLBACK(on_key), da);
     g_signal_connect(da, "button-press-event", G_CALLBACK(on_button), NULL);
     gtk_widget_add_events(da, GDK_SCROLL_MASK | GDK_BUTTON_PRESS_MASK | GDK_KEY_PRESS_MASK);
     gtk_widget_set_can_focus(da, TRUE);
+
+    /* 底部导航栏: 上一张 / 页码 / 下一张 */
+    GtkWidget *nav = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+    add_class(nav, "qy-view-nav");
+    gtk_widget_set_margin_top(nav, 4);
+    gtk_widget_set_margin_bottom(nav, 4);
+    GtkWidget *b_prev = gtk_button_new_with_label("◀ 上一张");
+    add_class(b_prev, "qy-view-nav-btn");
+    page_label = gtk_label_new("1 / 1");
+    add_class(page_label, "qy-view-nav-label");
+    GtkWidget *b_next = gtk_button_new_with_label("下一张 ▶");
+    add_class(b_next, "qy-view-nav-btn");
+    gtk_box_pack_start(GTK_BOX(nav), b_prev, FALSE, FALSE, 0);
+    gtk_box_set_center_widget(GTK_BOX(nav), page_label);
+    gtk_box_pack_end(GTK_BOX(nav), b_next, FALSE, FALSE, 0);
+    g_signal_connect(b_prev, "clicked", G_CALLBACK(on_prev), da);
+    g_signal_connect(b_next, "clicked", G_CALLBACK(on_next), da);
+    gtk_box_pack_start(GTK_BOX(vbox), nav, FALSE, FALSE, 0);
+
     gtk_widget_show_all(win);
 
     gchar **args = (gchar**)ud;
@@ -147,6 +193,7 @@ static void activate(GtkApplication *app, gpointer ud) {
             scan_dir(args[0]);
             g_free(cur_dir);
             cur_dir = g_path_get_dirname(args[0]);
+            load_by_index(da, dir_idx);   /* 刷新页码 */
         }
     }
     gtk_widget_grab_focus(da);
