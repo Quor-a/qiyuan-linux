@@ -271,6 +271,8 @@ static const pair tbl[] = {
     { "图片", "Pictures" },
     { "刷新", "Refresh" },
     { "桌面版本", "Desktop Version" },
+    { "壁纸", "Wallpaper" },
+    { "程序化生成 · 自动轮换", "Procedural · auto-rotate" },
 };
 
 #define NTBL ((int)(sizeof tbl / sizeof tbl[0]))

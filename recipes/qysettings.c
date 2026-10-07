@@ -197,6 +197,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(v2), row(TR("合成器"), "weston 14.0.2"), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v2), row(TR("后端"), "DRM (bochs-drm / pixman)"), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v2), row(TR("分辨率"), "1280x800"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(v2), row(TR("壁纸"), TR("程序化生成 · 自动轮换")), FALSE, FALSE, 0);
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), v2, gtk_label_new(TR("显示")));
 
     /* 字体 */
@@ -281,6 +282,14 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), vlang, gtk_label_new(TR("语言")));
 
     gtk_widget_show_all(win);
+
+    /* 环境变量 QY_SETTINGS_PAGE=N 直达标签页（默认 0=关于） */
+    const char *pg = g_getenv("QY_SETTINGS_PAGE");
+    if (pg) {
+        int n = atoi(pg);
+        if (n >= 0 && n < gtk_notebook_get_n_pages(GTK_NOTEBOOK(nb)))
+            gtk_notebook_set_current_page(GTK_NOTEBOOK(nb), n);
+    }
 }
 
 static gboolean vol_changed(GtkRange *r, gpointer ud) {
