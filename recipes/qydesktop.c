@@ -61,6 +61,8 @@ static AppEntry apps[] = {
 #define NAPPS ((int)(sizeof apps / sizeof apps[0]))
 
 static GtkWidget *taskbar_box   = NULL;
+static guint     active_id     = 0;   /* 最近点击的任务栏窗口（本地高亮反馈） */
+static long      active_until  = 0;   /* 高亮截止时间戳 */
 static GtkWidget *clock_label  = NULL;
 static GtkWidget *desktop_fixed = NULL;
 
@@ -144,6 +146,12 @@ static int taskbar_parse(WinInfo *wins, int max) {
         /* 过滤壳层自身窗口与启动器 */
         if (strncmp(rest, "qydesktop", 9) == 0) continue;
         if (strcmp(rest, "qyappmenu") == 0) continue;
+        /* 重复标题去重：同一应用多实例只显示一个按钮 */
+        int dup = 0;
+        for (int i = 0; i < n; i++) {
+            if (strcmp(wins[i].title, rest) == 0) { dup = 1; break; }
+        }
+        if (dup) continue;
         wins[n].id = (guint)strtoul(line, NULL, 10);
         g_strlcpy(wins[n].title, rest, sizeof wins[n].title);
         n++;
@@ -154,8 +162,20 @@ static int taskbar_parse(WinInfo *wins, int max) {
 
 static void on_task_clicked(GtkButton *btn, gpointer ud) {
     guint id = GPOINTER_TO_UINT(ud);
+    active_id = id;
+    active_until = time(NULL) + 3;   /* 点击后高亮 3 秒 */
     FILE *f = fopen(QY_FOCUS, "w");
     if (f) { fprintf(f, "%u", id); fclose(f); }
+}
+
+static guint read_focus(void) {
+    FILE *f = fopen(QY_FOCUS, "r");
+    guint id = 0;
+    if (f) {
+        if (fscanf(f, "%u", &id) != 1) id = 0;
+        fclose(f);
+    }
+    return id;
 }
 
 static void refresh_taskbar(void) {
@@ -166,10 +186,15 @@ static void refresh_taskbar(void) {
 
     WinInfo wins[16];
     int n = taskbar_parse(wins, 16);
+    guint focus = read_focus();
+    long now = time(NULL);
     for (int i = 0; i < n; i++) {
         GtkWidget *b = gtk_button_new_with_label(wins[i].title);
         gtk_button_set_relief(GTK_BUTTON(b), GTK_RELIEF_NONE);
         add_class(b, "qy-bar-btn");
+        if ((wins[i].id == active_id && now < active_until) ||
+            wins[i].id == focus)
+            add_class(b, "qy-bar-btn-active");
         g_signal_connect(b, "clicked", G_CALLBACK(on_task_clicked),
                          GUINT_TO_POINTER(wins[i].id));
         gtk_box_pack_start(GTK_BOX(taskbar_box), b, FALSE, FALSE, 2);
