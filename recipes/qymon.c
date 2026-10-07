@@ -25,6 +25,8 @@ static long prev_total = 0, prev_idle = 0;
 static unsigned long mem_total_kb = 1;
 static GtkWidget *cpu_label = NULL, *mem_label = NULL, *info_label = NULL;
 static GtkWidget *disk_label = NULL;
+static unsigned long net_rx_prev = 0, net_tx_prev = 0;   /* 网络速率 */
+static gint64 net_time_prev = 0;
 
 /* 读取当前 CPU 频率 (MHz) */
 static double read_cpu_mhz(void) {
@@ -40,6 +42,40 @@ static double read_cpu_mhz(void) {
     }
     fclose(f);
     return mhz;
+}
+
+/* 读取首个非 lo 接口的收发速率 (KB/s), 与上次调用差分 */
+static gboolean read_net_speed(double *rx_kbs, double *tx_kbs) {
+    FILE *f = fopen("/proc/net/dev", "r");
+    if (!f) return FALSE;
+    char line[512];
+    fgets(line, sizeof line, f);   /* 表头1 */
+    fgets(line, sizeof line, f);   /* 表头2 */
+    unsigned long rx = 0, tx = 0;
+    gboolean found = FALSE;
+    while (fgets(line, sizeof line, f)) {
+        char ifname[64];
+        if (sscanf(line, " %63[^:]: %lu %*lu %*lu %*lu %*lu %*lu %*lu %*lu %lu",
+                   ifname, &rx, &tx) >= 3) {
+            if (strcmp(ifname, "lo") != 0) { found = TRUE; break; }
+        }
+    }
+    fclose(f);
+    if (!found) return FALSE;
+    gint64 now = g_get_monotonic_time();
+    if (net_time_prev == 0) {
+        net_rx_prev = rx; net_tx_prev = tx; net_time_prev = now;
+        *rx_kbs = 0; *tx_kbs = 0;
+        return TRUE;
+    }
+    double dt = (double)(now - net_time_prev) / 1000000.0;
+    if (dt <= 0) dt = 1.0;
+    *rx_kbs = (rx - net_rx_prev) / dt / 1024.0;
+    *tx_kbs = (tx - net_tx_prev) / dt / 1024.0;
+    if (*rx_kbs < 0) *rx_kbs = 0;
+    if (*tx_kbs < 0) *tx_kbs = 0;
+    net_rx_prev = rx; net_tx_prev = tx; net_time_prev = now;
+    return TRUE;
 }
 
 static gboolean tick(gpointer ud) {
@@ -107,6 +143,11 @@ static gboolean tick(gpointer ud) {
         if (freq[0]) {
             size_t L = strlen(info);
             g_snprintf(info + L, sizeof info - L, " · CPU %s", freq);
+        }
+        double rx = 0, tx = 0;
+        if (read_net_speed(&rx, &tx)) {
+            size_t L = strlen(info);
+            g_snprintf(info + L, sizeof info - L, " · ↓%.0fKB/s ↑%.0fKB/s", rx, tx);
         }
         if (info_label) gtk_label_set_text(GTK_LABEL(info_label), info);
     }
