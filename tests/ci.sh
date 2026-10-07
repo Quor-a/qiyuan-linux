@@ -70,10 +70,10 @@ PYEOF
 step "3. 未设 SOURCE_DATE_EPOCH 时两次构建确实不同"
 qyrm var/work var/pkgs
 env -u SOURCE_DATE_EPOCH ./bin/qybuild libqydemo qydemo --force >/dev/null 2>&1
-A=$(sha256sum var/pkgs/qydemo-0.1.0-1.x86_64.qyp 2>/dev/null | awk '{print $1}')
+A=$(sha256sum var/pkgs/qydemo-0.2.0-1.x86_64.qyp 2>/dev/null | awk '{print $1}')
 qyrm var/work
 env -u SOURCE_DATE_EPOCH ./bin/qybuild libqydemo qydemo --force >/dev/null 2>&1
-B=$(sha256sum var/pkgs/qydemo-0.1.0-1.x86_64.qyp 2>/dev/null | awk '{print $1}')
+B=$(sha256sum var/pkgs/qydemo-0.2.0-1.x86_64.qyp 2>/dev/null | awk '{print $1}')
 # 两次都必须真产出包，否则"不同"可能只是两次都没产物
 [ -n "$A" ] && [ -n "$B" ] && ok "两次都成功产出包" || bad "构建没产出包"
 [ "$A" != "$B" ] && ok "未设 epoch 时两次不同（说明检查有意义）" \
@@ -82,17 +82,17 @@ B=$(sha256sum var/pkgs/qydemo-0.1.0-1.x86_64.qyp 2>/dev/null | awk '{print $1}')
 step "4. 设了 SOURCE_DATE_EPOCH 后两次构建逐字节相同"
 qyrm var/work var/pkgs
 SOURCE_DATE_EPOCH=1700000000 ./bin/qybuild libqydemo qydemo --force >/dev/null 2>&1
-A=$(sha256sum var/pkgs/qydemo-0.1.0-1.x86_64.qyp 2>/dev/null | awk '{print $1}')
+A=$(sha256sum var/pkgs/qydemo-0.2.0-1.x86_64.qyp 2>/dev/null | awk '{print $1}')
 qyrm var/work
 SOURCE_DATE_EPOCH=1700000000 ./bin/qybuild libqydemo qydemo --force >/dev/null 2>&1
-B=$(sha256sum var/pkgs/qydemo-0.1.0-1.x86_64.qyp 2>/dev/null | awk '{print $1}')
+B=$(sha256sum var/pkgs/qydemo-0.2.0-1.x86_64.qyp 2>/dev/null | awk '{print $1}')
 # 沙盒文件系统偶发 rm 不干净导致第二次构建没产出。
 # 重试一次——这是环境问题不是代码问题，不重试的话测试会随机变红，
 # 而随机变红的测试等于没有测试
 if [ -z "$B" ]; then
   qyrm var/work var/pkgs
   SOURCE_DATE_EPOCH=1700000000 ./bin/qybuild libqydemo qydemo --force >/dev/null 2>&1
-  B=$(sha256sum var/pkgs/qydemo-0.1.0-1.x86_64.qyp 2>/dev/null | awk '{print $1}')
+  B=$(sha256sum var/pkgs/qydemo-0.2.0-1.x86_64.qyp 2>/dev/null | awk '{print $1}')
 fi
 [ -n "$A" ] && [ -n "$B" ] && ok "两次都成功产出包" || bad "构建没产出包"
 echo "  A=${A:0:16}…"
@@ -102,14 +102,14 @@ echo "  B=${B:0:16}…"
 step "5. 可复现检查：可复现的包零问题"
 SOURCE_DATE_EPOCH=1700000000 ./bin/qybuild qydemo libqydemo --force \
   --sign var/repo/keys/qiyuan >/dev/null 2>&1
-./bin/qyrepro check var/pkgs/qydemo-0.1.0-1.x86_64.qyp > "$TMP/chk.txt" 2>&1
+./bin/qyrepro check var/pkgs/qydemo-0.2.0-1.x86_64.qyp > "$TMP/chk.txt" 2>&1
 grep -q "通过" "$TMP/chk.txt" && ok "可复现包检查通过（无误报）" \
   || { bad "可复现包被误报"; cat "$TMP/chk.txt"; }
 
 step "6. 可复现检查：非可复现的包要被检出"
 qyrm var/work
 env -u SOURCE_DATE_EPOCH ./bin/qybuild qydemo --force >/dev/null 2>&1
-./bin/qyrepro check var/pkgs/qydemo-0.1.0-1.x86_64.qyp > "$TMP/chk2.txt" 2>&1
+./bin/qyrepro check var/pkgs/qydemo-0.2.0-1.x86_64.qyp > "$TMP/chk2.txt" 2>&1
 grep -q "时间戳" "$TMP/chk2.txt" && ok "检出时间戳问题" || bad "未检出时间戳"
 grep -q "属主" "$TMP/chk2.txt" && ok "检出属主未归一" || bad "未检出属主"
 grep -q "SOURCE_DATE_EPOCH" "$TMP/chk2.txt" \

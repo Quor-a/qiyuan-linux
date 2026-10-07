@@ -14,9 +14,9 @@ license = ""
 # 远程源码的 sha256 尚未填回，构建前会被拒绝：
 # 静默接受未校验的远程源码等于给供应链攻击敞开大门。
 # 在能联网的构建机上执行：qybuild --fetch-checksums hicolor-icon-theme
-source = ["https://example.org/src/hicolor-icon-theme-0.18.tar.xz"]
-sha256 = []
-checksum_pending = True
+source = ["https://icon-theme.freedesktop.org/releases/hicolor-icon-theme-0.18.tar.xz"]
+sha256 = ["db0e50a80aa3bf64bb45cbca5cf9f75efd9348cf2ac690b907435238c3cf81d7"]
+checksum_pending = False
 
 depends = []
 makedepends = []
@@ -29,8 +29,11 @@ compression = "gz"
 
 
 def build(ctx):
-    ctx.run("true")
+    # 0.18 起改用 meson，源码包内只有 index.theme + meson.build
+    ctx.run("rm -rf build && mkdir -p build")
+    ctx.run("cd build && meson setup .. --prefix=/usr")
 
 
 def package(ctx):
-    ctx.run("make DESTDIR={} install".format(ctx.destdir))
+    ctx.run("cd build && ninja")
+    ctx.run("cd build && DESTDIR={} ninja install".format(ctx.destdir))

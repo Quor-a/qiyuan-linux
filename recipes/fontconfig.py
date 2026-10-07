@@ -34,3 +34,21 @@ def build(ctx):
 
 def package(ctx):
     ctx.run("make DESTDIR={} install".format(ctx.destdir))
+    # pango 的 PangoFc introspection include 需要 fontconfig-2.0.gir；
+    # upstream fontconfig 不生成 gir，手写最小版满足 g-ir-scanner 的 include 解析。
+    import shutil
+    if shutil.which("g-ir-scanner") is None:
+        return
+    gir = ctx.destdir / "usr" / "share" / "gir-1.0"
+    gir.mkdir(parents=True, exist_ok=True)
+    (gir / "fontconfig-2.0.gir").write_text(
+        '<?xml version="1.0" encoding="utf-8"?>\n'
+        '<repository version="1.2"\n'
+        '            xmlns="http://www.gtk.org/introspection/core/1.0"\n'
+        '            xmlns:c="http://www.gtk.org/introspection/c/1.0"\n'
+        '            xmlns:glib="http://www.gtk.org/introspection/glib/1.0">\n'
+        '  <include name="GLib" version="2.0"/>\n'
+        '  <namespace name="fontconfig" version="2.0"\n'
+        '             c:identifier-prefixes="Fc"\n'
+        '             c:symbol-prefixes="fc"/>\n'
+        '</repository>\n')

@@ -446,14 +446,32 @@ class Builder:
             # libreadline/libtinfo（"undefined symbol: UP"→config.status 崩，
             # Makefile 创建失败）。binutils 工具已用 patchelf --set-rpath
             # /usr/lib 自带搜索路径（binutils.py 打包时也应写入 RUNPATH）。
-            pc = lib / "pkgconfig"
-            pcs = self.sysroot / "usr" / "share" / "pkgconfig"
-            import platform as _pf
-            pm = lib / (_pf.machine() + "-linux-gnu") / "pkgconfig"
-            paths = [str(p) for p in (pc, pm, pcs) if p.exists()]
-            if paths:
-                ctx.env("PKG_CONFIG_PATH", ":".join(paths))
-                ctx.env("PKG_CONFIG_SYSROOT_DIR", f"{self.sysroot}")
+        # pkgconfig 注入必须独立于 usr/lib 是否存在（见 _inject_pkgconfig 文档）。
+        self._inject_pkgconfig(ctx)
+
+    def _inject_pkgconfig(self, ctx: BuildContext) -> None:
+        """把 sysroot 里所有 pkgconfig 目录注入 PKG_CONFIG_PATH。
+
+        必须独立于 `usr/lib` 是否存在：X11 协议类包（xorgproto/xtrans 等）
+        只装 `.pc` 到 `usr/share/pkgconfig`，此时 sysroot 里根本没有 `usr/lib`，
+        若把这段逻辑挂在 `if lib.exists()` 里，libXau 这类包的 configure 就会
+        报 `Package requirements (xproto) were not met` —— 实际 .pc 就在 sysroot 里。
+        """
+        import platform as _pf
+        lib = self.sysroot / "usr" / "lib"
+        cands = [
+            lib / "pkgconfig",
+            lib / (_pf.machine() + "-linux-gnu") / "pkgconfig",
+            lib / "pkgconfig" / "..",  # 占位保持顺序稳定
+            self.sysroot / "usr" / "share" / "pkgconfig",
+            self.sysroot / "lib" / "pkgconfig",
+        ]
+        paths = [str(p) for p in cands if p.is_dir()]
+        if paths:
+            existing = ctx.env_extra.get("PKG_CONFIG_PATH")
+            joined = ":".join(paths + ([existing] if existing else []))
+            ctx.env("PKG_CONFIG_PATH", joined)
+            ctx.env("PKG_CONFIG_SYSROOT_DIR", f"{self.sysroot}")
 
     def _build_phase(self, rec, ctx: BuildContext) -> None:
         util.log("step", "构建阶段")

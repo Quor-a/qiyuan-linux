@@ -41,3 +41,22 @@ def build(ctx):
 
 def package(ctx):
     ctx.run("make DESTDIR={} install".format(ctx.destdir))
+    # harfbuzz 的 introspection 需要 freetype2-2.0.gir（upstream freetype
+    # 不生成 gir，这里用最小手写版满足 g-ir-scanner 的 include 解析；
+    # 只有当 g-ir-scanner 可用时才有意义）。
+    import shutil
+    if shutil.which("g-ir-scanner") is None:
+        return
+    gir = ctx.destdir / "usr" / "share" / "gir-1.0"
+    gir.mkdir(parents=True, exist_ok=True)
+    (gir / "freetype2-2.0.gir").write_text(
+        '<?xml version="1.0" encoding="utf-8"?>\n'
+        '<repository version="1.2"\n'
+        '            xmlns="http://www.gtk.org/introspection/core/1.0"\n'
+        '            xmlns:c="http://www.gtk.org/introspection/c/1.0"\n'
+        '            xmlns:glib="http://www.gtk.org/introspection/glib/1.0">\n'
+        '  <include name="GLib" version="2.0"/>\n'
+        '  <namespace name="freetype2" version="2.0"\n'
+        '             c:identifier-prefixes="FT"\n'
+        '             c:symbol-prefixes="ft"/>\n'
+        '</repository>\n')

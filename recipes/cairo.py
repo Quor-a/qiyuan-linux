@@ -17,8 +17,8 @@ license = "LGPL-2.1-or-later OR MPL-1.1"
 source = ["https://cairographics.org/releases/cairo-1.18.4.tar.xz"]
 sha256 = ["445ed8208a6e4823de1226a74ca319d3600e83f6369f99b14265006599c32ccb"]
 
-depends = ["pixman", "freetype", "fontconfig", "libpng", "zlib"]
-makedepends = ["pixman", "freetype", "fontconfig", "libpng", "zlib", "meson", "ninja"]
+depends = ["pixman", "freetype", "fontconfig", "libpng", "zlib", "glib"]
+makedepends = ["pixman", "freetype", "fontconfig", "libpng", "zlib", "glib", "meson", "ninja"]
 provides = ["libcairo.so.2"]
 
 requires_build_machine = True
@@ -35,3 +35,22 @@ def build(ctx):
 def package(ctx):
     ctx.run("cd build && ninja")
     ctx.run("cd build && DESTDIR={} ninja install".format(ctx.destdir))
+    # pango 的 introspection include 需要 cairo-1.0.gir；meson 的
+    # -Dgir=... 在 cairo 上游默认不开（且依赖 g-ir-scanner），
+    # 这里直接手写最小 gir（cgo 封装层，g-ir-scanner 只解析 include 名）。
+    import shutil
+    if shutil.which("g-ir-scanner") is None:
+        return
+    gir = ctx.destdir / "usr" / "share" / "gir-1.0"
+    gir.mkdir(parents=True, exist_ok=True)
+    (gir / "cairo-1.0.gir").write_text(
+        '<?xml version="1.0" encoding="utf-8"?>\n'
+        '<repository version="1.2"\n'
+        '            xmlns="http://www.gtk.org/introspection/core/1.0"\n'
+        '            xmlns:c="http://www.gtk.org/introspection/c/1.0"\n'
+        '            xmlns:glib="http://www.gtk.org/introspection/glib/1.0">\n'
+        '  <include name="GLib" version="2.0"/>\n'
+        '  <namespace name="cairo" version="1.0"\n'
+        '             c:identifier-prefixes="cairo"\n'
+        '             c:symbol-prefixes="cairo"/>\n'
+        '</repository>\n')

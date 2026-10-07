@@ -306,7 +306,16 @@ def run_triggers(names: list, root: Path | None = None,
                  timeout: int = 120) -> list:
     """执行触发器。失败不致命——触发器失败通常只是"功能没生效"，
     把整个安装判失败会让用户卡在一个装了一半的系统上。
+
+    开发机（非 root）上 ldconfig / glib-compile-schemas 都要写 /etc、/usr，
+    必然 Permission denied——这不是包的问题，改用 qemu 支持的假目标：
+      ldconfig    -> ldconfig -r <root>（root 检查 root/ 下缓存，非 root 时 stderr
+                     提示但不失败）；这里统一降级为"记录而非失败"。
+    判定：若进程非 root 且触发器写的是系统路径，标记 None（跳过），
+    真机/目标系统（root）上仍会正常执行。
     """
+    import os
+    is_root = os.geteuid() == 0
     results = []
     for n in names:
         t = TRIGGERS.get(n)
@@ -317,6 +326,11 @@ def run_triggers(names: list, root: Path | None = None,
         exe = t["cmd"].split()[0]
         if root is not None and shutil.which(exe) is None:
             results.append((n, None, f"{exe} 不存在，跳过（装机环境）"))
+            continue
+        if not is_root and exe in ("ldconfig", "glib-compile-schemas",
+                                   "update-ca-trust"):
+            results.append((n, None,
+                            "非 root 开发机跳过（目标系统/真机上正常执行）"))
             continue
         try:
             p = subprocess.run(t["cmd"], shell=True, capture_output=True,

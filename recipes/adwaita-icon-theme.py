@@ -9,9 +9,9 @@ release = 1
 summary = "GNOME 默认图标集"
 license = "CC-BY-SA-3.0"
 
-source = ["https://example.org/src/adwaita-icon-theme-48.0.tar.xz"]
-sha256 = []
-checksum_pending = True
+source = ["https://download.gnome.org/sources/adwaita-icon-theme/48/adwaita-icon-theme-48.0.tar.xz"]
+sha256 = ["847068888650d9673115be6dbf2bfdc31a46aebc528a6a9db4420e60e656b8d4"]
+checksum_pending = False
 
 depends = ["hicolor-icon-theme"]
 makedepends = ["meson", "ninja", "hicolor-icon-theme"]

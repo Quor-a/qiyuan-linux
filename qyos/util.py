@@ -146,8 +146,14 @@ def extract_tar(archive: Path, dest: Path) -> None:
 # ---------------------------------------------------------------- 下载
 
 def fetch(url: str, dest_dir: Path, expected: str | None = None,
-          timeout: int = 300) -> Path:
-    """下载源码到缓存目录，返回本地路径。已存在且校验和匹配则跳过。"""
+          timeout: int = 300, retries: int = 4) -> Path:
+    """下载源码到缓存目录，返回本地路径。已存在且校验和匹配则跳过。
+
+    断点续传是必需的，不是锦上添花：构建机的出口链路经常在传到一半时
+    卡死（大文件尤其明显），一次失败就丢掉几十 MB 的话，GTK 这一百多个
+    包的依赖链会永远走不完。这里用 Range 请求从已有 .part 续传，
+    并对"中途卡死/连接被掐"做有限次重试；每个候选都试完才判定失败。
+    """
     dest_dir.mkdir(parents=True, exist_ok=True)
     name = url.rsplit("/", 1)[-1] or "source"
     target = dest_dir / name
@@ -165,19 +171,42 @@ def fetch(url: str, dest_dir: Path, expected: str | None = None,
         candidates.append("https://ghproxy.net/" + url)
     last_err: Exception | None = None
     for u in candidates:
-        req = urllib.request.Request(u, headers={"User-Agent": "qiyuan-fetch/0.1"})
-        try:
-            with urllib.request.urlopen(req, timeout=timeout) as r, open(tmp, "wb") as f:
-                shutil.copyfileobj(r, f)
-            if tmp.read_bytes()[:1] == b"<":
-                raise IOError(f"镜像返回 HTML: {u}")
-            break
-        except Exception as e:
-            last_err = e
-            tmp.unlink(missing_ok=True)
+        for attempt in range(1, retries + 1):
+            have = tmp.stat().st_size if tmp.exists() else 0
+            headers = {"User-Agent": "qiyuan-fetch/0.1"}
+            if have:
+                headers["Range"] = f"bytes={have}-"
+            req = urllib.request.Request(u, headers=headers)
+            try:
+                with urllib.request.urlopen(req, timeout=timeout) as r:
+                    # 服务器不支持 Range 却回了 200：从头写，不能追加
+                    mode = "ab" if (have and r.status == 206) else "wb"
+                    if mode == "wb":
+                        have = 0
+                    with open(tmp, mode) as f:
+                        shutil.copyfileobj(r, f, length=1 << 20)
+                if tmp.read_bytes()[:1] == b"<":
+                    raise IOError(f"镜像返回 HTML: {u}")
+                # 有校验和时以校验和为准判断是否完整；没有就只能信 EOF
+                if expected is None or sha256_file(tmp) == expected:
+                    break
+                # 尺寸对不上：可能是服务器忽略 Range 重发了完整文件，
+                # 或内容被代理截断——两种情况都重下。
+                raise IOError("下载不完整")
+            except Exception as e:
+                last_err = e
+                if attempt < retries:
+                    log("warn", f"下载中断（已收 "
+                                f"{tmp.stat().st_size if tmp.exists() else 0} 字节），"
+                                f"重试 {attempt}/{retries - 1}: {e}")
+                    continue
+                tmp.unlink(missing_ok=True)
+        else:
+            continue
+        break
     else:
         raise last_err if last_err else IOError(f"下载失败: {url}")
-    tmp.rename(target)
+    tmp.replace(target)
     if expected is not None:
         got = sha256_file(target)
         if got != expected:
