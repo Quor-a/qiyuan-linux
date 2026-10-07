@@ -356,6 +356,14 @@ static GdkPixbuf *gen_wallpaper(guint seed) {
     return pb;
 }
 
+/* 换一张新壁纸（右键刷新 / 定时轮换共用） */
+static void rotate_wallpaper(void) {
+    if (wallpaper) g_object_unref(wallpaper);
+    wall_seed++;
+    wallpaper = gen_wallpaper(wall_seed);
+    if (desktop_fixed) gtk_widget_queue_draw(desktop_fixed);
+}
+
 /* ---------- 桌面右键菜单 ---------- */
 static void menu_new_folder(GtkMenuItem *mi, gpointer ud) {
     const char *home = g_get_home_dir();
@@ -376,10 +384,13 @@ static void menu_open_settings(GtkMenuItem *mi, gpointer ud) { launch_cmd("qyset
 static void menu_open_monitor(GtkMenuItem *mi, gpointer ud) { launch_cmd("qymon"); }
 static void menu_open_trash(GtkMenuItem *mi, gpointer ud) { launch_cmd("qyfiles --trash"); }
 static void menu_refresh_wallpaper(GtkMenuItem *mi, gpointer ud) {
-    if (wallpaper) g_object_unref(wallpaper);
-    wall_seed++;                       /* 每次刷新换一张新图案 */
-    wallpaper = gen_wallpaper(wall_seed);
-    if (desktop_fixed) gtk_widget_queue_draw(desktop_fixed);
+    rotate_wallpaper();
+}
+
+/* 自动轮换壁纸 (默认 600s, 可用 QY_WALL_INTERVAL 秒覆盖) */
+static gboolean auto_wall_tick(gpointer ud) {
+    rotate_wallpaper();
+    return G_SOURCE_CONTINUE;
 }
 
 static void menu_about(GtkMenuItem *mi, gpointer ud) {
@@ -561,6 +572,9 @@ static void build_desktop(void) {
         wallpaper = gdk_pixbuf_new_from_file(QY_WALL, NULL);
         if (!wallpaper) wallpaper = gen_wallpaper(0);   /* 文件缺失回退到程序化生成 */
     }
+    const char *iv_env = getenv("QY_WALL_INTERVAL");   /* 自动轮换秒数(默认600) */
+    int wall_interval = (iv_env && atoi(iv_env) > 0) ? atoi(iv_env) : 600;
+    g_timeout_add_seconds(wall_interval, auto_wall_tick, NULL);
     GtkWidget *win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(win), "qydesktop");
     gtk_window_set_decorated(GTK_WINDOW(win), FALSE);
