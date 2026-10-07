@@ -10,21 +10,22 @@ typedef struct {
     const char *color;      /* 图标底色 (统一主题色板) */
     const char *cmdline;
     int launches;          /* 常用排序 */
+    const char *cat;       /* 分类: 系统/文件/工具 */
 } AppEntry;
 
 /* 统一图标主题色板 (v1.7): 每应用固定主色 */
 static AppEntry apps[] = {
-    { "文件管理器", "▤", "#3b82f6", "qyfiles",         0 },
-    { "终端",       ">_", "#334155", "weston-terminal", 0 },
-    { "系统设置",   "⚙",  "#6b7280", "qysettings",      0 },
-    { "文本编辑",   "✎", "#10b981", "qyedit",          0 },
-    { "系统监视",   "▦", "#f59e0b", "qymon",           0 },
-    { "图片查看",   "▣", "#8b5cf6", "qyview",          0 },
-    { "压缩管理",   "▣", "#ef4444", "qyarc",           0 },
-    { "系统安装",   "⬇", "#f97316", "qysetup",         0 },
-    { "用户管理",   "☻", "#0ea5e9", "qyusers",         0 },
-    { "回收站",     "🗑", "#6b7280", "qyfiles --trash", 0 },
-    { "软件中心",   "▦", "#0a7ea4", "qystore",         0 },
+    { "系统设置",   "⚙",  "#6b7280", "qysettings",      0, "系统" },
+    { "系统监视",   "▦", "#f59e0b", "qymon",           0, "系统" },
+    { "系统安装",   "⬇", "#f97316", "qysetup",         0, "系统" },
+    { "用户管理",   "☻", "#0ea5e9", "qyusers",         0, "系统" },
+    { "文件管理器", "▤", "#3b82f6", "qyfiles",         0, "文件" },
+    { "图片查看",   "▣", "#8b5cf6", "qyview",          0, "文件" },
+    { "压缩管理",   "▣", "#ef4444", "qyarc",           0, "文件" },
+    { "回收站",     "🗑", "#6b7280", "qyfiles --trash", 0, "文件" },
+    { "终端",       ">_", "#334155", "weston-terminal", 0, "工具" },
+    { "文本编辑",   "✎", "#10b981", "qyedit",          0, "工具" },
+    { "软件中心",   "▦", "#0a7ea4", "qystore",         0, "工具" },
 };
 #define NAPPS ((int)(sizeof apps / sizeof apps[0]))
 
@@ -206,17 +207,30 @@ static void rebuild(gboolean filtered) {
     g_list_free(ch);
 
     gboolean any = FALSE;
-    GtkWidget *cur_row = NULL;
-    int col = 0;
-    for (int i = 0; i < NAPPS; i++) {
-        if (filtered && !app_matches(&apps[i], q)) continue;
-        any = TRUE;
-        if (col == 0) {
-            cur_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
-            gtk_box_pack_start(GTK_BOX(grid_box), cur_row, FALSE, FALSE, 0);
+    static const char *cats[] = { "系统", "文件", "工具" };
+    for (int ci = 0; ci < 3; ci++) {
+        int col = 0;
+        GtkWidget *cur_row = NULL;
+        gboolean cat_any = FALSE;
+        for (int i = 0; i < NAPPS; i++) {
+            if (strcmp(apps[i].cat, cats[ci]) != 0) continue;
+            if (filtered && !app_matches(&apps[i], q)) continue;
+            if (!cat_any) {
+                GtkWidget *catlb = gtk_label_new(NULL);
+                gtk_label_set_markup(GTK_LABEL(catlb), g_strdup_printf("<b>%s</b>", TR(cats[ci])));
+                gtk_widget_set_halign(catlb, GTK_ALIGN_START);
+                add_class(catlb, "qy-appmenu-cat");
+                gtk_box_pack_start(GTK_BOX(grid_box), catlb, FALSE, FALSE, 0);
+                cat_any = TRUE;
+                any = TRUE;
+            }
+            if (col == 0) {
+                cur_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
+                gtk_box_pack_start(GTK_BOX(grid_box), cur_row, FALSE, FALSE, 0);
+            }
+            gtk_box_pack_start(GTK_BOX(cur_row), make_grid_icon(&apps[i]), TRUE, TRUE, 2);
+            col = (col + 1) % 4;
         }
-        gtk_box_pack_start(GTK_BOX(cur_row), make_grid_icon(&apps[i]), TRUE, TRUE, 2);
-        col = (col + 1) % 4;
     }
     if (!any) {
         gtk_box_pack_start(GTK_BOX(grid_box), gtk_label_new(TR("无匹配应用")), FALSE, FALSE, 4);
@@ -230,7 +244,7 @@ static void rebuild(gboolean filtered) {
             if (sorted[j]->launches > sorted[i]->launches) {
                 AppEntry *t = sorted[i]; sorted[i] = sorted[j]; sorted[j] = t;
             }
-    col = 0; cur_row = NULL;
+    int col = 0; GtkWidget *cur_row = NULL;
     int shown = 0;
     for (int i = 0; i < NAPPS && shown < 6; i++) {
         if (sorted[i]->launches == 0) break;

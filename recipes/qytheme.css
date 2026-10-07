@@ -360,3 +360,10 @@ notebook tab:checked {
     color: #9CA3AF;
     padding: 0 6px;
 }
+
+/* ---------- 开始菜单分类标题 ---------- */
+.qy-appmenu-cat {
+    font-size: 12px;
+    color: #E95420;
+    padding: 6px 2px 2px 2px;
+}
