@@ -427,7 +427,13 @@ int main(int argc, char **argv) {
 
     info_label = gtk_label_new(TR("选择一个软件包"));
     gtk_label_set_xalign(GTK_LABEL(info_label), 0.0);
-    gtk_box_pack_start(GTK_BOX(vbox), info_label, FALSE, FALSE, 0);
+    gtk_label_set_line_wrap(GTK_LABEL(info_label), TRUE);
+    GtkWidget *card = gtk_event_box_new();
+    qy_add_class(card, "qy-store-card");
+    gtk_widget_set_margin_start(GTK_WIDGET(card), 2);
+    gtk_widget_set_margin_end(GTK_WIDGET(card), 2);
+    gtk_container_add(GTK_CONTAINER(card), info_label);
+    gtk_box_pack_start(GTK_BOX(vbox), card, FALSE, FALSE, 0);
 
     btn_act = gtk_button_new_with_label(TR("安装"));
     g_signal_connect(btn_act, "clicked", G_CALLBACK(on_act), NULL);

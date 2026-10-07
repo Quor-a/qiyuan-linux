@@ -436,3 +436,10 @@ notebook tab:checked {
     padding: 2px 8px;
     background-color: #1c2331;
 }
+
+/* ---------- 软件中心详情卡片 ---------- */
+.qy-store-card {
+    background-color: #1c2331;
+    border-radius: 8px;
+    border: 1px solid #2a3441;
+}
