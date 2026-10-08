@@ -1,0 +1,5 @@
+[Unit]
+Description=控制台登录（tty1-getty）
+After=system
+ExecStart=/sbin/agetty --noclear tty1 38400 linux
+Restart=on-failure

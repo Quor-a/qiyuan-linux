@@ -1,0 +1,23 @@
+#!/bin/sh
+# udhcpc 事件脚本：busybox DHCP 客户端拿到/释放租约时自动配网
+[ -n "$broadcast" ] && BROADCAST="broadcast $broadcast"
+[ -n "$subnet" ] && NETMASK="netmask $subnet"
+
+case "$1" in
+  deconfig)
+    ip addr flush dev "$interface" 2>/dev/null || ifconfig "$interface" 0.0.0.0
+    ;;
+  bound|renew)
+    ifconfig "$interface" "$ip" $BROADCAST $NETMASK
+    if [ -n "$router" ]; then
+      while ip route del default 2>/dev/null; do :; done
+      for r in $router; do ip route add default via "$r" dev "$interface"; done
+    fi
+    # 用 DHCP 下发的 DNS 更新 resolv.conf（保留静态兜底）
+    : > /etc/resolv.conf
+    [ -n "$domain" ] && echo "search $domain" >> /etc/resolv.conf
+    for d in $dns; do echo "nameserver $d" >> /etc/resolv.conf; done
+    grep -q nameserver /etc/resolv.conf || printf "nameserver 223.5.5.5\nnameserver 119.29.29.29\n" >> /etc/resolv.conf
+    ;;
+esac
+exit 0

@@ -27,13 +27,12 @@ def build(ctx):
 
 def package(ctx):
     d = str(ctx.destdir)
-    s = str(ctx.sysroot)
+    src = str(ctx.srcdir)
     ctx.run("mkdir -p " + d + "/etc/qyinit.d " + d + "/usr/share/udhcpc " + d + "/var/spool/cron " + d + "/root")
     for f in ("passwd", "group", "profile", "motd", "hosts", "fstab", "resolv.conf"):
-        ctx.run("cp " + s + "/etc/" + f + " " + d + "/etc/" + f)
-    # shadow 模板放源码占位目录（root:root 640 的文件构建沙箱读不了）
-    ctx.run("cp " + str(ctx.srcdir) + "/shadow.template " + d + "/etc/shadow")
-    ctx.run("cp " + s + "/usr/share/udhcpc/default.script " + d + "/usr/share/udhcpc/")
-    ctx.run("cp " + s + "/etc/qyinit.d/getty.unit " + d + "/etc/qyinit.d/")
+        ctx.run("cp " + src + "/etc/" + f + " " + d + "/etc/" + f)
+    ctx.run("cp " + src + "/shadow.template " + d + "/etc/shadow")
+    ctx.run("cp " + src + "/usr/share/udhcpc/default.script " + d + "/usr/share/udhcpc/")
+    ctx.run("cp " + src + "/etc/qyinit.d/getty.unit " + d + "/etc/qyinit.d/")
     ctx.run("chmod 640 " + d + "/etc/shadow")
     ctx.run("chmod 755 " + d + "/usr/share/udhcpc/default.script")

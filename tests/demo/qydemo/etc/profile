@@ -1,0 +1,7 @@
+# /etc/profile —— 登录 shell 环境启元 Linux
+export PATH=/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin
+export PS1='\u@\h:\w\$ '
+export EDITOR=vi
+export LANG=zh_CN.UTF-8
+[ -d /usr/share/locale ] || unset LANG
+umask 022

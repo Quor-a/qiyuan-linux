@@ -1,0 +1,2 @@
+# <fs>  <mount>  <type>  <opts>  <dump> <pass>
+tmpfs   /tmp     tmpfs   defaults,nosuid 0 0

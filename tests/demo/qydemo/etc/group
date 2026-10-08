@@ -1,0 +1,10 @@
+root:x:0:
+daemon:x:1:
+messagebus:x:81:
+avahi:x:84:
+polkitd:x:101:
+video:x:971:
+seatd:x:971:
+input:x:972:
+audio:x:973:
+render:x:974:
