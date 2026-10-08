@@ -38,6 +38,7 @@ static void add_history(const char *text) {
     char st[256];
     g_snprintf(st, sizeof st, "%s: %d", TR("剪贴板历史"), (int)history->len);
     gtk_label_set_text(GTK_LABEL(status_label), st);
+    gtk_widget_show_all(listbox);   /* 窗口已显示后插入的行需显式显示 */
 }
 
 static void on_copy_clicked(GtkWidget *w, gpointer ud) {

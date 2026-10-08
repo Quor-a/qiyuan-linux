@@ -31,6 +31,7 @@ static AppEntry apps[] = {
     { "截图工具",   "📷", "#f472b6", "qyshot",          0, "工具" },
     { "剪贴板",     "📋", "#f59e0b", "qyclip",          0, "工具" },
     { "锁屏",       "🔒", "#94a3b8", "qylock",          0, "系统" },
+    { "全局搜索",   "🔍", "#22d3ee", "qysearch",        0, "系统" },
 };
 #define NAPPS ((int)(sizeof apps / sizeof apps[0]))
 
