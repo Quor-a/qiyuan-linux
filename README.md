@@ -1450,3 +1450,16 @@ ngs-about-v2.png`。
   当前布局+下拉+按钮渲染正常，qyinput.conf 写入 layout=de
 
 构建产物：`qydesktop 0.1.0-121`。
+
+### 系统设置：笔和Ink页（v0.1.0-122，2026-10 实测）
+
+按设置中心「设备→笔和Ink」需求，新增笔和Ink页（输入页之后）：
+- 「手写笔」开关 + 「书写时忽略触摸」开关
+- 每项 GtkSwitch，切换即写 /etc/qypen.conf（pen/ignore_touch）
+- 自动化：`QY_SETTINGS_PEN=off` 启动后自动关闭
+- l10n：笔和Ink/手写笔设置/手写笔/书写时忽略触摸
+- 实测：`QY_SETTINGS_PAGE=33` 直达笔和Ink页
+  （QYSETTINGS_DEBUG: set page=33 total=34），
+  2 个开关渲染正常，qypen.conf 写入 pen=off
+
+构建产物：`qydesktop 0.1.0-122`。

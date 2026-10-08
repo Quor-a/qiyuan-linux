@@ -281,6 +281,51 @@ static gboolean auto_perm_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 笔和Ink: 开关写 /etc/qypen.conf ---------- */
+#define PEN_CONF "/etc/qypen.conf"
+static int g_pen_loading = 0;
+
+static void pen_write(const char *key, int on) {
+    gchar *content = NULL;
+    gsize len = 0;
+    g_file_get_contents(PEN_CONF, &content, &len, NULL);
+    GString *out = g_string_new(NULL);
+    char *line = content;
+    int replaced = 0;
+    size_t klen = strlen(key);
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+        if (strncmp(line, key, klen) == 0 && line[klen] == '=') {
+            g_string_append_printf(out, "%s=%s", key, on ? "on" : "off");
+            replaced = 1;
+        } else {
+            g_string_append_len(out, line, llen);
+        }
+        if (nl) g_string_append_c(out, '\n');
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(content);
+    if (!replaced)
+        g_string_append_printf(out, "%s=%s\n", key, on ? "on" : "off");
+    g_file_set_contents(PEN_CONF, out->str, out->len, NULL);
+    g_string_free(out, TRUE);
+}
+
+static void on_pen_toggled(GtkWidget *sw, gpointer ud) {
+    if (g_pen_loading) return;
+    const char *key = (const char *)ud;
+    pen_write(key, gtk_switch_get_active(GTK_SWITCH(sw)));
+}
+
+/* 自动化验证: QY_SETTINGS_PEN=off 启动后关闭 */
+static gboolean auto_pen_apply(gpointer p) {
+    (void)p;
+    const char *env = g_getenv("QY_SETTINGS_PEN");
+    if (env) pen_write("pen", strcmp(env, "off") != 0);
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 输入: 键盘布局 ---------- */
 #define INPUT_CONF "/etc/qyinput.conf"
 static GtkWidget *g_input_combo = NULL;
@@ -2754,6 +2799,52 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vin, gtk_label_new(TR("输入")));
         if (env_in)
             g_timeout_add(1750, auto_input_apply, NULL);
+    }
+
+    /* 笔和Ink页: 手写笔开关（写 /etc/qypen.conf） */
+    {
+        GtkWidget *vpn = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vpn), 14);
+        gtk_box_pack_start(GTK_BOX(vpn), row(TR("笔和Ink"), TR("手写笔设置")), FALSE, FALSE, 0);
+        g_pen_loading = 1;
+        static const char *pen_keys[] = { "pen", "ignore_touch" };
+        static const char *pen_labels[] = { "手写笔", "书写时忽略触摸" };
+        for (int i = 0; i < 2; i++) {
+            GtkWidget *p_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+            GtkWidget *p_l = gtk_label_new(TR(pen_labels[i]));
+            gtk_widget_set_size_request(p_l, 180, -1);
+            gtk_widget_set_halign(p_l, GTK_ALIGN_START);
+            GtkWidget *p_sw = gtk_switch_new();
+            gchar *content = NULL;
+            gsize len = 0;
+            int cur_on = 0;
+            if (g_file_get_contents(PEN_CONF, &content, &len, NULL)) {
+                char *line = content;
+                size_t klen = strlen(pen_keys[i]);
+                while (line && *line) {
+                    if (strncmp(line, pen_keys[i], klen) == 0 && line[klen] == '=') {
+                        cur_on = strncmp(line + klen + 1, "off", 3) != 0;
+                        break;
+                    }
+                    char *nl = strchr(line, '\n');
+                    line = nl ? nl + 1 : NULL;
+                }
+                g_free(content);
+            }
+            const char *env_pn = g_getenv("QY_SETTINGS_PEN");
+            if (env_pn && i == 0)
+                cur_on = strcmp(env_pn, "off") != 0;
+            gtk_switch_set_active(GTK_SWITCH(p_sw), cur_on);
+            g_signal_connect(p_sw, "state-set", G_CALLBACK(on_pen_toggled),
+                             (gpointer)pen_keys[i]);
+            gtk_box_pack_start(GTK_BOX(p_row), p_l, FALSE, FALSE, 0);
+            gtk_box_pack_start(GTK_BOX(p_row), p_sw, FALSE, FALSE, 0);
+            gtk_box_pack_start(GTK_BOX(vpn), p_row, FALSE, FALSE, 0);
+        }
+        g_pen_loading = 0;
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vpn, gtk_label_new(TR("笔和Ink")));
+        if (g_getenv("QY_SETTINGS_PEN"))
+            g_timeout_add(1800, auto_pen_apply, NULL);
     }
 
     gtk_widget_show_all(win);
