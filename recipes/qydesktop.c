@@ -637,9 +637,31 @@ static void build_dock(void) {
 /* ---------- 桌面窗口 ---------- */
 static void build_desktop(void) {
     const char *seed_env = getenv("QY_WALL_SEED");   /* 演示/测试: 指定生成种子 */
-    if (seed_env && seed_env[0]) {
+    /* 优先读取 /etc/qywallpaper.conf 的 wallpaper= 路径（设置中心壁纸页写入） */
+    gchar *wall_path = NULL;
+    gchar *conf = NULL;
+    if (g_file_get_contents("/etc/qywallpaper.conf", &conf, NULL, NULL)) {
+        char *line = conf;
+        while (line && *line) {
+            if (strncmp(line, "wallpaper=", 10) == 0) {
+                char *nl = strchr(line, '\n');
+                if (nl) *nl = 0;
+                if (line[10]) wall_path = g_strdup(line + 10);
+                break;
+            }
+            char *nl = strchr(line, '\n');
+            line = nl ? nl + 1 : NULL;
+        }
+        g_free(conf);
+    }
+    if (wall_path) {
+        wallpaper = gdk_pixbuf_new_from_file(wall_path, NULL);
+        g_free(wall_path);
+    }
+    if (!wallpaper && seed_env && seed_env[0]) {
         wallpaper = gen_wallpaper((guint)strtoul(seed_env, NULL, 10));
-    } else {
+    }
+    if (!wallpaper) {
         wallpaper = gdk_pixbuf_new_from_file(QY_WALL, NULL);
         if (!wallpaper) wallpaper = gen_wallpaper(0);   /* 文件缺失回退到程序化生成 */
     }

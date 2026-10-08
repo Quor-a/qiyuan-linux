@@ -1557,3 +1557,14 @@ ngs-about-v2.png`。
   按钮矩形 x273-330 y273 宽 58px），主题色切换真实生效
 
 构建产物：`qydesktop 0.1.0-132`。
+
+### 壁纸配置真实生效：qydesktop 读取 /etc/qywallpaper.conf（v0.1.0-133，2026-10 实测）
+
+补全「壁纸页」闭环（此前仅写入配置，桌面未应用）：
+- qydesktop 启动时优先读取 /etc/qywallpaper.conf 的 `wallpaper=` 路径
+- 指定壁纸加载失败才回退系统默认 qiyuan.png → 程序化渐变
+- 实测：配置 `wallpaper=/usr/share/backgrounds/wall2.png`（蓝色渐变）
+  启动桌面后背景变为蓝色渐变（蓝色像素 592248 占屏 58%），
+  采样 (100,100)=(49,98,200)、(1279,799)=(34,68,170)，壁纸真实生效
+
+构建产物：`qydesktop 0.1.0-133`。
