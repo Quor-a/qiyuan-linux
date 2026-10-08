@@ -615,6 +615,100 @@ static void activate(GtkApplication *app, gpointer ud) {
             g_timeout_add(700, auto_idle_apply, GINT_TO_POINTER(cur_idx));
     }
 
+    /* 网络页: 当前网络概况（默认接口/IP/MAC/网关/DNS） */
+    {
+        GtkWidget *vnet = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vnet), 14);
+        char main_if[64] = "eth0";
+        char rline[256];
+        FILE *rf = popen("ip route show default 2>/dev/null", "r");
+        if (rf) {
+            if (fgets(rline, sizeof rline, rf)) {
+                char *devp = strstr(rline, "dev ");
+                if (devp) {
+                    devp += 4;
+                    char *sp = strchr(devp, ' ');
+                    if (sp) *sp = 0;
+                    snprintf(main_if, sizeof main_if, "%s", devp);
+                }
+            }
+            pclose(rf);
+        }
+        char ip[128] = "-";
+        char cmd[160];
+        snprintf(cmd, sizeof cmd, "ip -o -4 addr show %s 2>/dev/null", main_if);
+        FILE *ipf = popen(cmd, "r");
+        if (ipf) {
+            if (fgets(rline, sizeof rline, ipf)) {
+                char *p = strstr(rline, "inet ");
+                if (p) {
+                    p += 5;
+                    char *sp = strchr(p, ' ');
+                    if (sp) *sp = 0;
+                    snprintf(ip, sizeof ip, "%s", p);
+                }
+            }
+            pclose(ipf);
+        }
+        char mac[64] = "-";
+        snprintf(cmd, sizeof cmd, "ip -o link show %s 2>/dev/null", main_if);
+        FILE *mf = popen(cmd, "r");
+        if (mf) {
+            if (fgets(rline, sizeof rline, mf)) {
+                char *mp = strstr(rline, "link/");
+                if (mp) {
+                    mp += 5;
+                    if (sscanf(mp, "%*s %63s", mac) != 1) {
+                        char *sp = strchr(mp, ' ');
+                        if (sp) *sp = 0;
+                        snprintf(mac, sizeof mac, "%s", mp);
+                    }
+                }
+            }
+            pclose(mf);
+        }
+        char gw[128] = "-";
+        FILE *gf = popen("ip route show default 2>/dev/null", "r");
+        if (gf) {
+            if (fgets(rline, sizeof rline, gf)) {
+                char *p = strstr(rline, "default via ");
+                if (p) {
+                    p += 12;
+                    char *sp = strchr(p, ' ');
+                    if (sp) *sp = 0;
+                    snprintf(gw, sizeof gw, "%s", p);
+                }
+            }
+            pclose(gf);
+        }
+        char dns[128] = "-";
+        FILE *dnf = fopen("/etc/resolv.conf", "r");
+        if (dnf) {
+            int n = 0;
+            while (fgets(rline, sizeof rline, dnf) && n < 4) {
+                if (strncmp(rline, "nameserver", 10) == 0) {
+                    char *p = rline + 10;
+                    while (*p == ' ') p++;
+                    char *nl = strchr(p, '\n');
+                    if (nl) *nl = 0;
+                    if (n == 0) snprintf(dns, sizeof dns, "%s", p);
+                    else {
+                        strncat(dns, ", ", sizeof dns - strlen(dns) - 1);
+                        strncat(dns, p, sizeof dns - strlen(dns) - 1);
+                    }
+                    n++;
+                }
+            }
+            fclose(dnf);
+        }
+        gtk_box_pack_start(GTK_BOX(vnet), row(TR("网络接口"), main_if), FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vnet), row(TR("IP 地址"), ip), FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vnet), row(TR("MAC 地址"), mac), FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vnet), row(TR("默认网关"), gw), FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vnet), row(TR("DNS 服务器"), dns), FALSE, FALSE, 0);
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vnet, gtk_label_new(TR("网络")));
+    }
+
     gtk_widget_show_all(win);
 
     /* 日期时间每秒刷新 */

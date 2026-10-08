@@ -1159,3 +1159,16 @@ ngs-about-v2.png`。
   weston.ini idle-time=600 写入成功
 
 构建产物：`qydesktop 0.1.0-98`。
+
+### 系统设置：网络页（v0.1.0-99，2026-10 实测）
+
+按设置中心「网络和 Internet→状态/以太网」需求，新增网络概况页（电源页之后）：
+- 当前网络概况只读行：网络接口 / IP 地址 / MAC 地址 / 默认网关 / DNS 服务器
+- 数据源：ip route show default（选主接口）、ip -o -4 addr show、
+  ip -o link show、/etc/resolv.conf
+- l10n：网络/网络接口/默认网关/DNS 服务器
+- 实测：`QY_SETTINGS_PAGE=11` 直达网络页
+  （QYSETTINGS_DEBUG: set page=11 total=12），
+  显示 eth0 / 10.4.14.206 / 52:54:00:c5:aa:e6 / 网关 10.4.0.1
+
+构建产物：`qydesktop 0.1.0-99`。
