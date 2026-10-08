@@ -1614,3 +1614,14 @@ ngs-about-v2.png`。
   /etc/qybookmarks.conf 含 test.html，窗口 718x556 + 文本 6417 像素
 
 构建产物：`qydesktop 0.1.0-139`。
+
+### 截图工具 qyshot（v0.1.0-142，2026-10 实测）
+
+按「截图工具」需求，新增启元截图：
+- 纯 X11 辅助程序 qyshot-capture（XGetImage 抓根窗口 → 24-bit BMP）
+- qyshot 解析 BMP 构造 GdkPixbuf（gdk-pixbuf 无 BMP 加载器时自解析）
+- 全屏截图/保存 PNG/复制到剪贴板，启动器可直达
+- 自动化 QYSHOT_DISPLAY + QYSHOT_AUTO=输出路径（实测 exit=0）
+- 实测：1280x800 PNG 生成，非黑像素 10557（桌面内容真实捕获）
+
+构建产物：`qydesktop 0.1.0-142`。
