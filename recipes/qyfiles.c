@@ -13,7 +13,7 @@ static int in_trash = 0;   /* 当前是否处于回收站页 */
 static int g_argc = 0;     /* main 传下: --trash 检测用 */
 static char **g_argv = NULL;
 static char g_search[128] = "";  /* 当前搜索关键字（空=全部） */
-static gchar *cut_source = NULL; /* 剪切源完整路径 */
+static GSList *cut_sources = NULL; /* 剪切源列表（多选） */
 static void chdir_to(const char *path);
 static void chdir_trash(void);
 
@@ -134,18 +134,40 @@ static void selected_name(gchar **name) {
     gtk_tree_model_get(m, &it, 1, name, -1);
 }
 
-static void do_delete(void) {
-    gchar *name; selected_name(&name);
-    if (!name) return;
-    gchar *full = g_build_filename(in_trash ? "" : cwd, name, NULL);
-    if (in_trash) { g_free(name); g_free(full); return; }
-    GError *err = NULL;
-    if (!trash_file(full, &err)) {
-        gchar *msg = g_strdup_printf(TR("删除失败: %s"), err ? err->message : "?");
-        gtk_label_set_text(GTK_LABEL(status), msg);
-        g_free(msg); g_clear_error(&err);
+/* 多选：收集所有选中文件名到 GSList（调用者 g_slist_free_full(names, g_free)） */
+static GSList *selected_names(void) {
+    GSList *list = NULL;
+    GtkTreeSelection *sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+    GtkTreeModel *m = gtk_tree_view_get_model(GTK_TREE_VIEW(view));
+    GList *rows = gtk_tree_selection_get_selected_rows(sel, &m);
+    for (GList *r = rows; r; r = r->next) {
+        GtkTreeIter it;
+        if (gtk_tree_model_get_iter(m, &it, r->data)) {
+            gchar *name = NULL;
+            gtk_tree_model_get(m, &it, 1, &name, -1);
+            if (name) list = g_slist_prepend(list, name);
+        }
     }
-    g_free(name); g_free(full);
+    g_list_free_full(rows, (GDestroyNotify)gtk_tree_path_free);
+    return g_slist_reverse(list);
+}
+
+static void do_delete(void) {
+    GSList *names = selected_names();
+    if (!names) return;
+    if (in_trash) { g_slist_free_full(names, g_free); return; }
+    for (GSList *l = names; l; l = l->next) {
+        const char *name = (const char *)l->data;
+        gchar *full = g_build_filename(cwd, name, NULL);
+        GError *err = NULL;
+        if (!trash_file(full, &err)) {
+            gchar *msg = g_strdup_printf(TR("删除失败: %s"), err ? err->message : "?");
+            gtk_label_set_text(GTK_LABEL(status), msg);
+            g_free(msg); g_clear_error(&err);
+        }
+        g_free(full);
+    }
+    g_slist_free_full(names, g_free);
     chdir_to(cwd);
 }
 
@@ -322,30 +344,37 @@ static gboolean auto_copy(gpointer p) {
 
 static void do_copy(GtkButton *b, gpointer ud) {
     (void)b; (void)ud;
-    gchar *name;
-    selected_name(&name);
-    if (!name) { gtk_label_set_text(GTK_LABEL(status), TR("请先选择一个文件")); return; }
-    do_copy_named(name);
-    g_free(name);
+    GSList *names = selected_names();
+    if (!names) { gtk_label_set_text(GTK_LABEL(status), TR("请先选择一个文件")); return; }
+    for (GSList *l = names; l; l = l->next)
+        do_copy_named((const char *)l->data);
+    g_slist_free_full(names, g_free);
+    chdir_to(cwd);
 }
 
 /* ---------- 剪切 / 粘贴（移动文件） ---------- */
 static void do_cut(GtkButton *b, gpointer ud) {
     (void)b; (void)ud;
-    gchar *name;
-    selected_name(&name);
-    if (!name) { gtk_label_set_text(GTK_LABEL(status), TR("请先选择一个文件")); return; }
-    g_free(cut_source);
-    cut_source = g_build_filename(cwd, name, NULL);
-    gchar *msg = g_strdup_printf("%s: %s", TR("已剪切"), name);
+    GSList *names = selected_names();
+    if (!names) { gtk_label_set_text(GTK_LABEL(status), TR("请先选择一个文件")); return; }
+    g_slist_free_full(cut_sources, g_free);
+    cut_sources = NULL;
+    int n = 0;
+    for (GSList *l = names; l; l = l->next) {
+        cut_sources = g_slist_prepend(cut_sources, g_build_filename(cwd, (const char *)l->data, NULL));
+        n++;
+    }
+    cut_sources = g_slist_reverse(cut_sources);
+    g_printerr("QYFILESDBG: cut %d items\n", n);
+    gchar *msg = g_strdup_printf(TR("已剪切 %d 项"), n);
     gtk_label_set_text(GTK_LABEL(status), msg);
     g_free(msg);
-    g_free(name);
+    g_slist_free_full(names, g_free);
 }
 
 static void do_paste(GtkButton *b, gpointer ud) {
     (void)b; (void)ud;
-    if (!cut_source) {
+    if (!cut_sources) {
         gtk_label_set_text(GTK_LABEL(status), TR("没有可粘贴的剪切项"));
         return;
     }
@@ -353,20 +382,28 @@ static void do_paste(GtkButton *b, gpointer ud) {
         gtk_label_set_text(GTK_LABEL(status), TR("回收站中不能粘贴"));
         return;
     }
-    gchar *base = g_path_get_basename(cut_source);
-    gchar *dst = g_build_filename(cwd, base, NULL);
-    g_free(base);
-    gchar *cmd = g_strdup_printf("mv -b -- %s %s", g_shell_quote(cut_source), g_shell_quote(dst));
-    int rc = system(cmd);
-    g_free(cmd);
-    if (rc == 0) {
+    int ok = 0, fail = 0;
+    for (GSList *l = cut_sources; l; l = l->next) {
+        const gchar *src = (const gchar *)l->data;
+        gchar *base = g_path_get_basename(src);
+        gchar *dst = g_build_filename(cwd, base, NULL);
+        g_free(base);
+        gchar *cmd = g_strdup_printf("mv -b -- %s %s", g_shell_quote(src), g_shell_quote(dst));
+        int rc = system(cmd);
+        g_free(cmd);
+        if (rc == 0) ok++; else fail++;
+        g_free(dst);
+    }
+    if (fail == 0) {
         gtk_label_set_text(GTK_LABEL(status), TR("已粘贴"));
-        g_free(cut_source); cut_source = NULL;
+        g_slist_free_full(cut_sources, g_free);
+        cut_sources = NULL;
         chdir_to(cwd);
     } else {
-        gtk_label_set_text(GTK_LABEL(status), TR("粘贴失败"));
+        gchar *msg = g_strdup_printf(TR("粘贴失败 %d 项"), fail);
+        gtk_label_set_text(GTK_LABEL(status), msg);
+        g_free(msg);
     }
-    g_free(dst);
 }
 
 /* ---------- 属性对话框: 名称 / 位置 / 大小 / 修改时间 / 权限 ---------- */
@@ -498,6 +535,32 @@ static gboolean on_popup(GtkWidget *w, GdkEventButton *ev, gpointer ud) {
         return TRUE;
     }
     return FALSE;
+}
+
+/* 自动化：QYFILES_MULTI=file1,file2 选中多行并触发剪切（自测多选） */
+static gboolean auto_multi(gpointer p) {
+    const char *csv = (const char *)p;
+    GtkTreeModel *m = gtk_tree_view_get_model(GTK_TREE_VIEW(view));
+    GtkTreeSelection *sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+    char *copy = g_strdup(csv);
+    char **names = g_strsplit(copy, ",", 0);
+    for (int i = 0; names && names[i]; i++) {
+        GtkTreeIter it;
+        if (gtk_tree_model_get_iter_first(m, &it)) {
+            do {
+                gchar *name = NULL;
+                gtk_tree_model_get(m, &it, 1, &name, -1);
+                if (name && strcmp(name, names[i]) == 0)
+                    gtk_tree_selection_select_iter(sel, &it);
+                g_free(name);
+            } while (gtk_tree_model_iter_next(m, &it));
+        }
+    }
+    g_strfreev(names);
+    g_free(copy);
+    g_free(p);
+    do_cut(NULL, NULL);
+    return G_SOURCE_REMOVE;
 }
 
 /* 自动化：QYFILES_RIGHTCLICK=文件名 选中该行并弹出右键菜单（自测截图用） */
@@ -805,6 +868,27 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view), -1, TR("名称"), r2, "text", 1, NULL);
     GtkCellRenderer *r3 = gtk_cell_renderer_text_new();
     gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view), -1, TR("大小"), r3, "text", 2, NULL);
+    /* 列头点击排序 */
+    GtkTreeViewColumn *c0 = gtk_tree_view_get_column(GTK_TREE_VIEW(view), 0);
+    GtkTreeViewColumn *c1 = gtk_tree_view_get_column(GTK_TREE_VIEW(view), 1);
+    GtkTreeViewColumn *c2 = gtk_tree_view_get_column(GTK_TREE_VIEW(view), 2);
+    gtk_tree_view_column_set_clickable(c0, TRUE);
+    gtk_tree_view_column_set_sort_indicator(c0, TRUE);
+    gtk_tree_view_column_set_sort_column_id(c0, 0);
+    gtk_tree_view_column_set_clickable(c1, TRUE);
+    gtk_tree_view_column_set_sort_indicator(c1, TRUE);
+    gtk_tree_view_column_set_sort_column_id(c1, 1);
+    gtk_tree_view_column_set_clickable(c2, TRUE);
+    gtk_tree_view_column_set_sort_indicator(c2, TRUE);
+    gtk_tree_view_column_set_sort_column_id(c2, 2);
+    /* 默认按名称排序 */
+    gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(store), 1, GTK_SORT_ASCENDING);
+    /* 多选 */
+    gtk_tree_selection_set_mode(gtk_tree_view_get_selection(GTK_TREE_VIEW(view)), GTK_SELECTION_MULTIPLE);
+    gint sort_col = -1;
+    GtkSortType sort_order = GTK_SORT_ASCENDING;
+    gtk_tree_sortable_get_sort_column_id(GTK_TREE_SORTABLE(store), &sort_col, &sort_order);
+    g_printerr("QYFILESDBG: sort col=%d order=%d multi=1\n", sort_col, (int)sort_order);
     GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
     gtk_container_add(GTK_CONTAINER(scroll), view);
     gtk_box_pack_start(GTK_BOX(vbox), scroll, TRUE, TRUE, 0);
@@ -831,6 +915,10 @@ static void activate(GtkApplication *app, gpointer ud) {
     const char *rclk = g_getenv("QYFILES_RIGHTCLICK");
     if (rclk && rclk[0])
         g_timeout_add(800, (GSourceFunc)auto_rightclick, g_strdup(rclk));
+    /* 自动化验证: QYFILES_MULTI=file1,file2 选中多行并触发剪切 */
+    const char *multi = g_getenv("QYFILES_MULTI");
+    if (multi && multi[0])
+        g_timeout_add(600, (GSourceFunc)auto_multi, g_strdup(multi));
     /* 自动化验证: QYFILES_SEARCH=/etc:passwd 启动后进入 /etc 并过滤 */
     const char *sf = g_getenv("QYFILES_SEARCH");
     if (sf && sf[0]) {

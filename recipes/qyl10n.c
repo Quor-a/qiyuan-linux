@@ -424,6 +424,7 @@ static const pair tbl[] = {
     { "剪切", "Cut" },
     { "粘贴", "Paste" },
     { "已剪切", "Cut" },
+    { "已剪切 %d 项", "%d items cut" },
     { "已粘贴", "Pasted" },
     { "没有可粘贴的剪切项", "Nothing to paste" },
     { "回收站中不能粘贴", "Cannot paste in trash" },

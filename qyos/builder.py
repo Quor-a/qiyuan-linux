@@ -408,15 +408,23 @@ class Builder:
             # libtool .la 内 libdir=/usr/lib 会让链接期去宿主找依赖库；
         # 重写为 sysroot 实际路径，保证自包含
         import re as _re
-        for la in self.sysroot.rglob("*.la"):
-            try:
-                txt = la.read_text()
-                new = txt.replace("='/usr/lib/", f"='{self.sysroot}/usr/lib/")
-                new = new.replace(" '/usr/lib/", f" {self.sysroot}/usr/lib/").replace(" /usr/lib/lib", f" {self.sysroot}/usr/lib/lib")
-                if new != txt:
-                    la.write_text(new)
-            except Exception:
-                pass
+        import os as _os
+        # 用 os.walk 替代 rglob：跳过挂载的 /proc，避免扫描 map_files 触发权限拒绝
+        for _dp, _dns, _fns in _os.walk(self.sysroot):
+            if _dp == str(self.sysroot) and "proc" in _dns:
+                _dns.remove("proc")
+            for _fn in _fns:
+                if not _fn.endswith(".la"):
+                    continue
+                la = Path(_dp) / _fn
+                try:
+                    txt = la.read_text()
+                    new = txt.replace("='/usr/lib/", f"='{self.sysroot}/usr/lib/")
+                    new = new.replace(" '/usr/lib/", f" {self.sysroot}/usr/lib/").replace(" /usr/lib/lib", f" {self.sysroot}/usr/lib/lib")
+                    if new != txt:
+                        la.write_text(new)
+                except Exception:
+                    pass
 
 
         inc = self.sysroot / "usr" / "include"

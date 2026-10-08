@@ -1710,3 +1710,12 @@ ngs-about-v2.png`。
 - 自动化 `QYFILES_RIGHTCLICK=文件名` 选中目标行并构建菜单（自测日志 `QYFILESDBG: context menu ready (7 items)`）
 
 构建产物：`qydesktop 0.1.0-158`。
+
+### 文件管理器多选 + 列头排序（v0.1.0-161，2026-10 实测）
+
+- **多选**：`GTK_SELECTION_MULTIPLE`，删除/复制/剪切/粘贴均支持多文件（`selected_names()` 收集全部选中行）
+- **列头排序**：类型/名称/大小三列可点击排序（默认按名称升序）
+- **自动化验证**：`QYFILES_MULTI=aa.txt,cc.txt` → 选中两行并触发剪切 → 日志 `QYFILESDBG: cut 2 items`、`sort col=1 order=0 multi=1`
+- **构建系统修复**：`qyos/builder.py` 的 `rglob("*.la")` 改为 `os.walk` 并跳过挂载的 `/proc`，避免扫描 `map_files` 触发 PermissionError（挂载 proc 构建时必现）
+
+构建产物：`qydesktop 0.1.0-161`。
