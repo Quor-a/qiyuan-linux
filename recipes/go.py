@@ -12,8 +12,8 @@ summary = "Go 编译工具链（仅构建机使用）"
 license = "BSD-3-Clause"
 
 source = ["https://mirrors.aliyun.com/golang/go1.24.4.linux-amd64.tar.gz"]
-sha256 = []
-checksum_pending = True
+sha256 = ["77e5da33bb72aeaef1ba4418b6fe511bc4d041873cbf82e5aa6318740df98717"]
+checksum_pending = False
 
 depends = []
 makedepends = []
@@ -26,8 +26,9 @@ compression = "gz"
 
 def build(ctx):
     # Go 官方 tarball 自带预编译工具链，解包即用；只需要做一次自检
+    # （strip_components=1 后 go/ 顶层目录被剥掉，bin/go 直接在 src 下）
     ctx.log("Go 预编译工具链：解包 + go version 自检")
-    ctx.run("./go/bin/go version")
+    ctx.run("./bin/go version")
 
 
 def package(ctx):
@@ -35,6 +36,6 @@ def package(ctx):
     import os
     dest = os.path.join(str(ctx.destdir), "usr/lib/go")
     ctx.run("mkdir -p {}/usr/lib {}/usr/bin".format(ctx.destdir, ctx.destdir))
-    ctx.run("cp -a go {}".format(dest))
+    ctx.run("cp -a . {}".format(dest))
     ctx.run("ln -sf /usr/lib/go/bin/go {}/usr/bin/go".format(ctx.destdir))
     ctx.run("ln -sf /usr/lib/go/bin/gofmt {}/usr/bin/gofmt".format(ctx.destdir))

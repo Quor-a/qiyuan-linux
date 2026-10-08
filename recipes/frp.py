@@ -15,25 +15,28 @@ summary = "内网穿透反向代理（frpc 客户端 + frps 服务端）"
 license = "Apache-2.0"
 
 source = ["https://github.com/fatedier/frp/archive/refs/tags/v0.61.2.tar.gz"]
-sha256 = []
-checksum_pending = True
+sha256 = ["19600d944e05f7ed95bac53c18cbae6ce7eff859c62b434b0c315ca72acb1d3c"]
+checksum_pending = False
 
 depends = []
 makedepends = ["go"]
 provides = []
 
 requires_build_machine = True
-network = False
+network = True
 compression = "gz"
 
 
 def build(ctx):
     ctx.log("Go 静态构建 frpc/frps（CGO 关闭，纯静态，可拷贝到任何 Linux）")
     ctx.env("CGO_ENABLED", "0")
-    ctx.run("cd frp-0.61.2 && go build -trimpath -ldflags='-s -w' "
-            "-o ../frpc ./cmd/frpc")
-    ctx.run("cd frp-0.61.2 && go build -trimpath -ldflags='-s -w' "
-            "-o ../frps ./cmd/frps")
+    # frp 的 go.mod 声明 go 1.23.0，本机工具链 1.24.4 时 Go 会尝试
+    # 下载 go1.23.0 工具链——用国内代理；模块依赖同样走它
+    ctx.env("GOPROXY", "https://goproxy.cn,direct")
+    ctx.env("GOSUMDB", "sum.golang.google.cn")
+    # strip_components=1 后源码树顶层被剥掉，cmd/frpc 直接在 src 下
+    ctx.run("go build -trimpath -ldflags='-s -w' -o frpc ./cmd/frpc")
+    ctx.run("go build -trimpath -ldflags='-s -w' -o frps ./cmd/frps")
     ctx.run("./frpc --version && ./frps --version")
 
 
@@ -60,5 +63,5 @@ def package(ctx):
             "bindPort = 7000\n"
             "auth.token = \"请改成随机长字符串\"\n"
             "EOF".format(ctx.destdir))
-    ctx.run("cp -a frp-0.61.2/README* frp-0.61.2/LICENSE "
+    ctx.run("cp -a README.md LICENSE "
             "{}/usr/share/doc/frp/ 2>/dev/null || true".format(ctx.destdir))
