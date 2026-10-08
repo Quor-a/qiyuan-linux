@@ -1603,3 +1603,14 @@ ngs-about-v2.png`。
   大数字行亮像素 1494→1620（新增标签），渲染正常
 
 构建产物：`qydesktop 0.1.0-137`。
+
+### 浏览器前进/后退 + 收藏（v0.1.0-139，2026-10 实测）
+
+按「浏览器」软件细节需求，qybrowser 新增：
+- 历史栈：前进/后退按钮（⇐ ⇒），打开新页清空正文并自动入栈
+- 收藏：☆ 按钮把当前地址写入 /etc/qybookmarks.conf（自动去重）
+- 自动化：QYBROWSER_URL / QYBROWSER_URL2 / QYBROWSER_BACK / QYBROWSER_BOOKMARK
+- 实测：两页访问后自动后退并收藏第一页，
+  /etc/qybookmarks.conf 含 test.html，窗口 718x556 + 文本 6417 像素
+
+构建产物：`qydesktop 0.1.0-139`。

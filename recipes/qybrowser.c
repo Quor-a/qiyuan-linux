@@ -13,6 +13,12 @@ static GtkWidget *url_entry = NULL;
 static GtkWidget *view      = NULL;
 static GtkWidget *status_label = NULL;
 static GtkTextBuffer *buffer = NULL;
+static GtkWidget *back_btn = NULL, *fwd_btn = NULL;   /* 前进/后退 */
+
+/* 浏览历史栈 */
+static GPtrArray *hist = NULL;
+static int hist_pos = -1;
+static gboolean hist_nav = FALSE;   /* 历史导航时不重复入栈 */
 
 static gboolean finish_fetch(gpointer ud);   /* 前向声明 */
 
@@ -165,11 +171,91 @@ static gboolean finish_fetch(gpointer ud) {
 /* ---------- 打开 URL ---------- */
 static void open_url(const char *url) {
     if (!url || !url[0]) return;
+    if (!hist) hist = g_ptr_array_new_with_free_func(g_free);
+    /* 历史导航时不重复入栈 */
+    if (!hist_nav) {
+        /* 清空当前位置之后的前进历史 */
+        while (hist_pos < (int)hist->len - 1)
+            g_ptr_array_remove_index(hist, hist->len - 1);
+        g_ptr_array_add(hist, g_strdup(url));
+        hist_pos = (int)hist->len - 1;
+    }
+    /* 每次打开替换正文 */
+    gtk_text_buffer_set_text(buffer, "", -1);
+    GtkTextIter end;
+    gtk_text_buffer_get_end_iter(buffer, &end);
+    gchar *head = g_strdup_printf("%s\n%s\n", url, "——————————————————");
+    gtk_text_buffer_insert(buffer, &end, head, -1);
+    g_free(head);
     gtk_label_set_text(GTK_LABEL(status_label), TR("正在下载..."));
+    if (back_btn) gtk_widget_set_sensitive(back_btn, hist_pos > 0);
+    if (fwd_btn) gtk_widget_set_sensitive(fwd_btn, hist_pos < (int)hist->len - 1);
     FetchResult *r = g_new0(FetchResult, 1);
     r->url = g_strdup(url);
     GThread *t = g_thread_new("qyb-fetch", fetch_thread, r);
     g_thread_unref(t);
+}
+
+static void on_back(GtkWidget *w, gpointer ud) {
+    (void)w; (void)ud;
+    if (hist_pos > 0) {
+        hist_pos--;
+        hist_nav = TRUE;
+        open_url((const char *)g_ptr_array_index(hist, hist_pos));
+        hist_nav = FALSE;
+        gtk_entry_set_text(GTK_ENTRY(url_entry), (const char *)g_ptr_array_index(hist, hist_pos));
+    }
+}
+
+static void on_fwd(GtkWidget *w, gpointer ud) {
+    (void)w; (void)ud;
+    if (hist_pos < (int)hist->len - 1) {
+        hist_pos++;
+        hist_nav = TRUE;
+        open_url((const char *)g_ptr_array_index(hist, hist_pos));
+        hist_nav = FALSE;
+        gtk_entry_set_text(GTK_ENTRY(url_entry), (const char *)g_ptr_array_index(hist, hist_pos));
+    }
+}
+
+/* 收藏当前页到 /etc/qybookmarks.conf */
+static void on_bookmark(GtkWidget *w, gpointer ud) {
+    (void)w; (void)ud;
+    const char *url = gtk_entry_get_text(GTK_ENTRY(url_entry));
+    if (!url || !url[0]) return;
+    gchar *content = NULL;
+    g_file_get_contents("/etc/qybookmarks.conf", &content, NULL, NULL);
+    if (content && strstr(content, url)) {
+        g_free(content);
+        gtk_label_set_text(GTK_LABEL(status_label), TR("已收藏"));
+        return;
+    }
+    GString *out = g_string_new(NULL);
+    if (content) g_string_append(out, content);
+    g_string_append_printf(out, "%s\n", url);
+    g_file_set_contents("/etc/qybookmarks.conf", out->str, out->len, NULL);
+    g_free(content);
+    g_string_free(out, TRUE);
+    gtk_label_set_text(GTK_LABEL(status_label), TR("已收藏"));
+}
+
+/* 自动化辅助 */
+static gboolean auto_open_second(gpointer p) {
+    const char *url = (const char *)p;
+    gtk_entry_set_text(GTK_ENTRY(url_entry), url);
+    open_url(url);
+    g_free(p);
+    return G_SOURCE_REMOVE;
+}
+static gboolean auto_go_back(gpointer p) {
+    (void)p;
+    on_back(NULL, NULL);
+    return G_SOURCE_REMOVE;
+}
+static gboolean auto_bookmark(gpointer p) {
+    (void)p;
+    on_bookmark(NULL, NULL);
+    return G_SOURCE_REMOVE;
 }
 
 static void on_open(GtkWidget *w, gpointer ud) {
@@ -210,20 +296,34 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_widget_set_margin_bottom(vbox, 8);
     gtk_container_add(GTK_CONTAINER(win), vbox);
 
-    /* 工具栏: 地址栏 + 打开 + 清空 */
+    /* 工具栏: 后退/前进 + 地址栏 + 打开 + 收藏 + 清空 */
     GtkWidget *bar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+    back_btn = gtk_button_new_with_label("⇐");
+    gtk_widget_set_tooltip_text(back_btn, TR("后退"));
+    gtk_widget_set_sensitive(back_btn, FALSE);
+    fwd_btn = gtk_button_new_with_label("⇒");
+    gtk_widget_set_tooltip_text(fwd_btn, TR("前进"));
+    gtk_widget_set_sensitive(fwd_btn, FALSE);
+    g_signal_connect(back_btn, "clicked", G_CALLBACK(on_back), NULL);
+    g_signal_connect(fwd_btn, "clicked", G_CALLBACK(on_fwd), NULL);
     GtkWidget *lbl = gtk_label_new(TR("地址"));
     url_entry = gtk_entry_new();
     gtk_entry_set_placeholder_text(GTK_ENTRY(url_entry), "https://...");
     GtkWidget *btn = gtk_button_new_with_label(TR("打开"));
     qy_add_class(btn, "qy-btn");
+    GtkWidget *bm_btn = gtk_button_new_with_label("☆");
+    gtk_widget_set_tooltip_text(bm_btn, TR("收藏"));
+    g_signal_connect(bm_btn, "clicked", G_CALLBACK(on_bookmark), NULL);
     GtkWidget *btn2 = gtk_button_new_with_label(TR("清空"));
     g_signal_connect(btn, "clicked", G_CALLBACK(on_open), NULL);
     g_signal_connect(btn2, "clicked", G_CALLBACK(on_clear), NULL);
     g_signal_connect(url_entry, "activate", G_CALLBACK(on_entry_activate), NULL);
+    gtk_box_pack_start(GTK_BOX(bar), back_btn, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(bar), fwd_btn, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(bar), lbl, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(bar), url_entry, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(bar), btn, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(bar), bm_btn, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(bar), btn2, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), bar, FALSE, FALSE, 0);
 
@@ -248,6 +348,14 @@ static void activate(GtkApplication *app, gpointer ud) {
     if (auto_url) {
         gtk_entry_set_text(GTK_ENTRY(url_entry), auto_url);
         open_url(auto_url);
+        if (g_getenv("QYBROWSER_BOOKMARK"))
+            g_timeout_add(3000, auto_bookmark, NULL);
+        const char *second = g_getenv("QYBROWSER_URL2");
+        if (second) {
+            g_timeout_add(5000, auto_open_second, g_strdup(second));
+            if (g_getenv("QYBROWSER_BACK"))
+                g_timeout_add(9000, auto_go_back, NULL);
+        }
     }
 
     gtk_widget_show_all(win);
