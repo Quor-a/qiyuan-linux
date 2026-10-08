@@ -1317,3 +1317,17 @@ ngs-about-v2.png`。
   按钮渲染正常，qynetreset.log 写入时间戳
 
 构建产物：`qydesktop 0.1.0-111`。
+
+### 系统设置：多显示器页（v0.1.0-112，2026-10 实测）
+
+按设置中心「系统→多显示器」需求，新增多显示器页（网络重置页之后）：
+- 「检测到的显示器」显示当前输出 Virtual-1 (1280x800)
+- 「多显示器模式」下拉：扩展桌面 / 复制屏幕 + 应用按钮
+- 应用后写 /etc/qydisplay.conf（layout=extend/mirror）
+- 自动化：`QY_SETTINGS_DISPLAY=layout:mirror` 启动后自动写入
+- l10n：多显示器/检测到的显示器/多显示器模式/扩展桌面/复制屏幕
+- 实测：`QY_SETTINGS_PAGE=23` 直达多显示器页
+  （QYSETTINGS_DEBUG: set page=23 total=24），
+  输出行+下拉+按钮渲染正常，qydisplay.conf 写入 layout=mirror
+
+构建产物：`qydesktop 0.1.0-112`。

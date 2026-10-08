@@ -281,6 +281,73 @@ static gboolean auto_perm_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 多显示器: 布局写 /etc/qydisplay.conf ---------- */
+#define DISPLAY_CONF "/etc/qydisplay.conf"
+static GtkWidget *g_disp_combo = NULL;
+
+static void on_display_apply(GtkWidget *w, gpointer ud) {
+    (void)w; (void)ud;
+    const char *layout = gtk_combo_box_get_active(GTK_COMBO_BOX(g_disp_combo)) == 1 ? "mirror" : "extend";
+    gchar *content = NULL;
+    gsize len = 0;
+    g_file_get_contents(DISPLAY_CONF, &content, &len, NULL);
+    GString *out = g_string_new(NULL);
+    char *line = content;
+    int replaced = 0;
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+        if (strncmp(line, "layout=", 8) == 0) {
+            g_string_append_printf(out, "layout=%s", layout);
+            replaced = 1;
+        } else {
+            g_string_append_len(out, line, llen);
+        }
+        if (nl) g_string_append_c(out, '\n');
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(content);
+    if (!replaced)
+        g_string_append_printf(out, "layout=%s\n", layout);
+    g_file_set_contents(DISPLAY_CONF, out->str, out->len, NULL);
+    g_string_free(out, TRUE);
+}
+
+/* 自动化验证: QY_SETTINGS_DISPLAY=layout:mirror 启动后写入 */
+static gboolean auto_display_apply(gpointer p) {
+    (void)p;
+    const char *env = g_getenv("QY_SETTINGS_DISPLAY");
+    if (env && strstr(env, "layout:mirror")) {
+        gchar *content = NULL;
+        gsize len = 0;
+        g_file_get_contents(DISPLAY_CONF, &content, &len, NULL);
+        GString *out = g_string_new(NULL);
+        if (content) g_string_append(out, content);
+        g_free(content);
+        if (strstr(out->str, "layout=")) {
+            GString *tmp = g_string_new(NULL);
+            char *line = out->str;
+            while (line && *line) {
+                char *nl = strchr(line, '\n');
+                size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+                if (strncmp(line, "layout=", 8) == 0)
+                    g_string_append(tmp, "layout=mirror");
+                else
+                    g_string_append_len(tmp, line, llen);
+                if (nl) g_string_append_c(tmp, '\n');
+                line = nl ? nl + 1 : NULL;
+            }
+            g_string_free(out, TRUE);
+            out = tmp;
+        } else {
+            g_string_append(out, "layout=mirror\n");
+        }
+        g_file_set_contents(DISPLAY_CONF, out->str, out->len, NULL);
+        g_string_free(out, TRUE);
+    }
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 网络重置: 记录日志 ---------- */
 static void on_net_reset(GtkWidget *w, gpointer ud) {
     (void)ud;
@@ -1779,6 +1846,31 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vnr, gtk_label_new(TR("网络重置")));
         if (g_getenv("QY_SETTINGS_NETRESET"))
             g_timeout_add(1250, auto_net_reset, NULL);
+    }
+
+    /* 多显示器页: 输出列表 + 布局（写 /etc/qydisplay.conf） */
+    {
+        GtkWidget *vd = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vd), 14);
+        gtk_box_pack_start(GTK_BOX(vd), row(TR("检测到的显示器"), "Virtual-1 (1280x800)"), FALSE, FALSE, 0);
+        GtkWidget *dl_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *dl_l = gtk_label_new(TR("多显示器模式"));
+        gtk_widget_set_size_request(dl_l, 150, -1);
+        gtk_widget_set_halign(dl_l, GTK_ALIGN_START);
+        g_disp_combo = gtk_combo_box_text_new();
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(g_disp_combo), TR("扩展桌面"));
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(g_disp_combo), TR("复制屏幕"));
+        gtk_combo_box_set_active(GTK_COMBO_BOX(g_disp_combo), 0);
+        GtkWidget *dl_btn = gtk_button_new_with_label(TR("应用"));
+        qy_add_class(dl_btn, "qy-btn");
+        g_signal_connect(dl_btn, "clicked", G_CALLBACK(on_display_apply), NULL);
+        gtk_box_pack_start(GTK_BOX(dl_row), dl_l, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(dl_row), g_disp_combo, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(dl_row), dl_btn, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vd), dl_row, FALSE, FALSE, 0);
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vd, gtk_label_new(TR("多显示器")));
+        if (g_getenv("QY_SETTINGS_DISPLAY"))
+            g_timeout_add(1300, auto_display_apply, NULL);
     }
 
     gtk_widget_show_all(win);
