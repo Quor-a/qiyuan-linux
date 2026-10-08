@@ -1,0 +1,18 @@
+# 项目声明文件（示例）：mo.mod
+#
+# 这是「声明 / 元数据」需求的落地形式：
+# 一个纯文本清单，描述项目名、版本、入口与依赖。
+# 构建工具读取它来决定编什么、依赖去哪找。
+#
+# 格式：每行一条 key = value，# 开头是注释。
+# 当前 mobuild.sh 会读取 name / version / main / deps 四项。
+
+name    = myapp
+version = 0.1.0
+main    = src/main.mo
+
+# 依赖：标准库模块名，空格分隔。会从 lib/ 解析
+deps    = io str fs
+
+# 编译产物名（可选）
+output  = myapp.elf

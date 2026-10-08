@@ -1,0 +1,15 @@
+# 墨语言 CI：每次提交都重建编译器 + 跑全部测试 + 验证自举
+# 放到 .github/workflows/mo.yml
+name: mo
+on: [push, pull_request]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: make
+      - name: Test
+        run: bash tests/run.sh bin/moc
+      - name: Bootstrap
+        run: bash verify_bootstrap.sh

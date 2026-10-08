@@ -1,0 +1,25 @@
+{
+  "name": "Mo",
+  "scopeName": "source.mo",
+  "fileTypes": ["mo"],
+  "patterns": [
+    { "include": "#comments" },
+    { "include": "#strings" },
+    { "include": "#chars" },
+    { "include": "#numbers" },
+    { "include": "#keywords" },
+    { "include": "#types" },
+    { "include": "#builtins" },
+    { "include": "#operators" }
+  ],
+  "repository": {
+    "comments":  { "name": "comment.line.number-sign.mo", "match": "#.*$" },
+    "strings":   { "name": "string.quoted.double.mo", "begin": "\"", "end": "\"", "patterns": [{ "name": "constant.character.escape.mo", "match": "\\\\." }] },
+    "chars":     { "name": "string.quoted.single.mo", "match": "'([^'\\\\]|\\\\.)'" },
+    "numbers":   { "name": "constant.numeric.mo", "match": "\\b[0-9]+\\b" },
+    "keywords":  { "name": "keyword.control.mo", "match": "\\b(fn|return|let|var|struct|import|if|else|while|break|continue)\\b" },
+    "types":     { "name": "support.type.mo", "match": "\\b(i64|byte|ptr)\\b" },
+    "builtins":  { "name": "support.function.builtin.mo", "match": "\\b(load8|load64|store8|store64|syscall|argc|argv)\\b" },
+    "operators": { "name": "keyword.operator.mo", "match": "[-+*/%=!<>&|^~]+" }
+  }
+}

@@ -1,0 +1,22 @@
+# 把墨语言编出来的程序接进现成构建系统。
+# 墨语言产出的是独立 ELF，不需要运行时与动态库，
+# 所以接入方式和调用一个 C 编译出的可执行程序完全一样。
+
+# --- Makefile 里加一条规则 ---
+%.elf: %.mo bin/moc
+	./bin/moc $< $@
+	chmod +x $@
+
+# --- CMake 里加一个自定义命令 ---
+# add_custom_command(
+#   OUTPUT  ${CMAKE_BINARY_DIR}/tool.elf
+#   COMMAND ${CMAKE_SOURCE_DIR}/mo/bin/moc
+#           ${CMAKE_SOURCE_DIR}/tools/tool.mo
+#           ${CMAKE_BINARY_DIR}/tool.elf
+#   DEPENDS ${CMAKE_SOURCE_DIR}/tools/tool.mo)
+
+# --- 与别的语言配合 ---
+# 墨语言程序不导出符号、也不读 libc，
+# 所以与 C/Go/Python 配合走「进程 + 文本」最省事：
+#   ./tool.elf | python3 parse.py
+# 需要结构化数据时用 JSON（lib/json.mo 能解析）。

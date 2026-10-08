@@ -1,0 +1,5 @@
+array 105 241
+fib 14 5
+loop 188 0
+sort 15 0
+str 24 0

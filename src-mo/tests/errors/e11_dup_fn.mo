@@ -1,0 +1,12 @@
+# expect-error: duplicate definition
+fn f() -> i64 {
+    return 1;
+}
+
+fn f() -> i64 {
+    return 2;
+}
+
+fn main() -> i64 {
+    return f();
+}

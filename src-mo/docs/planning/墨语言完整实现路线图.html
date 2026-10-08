@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>墨语言完整实现路线图</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;
+       background:#f6f7f9;color:#1c1e21;line-height:1.65;-webkit-text-size-adjust:100%}
+  .wrap{max-width:960px;margin:0 auto;padding:24px 16px 64px}
+  header{background:linear-gradient(135deg,#1b2a4a,#2d4a7c);color:#fff;border-radius:16px;
+         padding:28px 22px;margin-bottom:24px}
+  header h1{font-size:26px;font-weight:700;letter-spacing:.5px}
+  header p{margin-top:8px;font-size:14px;opacity:.9}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin:22px 0 20px}
+  .stat{background:#fff;border-radius:12px;padding:14px 12px;text-align:center;
+        box-shadow:0 1px 3px rgba(0,0,0,.07)}
+  .stat b{display:block;font-size:22px;color:#2d4a7c}
+  .stat span{font-size:12px;color:#5b6470}
+  .judge{background:#e8f4ec;border-left:4px solid #2e9e5b;border-radius:8px;
+         padding:12px 16px;font-size:14px}
+  .judge strong{color:#1f7a44}
+  section{background:#fff;border-radius:14px;padding:22px 20px;margin-bottom:18px;
+          box-shadow:0 1px 4px rgba(0,0,0,.06)}
+  h2{font-size:19px;margin-bottom:14px;color:#1b2a4a;display:flex;align-items:center;gap:8px}
+  h2::before{content:"";width:4px;height:18px;background:#2d4a7c;border-radius:2px}
+  h3{font-size:15px;margin:16px 0 8px;color:#2d4a7c}
+  p{font-size:14px;margin-bottom:10px}
+  .timeline{position:relative;padding-left:20px;margin-top:8px}
+  .timeline::before{content:"";position:absolute;left:6px;top:6px;bottom:6px;width:2px;background:#d6dde8}
+  .ph{position:relative;padding:0 0 18px 12px}
+  .ph::before{content:"";position:absolute;left:-18px;top:6px;width:10px;height:10px;
+              border-radius:50%;background:#2d4a7c;border:2px solid #fff;box-shadow:0 0 0 2px #d6dde8}
+  .ph.done::before{background:#2e9e5b}
+  .ph b{font-size:15px;color:#1b2a4a}
+  .ph .meta{font-size:12px;color:#6b7480;margin:2px 0 6px}
+  .ph .goal{font-size:13px;color:#3a4250}
+  .ph .pass{font-size:12.5px;color:#1f7a44;background:#eef7f1;border-radius:6px;
+            padding:6px 10px;margin-top:6px}
+  table{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+  th{background:#2d4a7c;color:#fff;text-align:left;padding:9px 10px;font-weight:600}
+  td{padding:9px 10px;border-bottom:1px solid #eceff3;vertical-align:top}
+  tr:nth-child(even) td{background:#fafbfc}
+  .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;margin-right:6px}
+  .t-high{background:#fde8e8;color:#b03030}
+  .t-mid{background:#fff3dd;color:#96601a}
+  .t-low{background:#eaf1fb;color:#2d4a7c}
+  ul{padding-left:20px;font-size:14px}
+  li{margin-bottom:6px}
+  .warn{background:#fff6e6;border-left:4px solid #d99a2b;border-radius:8px;padding:12px 16px;font-size:13.5px}
+  .rules{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:10px}
+  .rule{border:1px solid #e3e8ef;border-radius:10px;padding:12px 14px;background:#fbfcfe}
+  .rule b{display:block;font-size:13.5px;color:#1b2a4a;margin-bottom:4px}
+  .rule span{font-size:12.5px;color:#5b6470}
+  .entry{background:#eef2f9;border-radius:10px;padding:14px 16px;font-size:13.5px;color:#33405a}
+  footer{text-align:center;font-size:12px;color:#8a929e;margin-top:28px}
+  @media(max-width:520px){header h1{font-size:21px} .wrap{padding:16px 12px 48px}
+    table{font-size:12px} th,td{padding:7px 6px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <h1>墨语言 Mo · 完整实现路线图</h1>
+  <p>从「已达成自举」出发，用 26 周把一门原创语言做成可对外发布的 0.1 版本</p>
+</header>
+
+<div class="stats">
+  <div class="stat"><b>26 周</b><span>2026-10-08 → 2027-04-07</span></div>
+  <div class="stat"><b>20h+</b><span>每周投入</span></div>
+  <div class="stat"><b>6 个</b><span>阶段</span></div>
+  <div class="stat"><b>≈520h</b><span>总工时预算</span></div>
+</div>
+
+<div class="judge">
+  <strong>可行性：可行。</strong>最难的一关——自举——已经跑通：手写 x86-64 汇编编译器 → 墨语言写的编译器 → 自编译产物与上一版字节完全一致（md5 <code>b7f2be32…</code>），10 项功能测试全通过。剩下的是可并行的增量开发，520 小时对六项子系统足够。
+</div>
+
+<section>
+  <h2>现在站在哪里</h2>
+  <p>墨语言已是一门<strong>能编译自身</strong>的语言。编译器 <code>src/compiler.mo</code> 共 1329 行，全部用墨语言写成，直接输出 ELF64 静态可执行文件，不依赖 libc 与外部链接器。</p>
+  <table>
+    <tr><th>已具备</th><th>尚缺</th></tr>
+    <tr><td>自举闭环（Stage 0→3，字节一致）</td><td>数组 / 结构体 / 指针算术语法</td></tr>
+    <tr><td>i64、函数、递归与互递归</td><td>静态类型检查（目前靠约定）</td></tr>
+    <tr><td>if-else、while、全局与局部变量</td><td>标准库（字符串、内存、IO、容器）</td></tr>
+    <tr><td>字符串字面量与转义</td><td>构建 / 测试 / 格式化工具链</td></tr>
+    <tr><td>内建 load8/64、store8/64、syscall</td><td>寄存器分配与优化（现为纯栈式）</td></tr>
+    <tr><td>10 项功能测试全通过</td><td>面向使用者的文档与示例</td></tr>
+  </table>
+</section>
+
+<section>
+  <h2>整体路线</h2>
+  <div class="timeline">
+    <div class="ph done">
+      <b>已完成 · 自举闭环</b>
+      <div class="meta">2026-10-08 前 · 已交付</div>
+      <div class="goal">手写汇编 seed → 墨语言编译器 → 自编译一致</div>
+      <div class="pass">通过：产物 md5 与上一版完全相同</div>
+    </div>
+    <div class="ph">
+      <b>阶段一 · 语言内核补强</b>
+      <div class="meta">第 1-5 周 · 10-08 ~ 11-11</div>
+      <div class="goal">数组与下标、取地址、多文件编译，错误信息带上行列号</div>
+      <div class="pass">通过：数组/指针/多文件程序能跑；错误输出 file:line:col；每步自举回归通过</div>
+    </div>
+    <div class="ph">
+      <b>阶段二 · 类型系统与诊断</b>
+      <div class="meta">第 6-11 周 · 11-12 ~ 12-23</div>
+      <div class="goal">真正的类型检查器：类型表示、赋值兼容、函数签名检查、可读诊断</div>
+      <div class="pass">通过：故意写错的 30 个程序全部被编译期拦住并给出行列与建议</div>
+    </div>
+    <div class="ph">
+      <b>阶段三 · 标准库与运行时</b>
+      <div class="meta">第 12-16 周 · 12-24 ~ 01-27</div>
+      <div class="goal">用墨语言自身写：堆分配器、字符串、IO 与格式化、容器与算法</div>
+      <div class="pass">通过：用标准库写出 3 个真实小工具（wc、素数筛、简易 JSON 解析）</div>
+    </div>
+    <div class="ph">
+      <b>阶段四 · 工具链与开发体验</b>
+      <div class="meta">第 17-21 周 · 01-28 ~ 03-03</div>
+      <div class="goal">构建工具、测试框架、格式化、编辑器高亮、调试信息</div>
+      <div class="pass">通过：一条命令构建全仓库；测试框架跑通 40+ 用例；gdb 能看到源码行</div>
+    </div>
+    <div class="ph">
+      <b>阶段五 · 性能与优化</b>
+      <div class="meta">第 22-24 周 · 03-04 ~ 03-24</div>
+      <div class="goal">基准套件 → 常量折叠与窥孔优化 → 寄存器分配与内联</div>
+      <div class="pass">通过：基准较基线提升 2 倍以上，且自举仍成立</div>
+    </div>
+    <div class="ph">
+      <b>阶段六 · 文档生态与发布</b>
+      <div class="meta">第 25-26 周 · 03-25 ~ 04-07</div>
+      <div class="goal">语言参考、入门教程、5 个示例、包管理雏形，打 0.1 标签</div>
+      <div class="pass">通过：新人照教程 30 分钟跑通第一个程序；能引用外部包构建成功</div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <h2>为什么这样排序</h2>
+  <h3>先语法，后类型，再库与工具，性能放最后</h3>
+  <ul>
+    <li><strong>语法先于类型</strong>：没有数组和结构体，类型系统无对象可检查；先让「写真实程序」成为可能。</li>
+    <li><strong>库先于工具</strong>：标准库用墨语言自写，本身就是对语言表达力的压力测试，能提前暴露语法缺陷。</li>
+    <li><strong>性能放最后</strong>：无优化的自举编译器已经能编译自己；过早优化会锁死代码生成器结构。</li>
+    <li><strong>文档与发布收尾</strong>：语言定型后再写教程，避免反复重写。</li>
+  </ul>
+  <h3>子系统优先级</h3>
+  <p>
+    <span class="tag t-high">高</span>语法与语义 · 类型系统 · 标准库
+    <span class="tag t-mid">中</span>工具链 · 性能 · 文档生态
+  </p>
+</section>
+
+<section>
+  <h2>三条硬规则：全程保持自举</h2>
+  <div class="rules">
+    <div class="rule"><b>一次只改一处</b><span>每个语法特性单独提交，改完立刻回归，不攒批处理</span></div>
+    <div class="rule"><b>回归必做</b><span>改完用新编译器编译 compiler.mo，产物 md5 须与上一版相同</span></div>
+    <div class="rule"><b>测试先行</b><span>新特性先写 3-5 个 .mo 用例进 tests/，再动编译器</span></div>
+  </div>
+</section>
+
+<section>
+  <h2>现实边界</h2>
+  <div class="warn">
+    <strong>最大风险：</strong>在语言里改语法，需要同步改编译器并维持自举，容易连锁返工。一旦出现「自举产物 md5 不一致」，立即回滚到上一个可用版本并二分定位，绝不带病前进。
+  </div>
+  <h3>缓冲与最小方案</h3>
+  <ul>
+    <li><strong>缓冲</strong>：每周按 16 小时排任务，留 4 小时给返工与休息；每阶段最后一周是收口周，不排新特性。</li>
+    <li><strong>时间不足时保留</strong>：自举回归、测试用例、阶段收口验收。</li>
+    <li><strong>可以舍弃</strong>：编辑器插件、包管理、格式化工具、寄存器分配——都可降到 0.2。</li>
+    <li><strong>状态不佳时的最小动作</strong>：只跑一次全量测试 + 一次自举回归，保持仓库健康，不写新代码。</li>
+  </ul>
+  <h3>检查与调整</h3>
+  <table>
+    <tr><th>检查时点</th><th>触发条件</th><th>调整动作</th></tr>
+    <tr><td>每周日</td><td>连续 2 周未完成当周任务</td><td>砍掉当周可选任务，目标顺延一周，阶段终点不变</td></tr>
+    <tr><td>每阶段收尾</td><td>有 2 项以上通过标准未满足</td><td>未满足项并入下一阶段，最终发布延后 1 周</td></tr>
+    <tr><td>每次改语法后</td><td>自举产物 md5 不一致</td><td>回滚上一版，二分定位，不带着不一致继续</td></tr>
+    <tr><td>第 16 周（阶段三结束）</td><td>写不出 3 个真实小工具</td><td>说明表达力不足，回头补语法，性能优化整体后移</td></tr>
+    <tr><td>第 24 周（阶段五结束）</td><td>性能提升未达 2 倍</td><td>只保留窥孔优化，寄存器分配降级为可选</td></tr>
+  </table>
+  <h3>关键假设</h3>
+  <ul>
+    <li>继续保持单类型 i64 + 指针即整数，本轮不引入泛型与所有权系统。</li>
+    <li>继续直接产出 ELF64，不接 LLVM / QBE —— 保持零依赖与可控。</li>
+    <li>验收尺度是「能编译真实小工具」，不是「性能追平 C」。</li>
+  </ul>
+</section>
+
+<section>
+  <h2>执行入口</h2>
+  <div class="entry">
+    详细的逐日安排（前两周）、按周任务（第 3-26 周）、每项任务的产出与完成标准、以及每周填写的「实际投入 / 状态 / 反馈」记录表，都在同目录下的 <strong>墨语言完整实现路线图.xlsx</strong> 中查看与填写。<br>
+    代码与构建脚本在本仓库：<code>./build.sh all</code> 一键重建，<code>bash tests/run.sh bin/moc_self</code> 跑全量测试。
+  </div>
+</section>
+
+<footer>生成于 2026-10-08 · 计划周期 2026-10-08 至 2027-04-07 · 墨语言 Mo</footer>
+
+</div>
+</body>
+</html>
