@@ -544,6 +544,23 @@ static gboolean desk_draw(GtkWidget *w, cairo_t *cr, gpointer ud) {
 }
 
 /* ---------- 顶栏 ---------- */
+static void tray_launch(const char *cmd) {
+    gchar *s = g_strdup_printf("%s &", cmd);
+    g_spawn_command_line_async(s, NULL);
+    g_free(s);
+}
+static void on_tray_clicked(GtkWidget *w, gpointer ud) {
+    tray_launch((const char *)ud);
+}
+static GtkWidget *make_tray_btn(const char *icon, const char *tip, const char *cmd) {
+    GtkWidget *b = gtk_button_new_with_label(icon);
+    gtk_button_set_relief(GTK_BUTTON(b), GTK_RELIEF_NONE);
+    add_class(b, "qy-status-btn");
+    gtk_widget_set_tooltip_text(b, tip);
+    g_signal_connect(b, "clicked", G_CALLBACK(on_tray_clicked), g_strdup(cmd));
+    return b;
+}
+
 static void build_bar(void) {
     GtkWidget *bar = gtk_event_box_new();
     add_class(bar, "qy-bar");
@@ -597,6 +614,15 @@ static void build_bar(void) {
     g_signal_connect(power, "clicked", G_CALLBACK(on_power_clicked), NULL);
     gtk_widget_set_tooltip_text(power, TR("系统"));
     gtk_box_pack_start(GTK_BOX(st), power, FALSE, FALSE, 0);
+
+    /* 系统托盘: 网络/声音/剪贴板/截图/锁屏 */
+    GtkWidget *tray_hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
+    gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_btn("🌐", TR("网络"), "qynet"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_btn("🔊", TR("声音"), "qysettings"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_btn("📋", TR("剪贴板"), "qyclip"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_btn("📷", TR("截图"), "qyshot"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_btn("🔒", TR("锁屏"), "qylock"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(st), tray_hb, FALSE, FALSE, 4);
     gtk_widget_set_margin_end(st, 8);
     gtk_box_pack_end(GTK_BOX(hbox), st, FALSE, FALSE, 0);
 
