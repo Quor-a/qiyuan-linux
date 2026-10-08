@@ -26,6 +26,16 @@ static GtkWindow *g_win = NULL;        /* 主窗口: 标题显示当前文件名
 static gchar *current_path = NULL;     /* 当前图片完整路径（保存用） */
 static GtkWidget *save_status = NULL;  /* 底部保存结果提示 */
 static GtkWidget *image_info = NULL;   /* 底部图片尺寸/格式/大小信息 */
+static GtkWidget *zoom_label = NULL;   /* 底部当前缩放百分比 */
+
+/* 刷新底部缩放百分比显示 */
+static void update_zoom(void) {
+    if (zoom_label) {
+        gchar buf[32];
+        g_snprintf(buf, sizeof buf, TR("缩放 %d%%"), (int)(zoom * 100 + 0.5));
+        gtk_label_set_text(GTK_LABEL(zoom_label), buf);
+    }
+}
 
 static const char *IMG_EXT[] = {".png",".jpg",".jpeg",".bmp",".gif",".webp",".xpm", NULL};
 
@@ -70,6 +80,7 @@ static gboolean load_path(const char *path) {
     g_free(current_path);
     current_path = g_strdup(path);
     zoom = 1.0; pan_x = pan_y = 0;
+    update_zoom();
     /* 底部显示图片尺寸/格式/大小 */
     if (image_info) {
         int iw = gdk_pixbuf_get_width(pix);
@@ -121,6 +132,7 @@ static void on_next(GtkButton *b, gpointer ud) {
 
 static void on_fit(GtkButton *b, gpointer ud) {
     zoom = 1.0; pan_x = pan_y = 0;
+    update_zoom();
     gtk_widget_queue_draw(GTK_WIDGET(ud));
 }
 
@@ -133,6 +145,7 @@ static void on_rotate(GtkButton *b, gpointer ud) {
         g_object_unref(pix);
         pix = r;
         zoom = 1.0; pan_x = pan_y = 0;
+        update_zoom();
         gtk_widget_queue_draw(GTK_WIDGET(ud));
     }
 }
@@ -209,6 +222,7 @@ static gboolean on_scroll(GtkWidget *w, GdkEventScroll *ev, gpointer ud) {
     else if (ev->direction == GDK_SCROLL_DOWN) zoom /= 1.15;
     if (zoom < 0.05) zoom = 0.05;
     if (zoom > 20) zoom = 20;
+    update_zoom();
     gtk_widget_queue_draw(w);
     return TRUE;
 }
@@ -276,9 +290,12 @@ static void activate(GtkApplication *app, gpointer ud) {
     add_class(save_status, "qy-view-nav-label");
     image_info = gtk_label_new("");
     add_class(image_info, "qy-view-nav-label");
+    zoom_label = gtk_label_new("");
+    add_class(zoom_label, "qy-view-nav-label");
     gtk_box_pack_start(GTK_BOX(nav), b_prev, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(nav), b_save, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(nav), save_status, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(nav), zoom_label, FALSE, FALSE, 0);
     gtk_box_set_center_widget(GTK_BOX(nav), page_label);
     gtk_box_pack_end(GTK_BOX(nav), image_info, FALSE, FALSE, 0);
     gtk_box_pack_end(GTK_BOX(nav), b_next, FALSE, FALSE, 0);
