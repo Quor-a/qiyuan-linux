@@ -399,6 +399,14 @@ static GdkPixbuf *gen_wallpaper(guint seed) {
         cairo_fill(cr);
         cairo_pattern_destroy(rg);
     }
+    /* 星空点缀: 随机白色小星点（不同种子分布不同） */
+    for (int i = 0; i < 90; i++) {
+        double sx = rand() % w, sy = rand() % h;
+        double sr = 0.5 + (rand() % 25) / 20.0;   /* 0.5~1.75px 半径 */
+        cairo_set_source_rgba(cr, 1, 1, 1, 0.25 + (rand() % 60) / 100.0);
+        cairo_arc(cr, sx, sy, sr, 0, 2 * G_PI);
+        cairo_fill(cr);
+    }
     cairo_destroy(cr);
     GdkPixbuf *pb = gdk_pixbuf_get_from_surface(surf, 0, 0, w, h);
     cairo_surface_destroy(surf);
