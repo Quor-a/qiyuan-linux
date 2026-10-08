@@ -1809,3 +1809,13 @@ ngs-about-v2.png`。
 - 设置页开关 → qynotifd 实际执行 → 桌面通知，形成完整闭环
 
 构建产物：`qydesktop 0.1.0-172`。
+
+### 浏览器增强：页面链接提取 + file:// 支持（v0.1.0-173，2026-10 实测）
+
+针对排查报告"浏览器"：
+- **qybrowser 新增右侧"页面链接"面板**：提取当前页面全部 `<a href>` 链接（显示 `url | 链接文本`），点击即跳转打开
+- **file:// 本地文件支持**：直接打开本地 HTML（`file:///tmp/testpage.html`），方便离线阅读
+- **自动化**：`QYBROWSER_URL=file:///tmp/testpage.html` → 日志 `QYBROWSERDBG: links=3`（3 个链接全部提取）
+- 实现要点：手写 HTML 链接扫描（避开旧 GLib 的 `g_regex_match_all`+`g_match_info_next` 崩溃问题，实测中 GLib-CRITICAL 已消除）
+
+构建产物：`qydesktop 0.1.0-173`。

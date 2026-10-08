@@ -21,6 +21,8 @@ static int hist_pos = -1;
 static gboolean hist_nav = FALSE;   /* 历史导航时不重复入栈 */
 
 static gboolean finish_fetch(gpointer ud);   /* 前向声明 */
+static void on_link_clicked(GtkWidget *w, gpointer ud);   /* 前向声明 */
+static void open_url(const char *url);   /* 前向声明 */
 
 /* ---------- libcurl 写回调 ---------- */
 struct curl_buf { char *data; size_t len; };
@@ -100,17 +102,92 @@ static char *html_to_text(const char *html) {
     return g_string_free(clean, FALSE);
 }
 
+/* 提取 HTML 中的链接：返回 "url | 文本" 数组（手动扫描，避免 GRegex match_all 在旧 GLib 的 bug） */
+static char **extract_links(const char *html, int *n_out) {
+    *n_out = 0;
+    if (!html) return NULL;
+    GPtrArray *arr = g_ptr_array_new_with_free_func(g_free);
+    GRegex *tag_re = g_regex_new("<[^>]+>", 0, 0, NULL);
+    const char *p = html;
+    while ((p = strstr(p, "href")) != NULL) {
+        /* 向前确认这是 <a ... href=...> */
+        const char *before = p;
+        while (before > html && before[-1] != '<' && before[-1] != '>')
+            before--;
+        if (before > html && before[-1] == '<' && g_ascii_strncasecmp(before, "a", 1) == 0) {
+            const char *q = p + 4;
+            while (*q == ' ' || *q == '\t' || *q == '=')
+                q++;
+            if (*q == '"' || *q == '\'') {
+                char quote = *q++;
+                const char *url_start = q;
+                const char *url_end = strchr(q, quote);
+                if (url_end) {
+                    gchar *url = g_strndup(url_start, (gsize)(url_end - url_start));
+                    const char *tag_end = strchr(url_end, '>');
+                    const char *close = tag_end ? strstr(tag_end, "</a>") : NULL;
+                    gchar *raw = NULL;
+                    if (tag_end && close && close > tag_end + 1)
+                        raw = g_strndup(tag_end + 1, (gsize)(close - (tag_end + 1)));
+                    gchar *clean = NULL;
+                    if (tag_re)
+                        clean = g_regex_replace(tag_re, raw ? raw : "", -1, 0, "", 0, NULL);
+                    gchar *effective = clean ? clean : g_strdup(raw ? raw : "");
+                    gchar *s = g_strstrip(effective);
+                    if (url[0] && s && s[0])
+                        g_ptr_array_add(arr, g_strdup_printf("%s | %s", url, s));
+                    g_free(effective);
+                    g_free(raw);
+                    g_free(url);
+                    p = close ? close + 4 : url_end;
+                    continue;
+                }
+            }
+        }
+        p += 4;
+    }
+    if (tag_re) g_regex_unref(tag_re);
+    *n_out = arr->len;
+    return (char **)g_ptr_array_free(arr, FALSE);
+}
+
 /* ---------- 下载线程 ---------- */
 typedef struct {
     char *url;
     char *text;
+    char **links;    /* 提取的页面链接 "url | 文本" */
+    int n_links;
     char  err[256];
     long  http_code;
     size_t bytes;
 } FetchResult;
 
+static GtkWidget *link_list = NULL;   /* 右侧链接面板 */
+
+/* 提取链接（公共入口，供 file:// 与 http 共用） */
+static void extract_links_into(FetchResult *r, const char *html) {
+    if (html)
+        r->links = extract_links(html, &r->n_links);
+}
+
 static gpointer fetch_thread(gpointer ud) {
     FetchResult *r = (FetchResult *)ud;
+    /* file:// 本地文件支持 */
+    if (g_str_has_prefix(r->url, "file://")) {
+        gchar *path = r->url + 7;
+        gchar *data = NULL;
+        gsize len = 0;
+        if (g_file_get_contents(path, &data, &len, NULL) && data) {
+            r->text = html_to_text(data);
+            extract_links_into(r, data);
+            r->bytes = len;
+            g_free(data);
+        } else {
+            g_strlcpy(r->err, TR("无法读取本地文件"), sizeof r->err);
+        }
+        g_idle_add_full(G_PRIORITY_DEFAULT_IDLE, (GSourceFunc)finish_fetch, r, NULL);
+        return NULL;
+    }
     CURL *curl = curl_easy_init();
     struct curl_buf buf = { NULL, 0 };
     long code = 0;
@@ -131,6 +208,7 @@ static gpointer fetch_thread(gpointer ud) {
             r->bytes = buf.len;
             if (buf.data) {
                 r->text = html_to_text(buf.data);
+                extract_links_into(r, buf.data);
                 g_free(buf.data);
             } else {
                 g_strlcpy(r->err, TR("无数据"), sizeof r->err);
@@ -163,9 +241,51 @@ static gboolean finish_fetch(gpointer ud) {
     else
         g_snprintf(st, sizeof st, "%s: %s", TR("下载失败"), r->err);
     gtk_label_set_text(GTK_LABEL(status_label), st);
+
+    /* 填充右侧链接面板 */
+    if (link_list) {
+        GList *children = gtk_container_get_children(GTK_CONTAINER(link_list));
+        for (GList *l = children; l; l = l->next)
+            gtk_widget_destroy(GTK_WIDGET(l->data));
+        g_list_free(children);
+        if (r->n_links > 0) {
+            for (int i = 0; i < r->n_links; i++) {
+                GtkWidget *b = gtk_button_new_with_label(r->links[i]);
+                gtk_widget_set_halign(b, GTK_ALIGN_START);
+                gtk_widget_set_tooltip_text(b, r->links[i]);
+                g_signal_connect(b, "clicked", G_CALLBACK(on_link_clicked), g_strdup(r->links[i]));
+                gtk_box_pack_start(GTK_BOX(link_list), b, FALSE, FALSE, 0);
+            }
+        } else {
+            GtkWidget *lbl = gtk_label_new(TR("无链接"));
+            gtk_widget_set_halign(lbl, GTK_ALIGN_START);
+            gtk_box_pack_start(GTK_BOX(link_list), lbl, FALSE, FALSE, 0);
+        }
+        gtk_widget_show_all(link_list);
+    }
+    g_printerr("QYBROWSERDBG: links=%d\n", r->n_links);
+
     g_free(r->url);
+    if (r->links) {
+        for (int i = 0; i < r->n_links; i++) g_free(r->links[i]);
+        g_free(r->links);
+    }
     g_free(r);
     return G_SOURCE_REMOVE;
+}
+
+/* 点击链接：提取 URL 并打开 */
+static void on_link_clicked(GtkWidget *w, gpointer ud) {
+    (void)w;
+    const char *item = (const char *)ud;
+    const char *sep = strchr(item, ' ');
+    if (sep && url_entry) {
+        gchar *url = g_strndup(item, (gsize)(sep - item));
+        gtk_entry_set_text(GTK_ENTRY(url_entry), url);
+        open_url(url);
+        g_free(url);
+    }
+    g_free(ud);
 }
 
 /* ---------- 打开 URL ---------- */
@@ -182,6 +302,12 @@ static void open_url(const char *url) {
     }
     /* 每次打开替换正文 */
     gtk_text_buffer_set_text(buffer, "", -1);
+    if (link_list) {
+        GList *children = gtk_container_get_children(GTK_CONTAINER(link_list));
+        for (GList *l = children; l; l = l->next)
+            gtk_widget_destroy(GTK_WIDGET(l->data));
+        g_list_free(children);
+    }
     GtkTextIter end;
     gtk_text_buffer_get_end_iter(buffer, &end);
     gchar *head = g_strdup_printf("%s\n%s\n", url, "——————————————————");
@@ -327,7 +453,8 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(bar), btn2, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), bar, FALSE, FALSE, 0);
 
-    /* 正文: 纯文本视图 */
+    /* 正文: 左侧纯文本视图 + 右侧链接面板 */
+    GtkWidget *paned = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
     GtkWidget *sw = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
     view = gtk_text_view_new();
@@ -335,7 +462,22 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_text_view_set_editable(GTK_TEXT_VIEW(view), FALSE);
     gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(view), GTK_WRAP_WORD);
     gtk_container_add(GTK_CONTAINER(sw), view);
-    gtk_box_pack_start(GTK_BOX(vbox), sw, TRUE, TRUE, 0);
+    gtk_paned_add1(GTK_PANED(paned), sw);
+
+    /* 右侧链接面板 */
+    GtkWidget *side = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
+    GtkWidget *side_title = gtk_label_new(TR("页面链接"));
+    gtk_widget_set_halign(side_title, GTK_ALIGN_START);
+    gtk_box_pack_start(GTK_BOX(side), side_title, FALSE, FALSE, 0);
+    GtkWidget *side_sw = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(side_sw), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+    gtk_widget_set_size_request(side_sw, 260, -1);
+    link_list = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
+    gtk_container_add(GTK_CONTAINER(side_sw), link_list);
+    gtk_box_pack_start(GTK_BOX(side), side_sw, TRUE, TRUE, 0);
+    gtk_paned_add2(GTK_PANED(paned), side);
+    gtk_paned_set_position(GTK_PANED(paned), 440);
+    gtk_box_pack_start(GTK_BOX(vbox), paned, TRUE, TRUE, 0);
 
     /* 状态栏 */
     status_label = gtk_label_new(TR("就绪"));
