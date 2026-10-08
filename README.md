@@ -1289,3 +1289,18 @@ ngs-about-v2.png`。
   开关+下拉+按钮渲染正常，qyautoplay.conf 写入 autoplay=off
 
 构建产物：`qydesktop 0.1.0-109`。
+
+### 系统设置：鼠标页（v0.1.0-110，2026-10 实测）
+
+按设置中心「设备→鼠标」需求，新增鼠标设置页（自动播放页之后）：
+- 「主按键」下拉：右手（默认）/ 左手
+- 「双击速度」GtkScale 滑块（0-10）
+- 「滚轮行数」GtkSpinButton（1-20 行）
+- 应用后写 /etc/qymouse.conf：primary/double_speed/scroll_lines
+- 自动化：`QY_SETTINGS_MOUSE=primary:right` 启动后自动写入
+- l10n：鼠标/主按键/双击速度/滚轮行数/右手（默认）/左手
+- 实测：`QY_SETTINGS_PAGE=21` 直达鼠标页
+  （QYSETTINGS_DEBUG: set page=21 total=22），
+  下拉+滑块+spin+按钮渲染正常，qymouse.conf 写入 primary=right
+
+构建产物：`qydesktop 0.1.0-110`。

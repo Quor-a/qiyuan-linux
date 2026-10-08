@@ -281,6 +281,65 @@ static gboolean auto_perm_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 鼠标: 设置写 /etc/qymouse.conf ---------- */
+#define MOUSE_CONF "/etc/qymouse.conf"
+static GtkWidget *g_mouse_combo = NULL;
+static GtkWidget *g_mouse_scale = NULL;
+static GtkWidget *g_mouse_spin = NULL;
+
+static void mouse_write(const char *key, const char *val) {
+    gchar *content = NULL;
+    gsize len = 0;
+    g_file_get_contents(MOUSE_CONF, &content, &len, NULL);
+    GString *out = g_string_new(NULL);
+    char *line = content;
+    int replaced = 0;
+    size_t klen = strlen(key);
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+        if (strncmp(line, key, klen) == 0 && line[klen] == '=') {
+            g_string_append_printf(out, "%s=%s", key, val);
+            replaced = 1;
+        } else {
+            g_string_append_len(out, line, llen);
+        }
+        if (nl) g_string_append_c(out, '\n');
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(content);
+    if (!replaced)
+        g_string_append_printf(out, "%s=%s\n", key, val);
+    g_file_set_contents(MOUSE_CONF, out->str, out->len, NULL);
+    g_string_free(out, TRUE);
+}
+
+static void on_mouse_apply(GtkWidget *w, gpointer ud) {
+    (void)w; (void)ud;
+    const char *primary = gtk_combo_box_get_active(GTK_COMBO_BOX(g_mouse_combo)) == 1 ? "right" : "left";
+    mouse_write("primary", primary);
+    int speed = (int)gtk_range_get_value(GTK_RANGE(g_mouse_scale));
+    gchar *spd = g_strdup_printf("%d", speed);
+    mouse_write("double_speed", spd);
+    g_free(spd);
+    int lines = gtk_spin_button_get_value_as_int(GTK_SPIN_BUTTON(g_mouse_spin));
+    gchar *lins = g_strdup_printf("%d", lines);
+    mouse_write("scroll_lines", lins);
+    g_free(lins);
+}
+
+/* 自动化验证: QY_SETTINGS_MOUSE=primary:right 启动后写入 */
+static gboolean auto_mouse_apply(gpointer p) {
+    (void)p;
+    const char *env = g_getenv("QY_SETTINGS_MOUSE");
+    if (env) {
+        char key[64] = "", mode[32] = "";
+        if (sscanf(env, "%63[^:]:%31s", key, mode) == 2)
+            mouse_write(key, mode);
+    }
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 自动播放: 配置 ---------- */
 #define AUTOPLAY_CONF "/etc/qyautoplay.conf"
 static int g_autoplay_loading = 0;
@@ -1625,6 +1684,60 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vap2, gtk_label_new(TR("自动播放")));
         if (env_ap)
             g_timeout_add(1150, auto_autoplay_apply, NULL);
+    }
+
+    /* 鼠标页: 主按键/双击速度/滚轮行数（写 /etc/qymouse.conf） */
+    {
+        GtkWidget *vms = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vms), 14);
+        gtk_box_pack_start(GTK_BOX(vms), row(TR("鼠标"), TR("设置写入 /etc/qymouse.conf")), FALSE, FALSE, 0);
+        /* 主按键 */
+        GtkWidget *mb_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *mb_l = gtk_label_new(TR("主按键"));
+        gtk_widget_set_size_request(mb_l, 150, -1);
+        gtk_widget_set_halign(mb_l, GTK_ALIGN_START);
+        g_mouse_combo = gtk_combo_box_text_new();
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(g_mouse_combo), TR("右手（默认）"));
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(g_mouse_combo), TR("左手"));
+        gtk_combo_box_set_active(GTK_COMBO_BOX(g_mouse_combo), 0);
+        const char *env_ms = g_getenv("QY_SETTINGS_MOUSE");
+        if (env_ms && strstr(env_ms, "primary:right"))
+            gtk_combo_box_set_active(GTK_COMBO_BOX(g_mouse_combo), 1);
+        gtk_box_pack_start(GTK_BOX(mb_row), mb_l, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(mb_row), g_mouse_combo, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vms), mb_row, FALSE, FALSE, 0);
+        /* 双击速度 */
+        GtkWidget *ds_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *ds_l = gtk_label_new(TR("双击速度"));
+        gtk_widget_set_size_request(ds_l, 150, -1);
+        gtk_widget_set_halign(ds_l, GTK_ALIGN_START);
+        g_mouse_scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0, 10, 1);
+        gtk_widget_set_size_request(g_mouse_scale, 260, -1);
+        gtk_scale_set_value_pos(GTK_SCALE(g_mouse_scale), GTK_POS_RIGHT);
+        gtk_range_set_value(GTK_RANGE(g_mouse_scale), 5);
+        gtk_box_pack_start(GTK_BOX(ds_row), ds_l, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(ds_row), g_mouse_scale, TRUE, TRUE, 0);
+        gtk_box_pack_start(GTK_BOX(vms), ds_row, FALSE, FALSE, 0);
+        /* 滚轮行数 */
+        GtkWidget *sw_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *sw_l = gtk_label_new(TR("滚轮行数"));
+        gtk_widget_set_size_request(sw_l, 150, -1);
+        gtk_widget_set_halign(sw_l, GTK_ALIGN_START);
+        g_mouse_spin = gtk_spin_button_new_with_range(1, 20, 1);
+        gtk_spin_button_set_value(GTK_SPIN_BUTTON(g_mouse_spin), 3);
+        gtk_box_pack_start(GTK_BOX(sw_row), sw_l, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(sw_row), g_mouse_spin, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vms), sw_row, FALSE, FALSE, 0);
+        /* 应用 */
+        GtkWidget *ms_btn = gtk_button_new_with_label(TR("应用"));
+        qy_add_class(ms_btn, "qy-btn");
+        g_signal_connect(ms_btn, "clicked", G_CALLBACK(on_mouse_apply), NULL);
+        GtkWidget *ms_hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+        gtk_box_pack_start(GTK_BOX(ms_hb), ms_btn, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vms), ms_hb, FALSE, FALSE, 0);
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vms, gtk_label_new(TR("鼠标")));
+        if (env_ms)
+            g_timeout_add(1200, auto_mouse_apply, NULL);
     }
 
     gtk_widget_show_all(win);
