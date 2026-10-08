@@ -67,6 +67,7 @@ static guint     active_id     = 0;   /* 最近点击的任务栏窗口（本地
 static long      active_until  = 0;   /* 高亮截止时间戳 */
 static GtkWidget *clock_label  = NULL;
 static GtkWidget *clock_btn   = NULL;  /* 顶栏时钟按钮（点击弹出日历） */
+static GtkWidget *power_btn   = NULL;  /* 顶栏电源按钮（关机/重启/注销） */
 static void on_clock_clicked(GtkWidget *w, gpointer ud);   /* 前向声明 */
 static GtkWidget *mon_label    = NULL;  /* 顶栏 CPU/内存小部件 */
 static GtkWidget *mon_draw     = NULL;  /* 顶栏 CPU/内存迷你条 (cairo) */
@@ -721,6 +722,40 @@ static GtkWidget *make_tray_btn(const char *icon, const char *tip, const char *c
     return b;
 }
 
+/* ---------- 电源菜单：关机 / 重启 / 注销 ---------- */
+static void on_power_action(GtkMenuItem *mi, gpointer ud) {
+    (void)mi;
+    const char *cmd = (const char *)ud;
+    g_printerr("QYDESKTOPDBG: power action %s\n", cmd);
+    g_spawn_command_line_async(cmd, NULL);
+}
+
+static void on_power_btn_clicked(GtkWidget *w, gpointer ud) {
+    (void)ud;
+    GtkWidget *menu = gtk_menu_new();
+    GtkWidget *mi;
+    mi = gtk_menu_item_new_with_label(TR("关机"));
+    g_signal_connect(mi, "activate", G_CALLBACK(on_power_action), g_strdup("poweroff"));
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
+    mi = gtk_menu_item_new_with_label(TR("重启"));
+    g_signal_connect(mi, "activate", G_CALLBACK(on_power_action), g_strdup("reboot"));
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
+    mi = gtk_menu_item_new_with_label(TR("注销"));
+    g_signal_connect(mi, "activate", G_CALLBACK(on_power_action), g_strdup("pkill -x weston"));
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
+    gtk_widget_show_all(menu);
+    gtk_menu_attach_to_widget(GTK_MENU(menu), w, NULL);
+    gtk_menu_popup_at_widget(GTK_MENU(menu), w, GDK_GRAVITY_SOUTH_WEST, GDK_GRAVITY_NORTH_WEST, NULL);
+    g_printerr("QYDESKTOPDBG: power menu shown\n");
+}
+
+/* 自动化: QYDESKTOP_POWER=1 启动后弹出电源菜单 */
+static gboolean auto_power_menu(gpointer p) {
+    (void)p;
+    on_power_btn_clicked(power_btn, NULL);
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 音量快捷滑块（amixer Master） ---------- */
 static void on_vol_scale_changed(GtkRange *range, gpointer ud) {
     (void)ud;
@@ -841,6 +876,12 @@ static void build_bar(void) {
     gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_btn("📋", TR("剪贴板"), "qyclip"), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_btn("📷", TR("截图"), "qyshot"), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_btn("🔒", TR("锁屏"), "qylock"), FALSE, FALSE, 0);
+    power_btn = gtk_button_new_with_label("⏻");
+    gtk_button_set_relief(GTK_BUTTON(power_btn), GTK_RELIEF_NONE);
+    add_class(power_btn, "qy-status-btn");
+    gtk_widget_set_tooltip_text(power_btn, TR("电源"));
+    g_signal_connect(power_btn, "clicked", G_CALLBACK(on_power_btn_clicked), NULL);
+    gtk_box_pack_start(GTK_BOX(tray_hb), power_btn, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(st), tray_hb, FALSE, FALSE, 4);
     gtk_widget_set_margin_end(st, 8);
     gtk_box_pack_end(GTK_BOX(hbox), st, FALSE, FALSE, 0);
@@ -1002,6 +1043,9 @@ int main(int argc, char **argv) {
     /* 自动化: QYDESKTOP_CALENDAR=1 启动后弹出日历 */
     if (g_getenv("QYDESKTOP_CALENDAR"))
         g_timeout_add(1000, (GSourceFunc)auto_calendar, NULL);
+    /* 自动化: QYDESKTOP_POWER=1 启动后弹出电源菜单 */
+    if (g_getenv("QYDESKTOP_POWER"))
+        g_timeout_add(1100, (GSourceFunc)auto_power_menu, NULL);
     gtk_main();
     return 0;
 }

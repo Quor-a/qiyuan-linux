@@ -1934,3 +1934,12 @@ ngs-about-v2.png`。
 - 与顶栏时钟联动（weston 读 localtime 显示正确本地时间）
 
 构建产物：`qydesktop 0.1.0-185`。
+
+### 顶栏电源菜单：关机 / 重启 / 注销（v0.1.0-186，2026-10 实测）
+
+针对排查报告"系统能力/体验细节"：
+- **顶栏新增 ⏻ 电源按钮**：点击弹出菜单（关机 poweroff / 重启 reboot / 注销 pkill weston），一键执行系统动作
+- **自动化**：`QYDESKTOP_POWER=1` 启动后自动弹出电源菜单 → 日志 `QYDESKTOPDBG: power menu shown`，截图中菜单可见
+- 与锁屏按钮相邻，构成完整"电源/安全"操作区
+
+构建产物：`qydesktop 0.1.0-186`。
