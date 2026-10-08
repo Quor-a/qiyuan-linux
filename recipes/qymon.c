@@ -29,6 +29,7 @@ static GtkWidget *cpu_label = NULL, *mem_label = NULL, *info_label = NULL;
 static GtkWidget *title_label = NULL;
 static GtkWidget *disk_label = NULL;
 static GtkWidget *proc_label = NULL;   /* 内存占用 TOP 5 进程列表 */
+static GtkWidget *temp_label = NULL;   /* CPU 温度大数字 */
 static unsigned long net_rx_prev = 0, net_tx_prev = 0;   /* 网络速率 */
 static gint64 net_time_prev = 0;
 
@@ -46,6 +47,22 @@ static double read_cpu_mhz(void) {
     }
     fclose(f);
     return mhz;
+}
+
+/* 读取 CPU 温度 (℃), 失败返回 -1 */
+static double read_cpu_temp(void) {
+    for (int i = 0; i < 8; i++) {
+        char path[96];
+        g_snprintf(path, sizeof path, "/sys/class/thermal/thermal_zone%d/temp", i);
+        FILE *f = fopen(path, "r");
+        if (f) {
+            long t = 0;
+            fscanf(f, "%ld", &t);
+            fclose(f);
+            if (t > 0) return t / 1000.0;
+        }
+    }
+    return -1;
 }
 
 /* 读取首个非 lo 接口的收发速率 (KB/s), 与上次调用差分 */
@@ -231,6 +248,14 @@ static gboolean tick(gpointer ud) {
     }
     g_snprintf(big, sizeof big, TR("磁盘 %d%%"), (int)(disk * 100 + 0.5));
     if (disk_label) gtk_label_set_text(GTK_LABEL(disk_label), big);
+    /* CPU 温度 */
+    double temp = read_cpu_temp();
+    if (temp > 0) {
+        g_snprintf(big, sizeof big, TR("温度 %d°C"), (int)(temp + 0.5));
+    } else {
+        g_snprintf(big, sizeof big, "%s --", TR("温度"));
+    }
+    if (temp_label) gtk_label_set_text(GTK_LABEL(temp_label), big);
     /* 窗口标题实时显示 CPU 使用率 */
     GtkWidget *win = gtk_widget_get_toplevel(GTK_WIDGET(ud));
     if (win && GTK_IS_WINDOW(win)) {
@@ -347,9 +372,13 @@ static void activate(GtkApplication *app, gpointer ud) {
     g_snprintf(lbl, sizeof lbl, "%s 0%%", TR("磁盘"));
     disk_label = gtk_label_new(lbl);
     add_class(disk_label, "qy-mon-disk");
+    g_snprintf(lbl, sizeof lbl, "%s --", TR("温度"));
+    temp_label = gtk_label_new(lbl);
+    add_class(temp_label, "qy-mon-temp");
     gtk_box_pack_start(GTK_BOX(hrow), cpu_label, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hrow), mem_label, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hrow), disk_label, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(hrow), temp_label, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), hrow, FALSE, FALSE, 0);
 
     /* 实时曲线区 */

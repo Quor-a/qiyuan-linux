@@ -377,6 +377,7 @@ static const pair tbl[] = {
     { "分辨率已保存，重启桌面后生效。", "Resolution saved, restart desktop to apply." },
     { "重启桌面", "Restart desktop" },
     { "稍后", "Later" },
+    { "温度", "Temperature" },
     { "设备管理", "Devices" },
     { "请先在列表中选择目标磁盘", "Select a target disk first" },
     { "输出音量 (Master)", "Master volume" },

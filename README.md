@@ -1593,3 +1593,13 @@ ngs-about-v2.png`。
 - 截图 docs/screenshots/qysettings-resolution-1024.png
 
 构建产物：`qydesktop 0.1.0-136`。
+
+### 系统监视器：CPU 温度显示（v0.1.0-137，2026-10 实测）
+
+按「系统监视」细节需求，qymon 新增 CPU 温度大数字：
+- 读取 /sys/class/thermal/thermal_zone*/temp（首个非零，毫度→℃）
+- 顶部大数字行新增「温度 XX°C」红色标签；无传感器时显示「温度 --」优雅降级
+- 实测：模拟 thermal_zone0/temp=45000 → 显示温度 45°C，
+  大数字行亮像素 1494→1620（新增标签），渲染正常
+
+构建产物：`qydesktop 0.1.0-137`。
