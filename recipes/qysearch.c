@@ -90,6 +90,27 @@ static void do_search(const char *q) {
             closedir(d);
         }
     }
+    /* 搜索常见目录中的文件（最多 15 个，点击用 qyfiles 打开所在目录） */
+    if (n < 40) {
+        const char *dirs[] = { "/home/user/Desktop", "/home/user/Documents",
+                               "/etc/qy" };
+        int fn = 0;
+        for (size_t di = 0; di < G_N_ELEMENTS(dirs); di++) {
+            DIR *d = opendir(dirs[di]);
+            if (!d) continue;
+            struct dirent *e;
+            while ((e = readdir(d)) != NULL && fn < 15) {
+                if (e->d_name[0] == '.') continue;
+                if (strcasestr(e->d_name, q)) {
+                    gchar *cmd = g_strdup_printf("qyfiles %s", dirs[di]);
+                    add_result_row("📄", e->d_name, cmd);
+                    g_free(cmd);
+                    n++; fn++;
+                }
+            }
+            closedir(d);
+        }
+    }
     char st[128];
     if (n == 0)
         g_snprintf(st, sizeof st, "%s: %s", TR("未找到匹配"), q);
@@ -97,6 +118,7 @@ static void do_search(const char *q) {
         g_snprintf(st, sizeof st, "%s %d", TR("搜索结果"), n);
     gtk_label_set_text(GTK_LABEL(status_label), st);
     gtk_widget_show_all(listbox);   /* 窗口已显示后插入的行需显式显示 */
+    g_printerr("QYSEARCHDBG: results=%d term=%s\n", n, q ? q : "");
 }
 
 static void on_search_changed(GtkEditable *e, gpointer ud) {

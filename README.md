@@ -1869,3 +1869,13 @@ ngs-about-v2.png`。
 - 实测：开启 → sshd 进程存在；关闭 → sshd 进程消失；latest.msg 同步更新
 
 构建产物：`qydesktop 0.1.0-178`。
+
+### 全局搜索增强：文件搜索（v0.1.0-179，2026-10 实测）
+
+针对排查报告"搜索/文件管理"：
+- **qysearch 新增文件搜索**：在 `/home/user/Desktop`、`/home/user/Documents`、`/etc/qy` 中按文件名实时匹配（最多 15 个），结果带 📄 图标
+- **点击文件结果**：用 qyfiles 打开该文件所在目录
+- 与既有应用/程序搜索（▸/⚙）合并显示，状态栏显示总结果数
+- **自动化**：`QYSEARCH_TERM=qy` → 日志 `QYSEARCHDBG: results=37 term=qy`（应用 + 程序 + 文件混合结果），截图可见列表
+
+构建产物：`qydesktop 0.1.0-179`。
