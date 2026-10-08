@@ -1436,3 +1436,17 @@ ngs-about-v2.png`。
   数据用量+开关渲染正常，qymetered.conf 写入 metered=on
 
 构建产物：`qydesktop 0.1.0-120`。
+
+### 系统设置：输入页（v0.1.0-121，2026-10 实测）
+
+按设置中心「设备→输入」需求，新增输入页（流量计费页之后）：
+- 「键盘」说明 + 「当前布局」显示
+- 「键盘布局」下拉：US/GB/DE/FR + 应用按钮
+- 应用后写 /etc/qyinput.conf（layout=us/gb/de/fr）
+- 自动化：`QY_SETTINGS_INPUT=layout:de` 启动后自动写入
+- l10n：输入/键盘/输入法与键盘布局/当前布局/键盘布局
+- 实测：`QY_SETTINGS_PAGE=32` 直达输入页
+  （QYSETTINGS_DEBUG: set page=32 total=33），
+  当前布局+下拉+按钮渲染正常，qyinput.conf 写入 layout=de
+
+构建产物：`qydesktop 0.1.0-121`。

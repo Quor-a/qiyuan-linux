@@ -281,6 +281,56 @@ static gboolean auto_perm_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 输入: 键盘布局 ---------- */
+#define INPUT_CONF "/etc/qyinput.conf"
+static GtkWidget *g_input_combo = NULL;
+
+static void input_write(const char *val) {
+    gchar *content = NULL;
+    gsize len = 0;
+    g_file_get_contents(INPUT_CONF, &content, &len, NULL);
+    GString *out = g_string_new(NULL);
+    char *line = content;
+    int replaced = 0;
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+        if (strncmp(line, "layout=", 8) == 0) {
+            g_string_append_printf(out, "layout=%s", val);
+            replaced = 1;
+        } else {
+            g_string_append_len(out, line, llen);
+        }
+        if (nl) g_string_append_c(out, '\n');
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(content);
+    if (!replaced)
+        g_string_append_printf(out, "layout=%s\n", val);
+    g_file_set_contents(INPUT_CONF, out->str, out->len, NULL);
+    g_string_free(out, TRUE);
+}
+
+static void on_input_apply(GtkWidget *w, gpointer ud) {
+    (void)w; (void)ud;
+    const char *layouts[] = { "us", "gb", "de", "fr" };
+    int act = gtk_combo_box_get_active(GTK_COMBO_BOX(g_input_combo));
+    if (act < 0) act = 0;
+    if (act > 3) act = 3;
+    input_write(layouts[act]);
+}
+
+/* 自动化验证: QY_SETTINGS_INPUT=layout:de 启动后写入 */
+static gboolean auto_input_apply(gpointer p) {
+    (void)p;
+    const char *env = g_getenv("QY_SETTINGS_INPUT");
+    if (env && strstr(env, "layout:")) {
+        const char *layout = strstr(env, "layout:") + 7;
+        if (*layout) input_write(layout);
+    }
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 按流量计费: 开关 ---------- */
 #define METERED_CONF "/etc/qymetered.conf"
 static int g_metered_loading = 0;
@@ -2646,6 +2696,64 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vmt, gtk_label_new(TR("流量计费")));
         if (env_mt)
             g_timeout_add(1700, auto_metered_apply, NULL);
+    }
+
+    /* 输入页: 键盘布局（写 /etc/qyinput.conf） */
+    {
+        GtkWidget *vin = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vin), 14);
+        gtk_box_pack_start(GTK_BOX(vin), row(TR("键盘"), TR("输入法与键盘布局")), FALSE, FALSE, 0);
+        gchar *content = NULL;
+        gsize len = 0;
+        gchar *cur = g_strdup("us");
+        if (g_file_get_contents(INPUT_CONF, &content, &len, NULL)) {
+            char *line = content;
+            while (line && *line) {
+                if (strncmp(line, "layout=", 8) == 0) {
+                    char *p = line + 8;
+                    char *nl = strchr(p, '\n');
+                    if (nl) *nl = 0;
+                    if (*p) { g_free(cur); cur = g_strdup(p); }
+                    break;
+                }
+                char *nl = strchr(line, '\n');
+                line = nl ? nl + 1 : NULL;
+            }
+            g_free(content);
+        }
+        gtk_box_pack_start(GTK_BOX(vin), row(TR("当前布局"), cur), FALSE, FALSE, 0);
+        g_free(cur);
+        GtkWidget *in_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *in_l = gtk_label_new(TR("键盘布局"));
+        gtk_widget_set_size_request(in_l, 150, -1);
+        gtk_widget_set_halign(in_l, GTK_ALIGN_START);
+        g_input_combo = gtk_combo_box_text_new();
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(g_input_combo), "US");
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(g_input_combo), "GB");
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(g_input_combo), "DE");
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(g_input_combo), "FR");
+        gtk_combo_box_set_active(GTK_COMBO_BOX(g_input_combo), 0);
+        const char *env_in = g_getenv("QY_SETTINGS_INPUT");
+        if (env_in) {
+            const char *layout = strstr(env_in, "layout:");
+            if (layout) {
+                layout += 7;
+                const char *layouts[] = { "us", "gb", "de", "fr" };
+                for (int i = 0; i < 4; i++)
+                    if (strcmp(layout, layouts[i]) == 0)
+                        gtk_combo_box_set_active(GTK_COMBO_BOX(g_input_combo), i);
+            }
+        }
+        GtkWidget *in_btn = gtk_button_new_with_label(TR("应用"));
+        qy_add_class(in_btn, "qy-btn");
+        g_signal_connect(in_btn, "clicked", G_CALLBACK(on_input_apply), NULL);
+        gtk_box_pack_start(GTK_BOX(in_row), in_l, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(in_row), g_input_combo, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(in_row), in_btn, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vin), in_row, FALSE, FALSE, 0);
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vin, gtk_label_new(TR("输入")));
+        if (env_in)
+            g_timeout_add(1750, auto_input_apply, NULL);
     }
 
     gtk_widget_show_all(win);
