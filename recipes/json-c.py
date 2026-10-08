@@ -16,7 +16,7 @@ license = "MIT"
 # 在能联网的构建机上执行：qybuild --fetch-checksums json-c
 source = ["https://s3.amazonaws.com/json-c_releases/releases/json-c-0.18.tar.gz"]
 sha256 = ["876ab046479166b869afc6896d288183bbc0e5843f141200c677b3e8dfb11724"]
-checksum_pending = True
+checksum_pending = False
 
 depends = []
 makedepends = []

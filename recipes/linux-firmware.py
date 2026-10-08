@@ -76,6 +76,10 @@ GROUPS = {
         # 核显机器会掉到软件渲染（鼠标都卡）
         "amdgpu", "radeon", "i915", "xe", "nouveau", "nvidia",
     ],
+    "bt": [
+        # 蓝牙控制器固件：Intel/Broadcom/Realtek/MediaTek USB-UART 适配器
+        "intel", "rtl_bt", "mediatek", "mt7601u", "qca", "ath3k",
+    ],
     "storage": [
         # 部分 NVMe 与 SAS 控制器没有固件直接认不到盘
         "qla2xxx", "qla1280", "qla4xxx", "lpfc", "aacraid",
@@ -85,7 +89,7 @@ GROUPS = {
 
 # 装机镜像默认带的组。wifi 必须在内——
 # 笔记本不带 wifi 固件就是联网都做不到
-IMAGE_GROUPS = ["core", "net", "wifi", "gpu", "storage"]
+IMAGE_GROUPS = ["core", "net", "wifi", "gpu", "storage", "bt"]
 
 
 def build(ctx):

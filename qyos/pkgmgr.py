@@ -24,6 +24,10 @@ from . import util
 # 多个核心包同时提供、内容等价的小工具：安装时后装者覆盖而非报冲突。
 _SHARED_OK = {
     "sbin/nologin", "usr/sbin/nologin", "bin/nologin", "usr/bin/nologin",
+    "bin/login", "usr/bin/login", "sbin/login", "usr/sbin/login",
+    "bin/su", "usr/bin/su",
+    "bin/chfn", "usr/bin/chfn", "bin/chsh", "usr/bin/chsh",
+    "bin/newgrp", "usr/bin/newgrp", "usr/sbin/adduser", "usr/sbin/deluser",
 }
 
 SCHEMA = """

@@ -4,6 +4,8 @@ https://invisible-island.net/ncurses
 许可证：MIT
 """
 
+import os
+
 name = "ncurses"
 version = "6.5"
 release = 1
@@ -35,6 +37,15 @@ def build(ctx):
 
 def package(ctx):
     ctx.run("make DESTDIR={} install".format(ctx.destdir))
+    # ncurses 不装 .pc，但下游（readline.pc 的 Requires.private: termcap）
+    # 需要 shim 才能被 pkg-config 解析
+    pc = os.path.join(ctx.destdir, "usr", "lib", "pkgconfig")
+    os.makedirs(pc, exist_ok=True)
+    for name, lib in (("tinfo.pc", "tinfow"), ("termcap.pc", "tinfow"),
+                      ("ncursesw.pc", "ncursesw")):
+        with open(os.path.join(pc, name), "w") as f:
+            f.write(f"Name: {name[:-3]}\nDescription: ncurses shim\n"
+                    f"Version: {version}\nLibs: -l{lib}\nCflags: -I/usr/include\n")
     # --enable-widec 下 termlib 装出来的是 libtinfow.so.6，但大量上游（gawk、bash、
     # less 等）链接的是非 wide 的 libtinfo.so.6。ldconfig 按 SONAME 建索引，用符号
     # 链接指过去不会被收录，运行期必然报找不到库。这里复制一份并把 SONAME 改成

@@ -35,6 +35,23 @@ def build(ctx):
     ctx.env("PKG_CONFIG_PATH", "")
     ctx.env("PKG_CONFIG_SYSROOT_DIR", "")
     ctx.run("make defconfig")
+    # 驱动扩展片段：有线网/WiFi/蓝牙/USB 全栈（kernel-config/*.fragment）
+    # 片段随仓库分发，宿主机直接读取（不进沙箱），逐条交给 scripts/config。
+    from pathlib import Path as _P
+    frag_dir = _P(__file__).resolve().parent.parent / "kernel-config"
+    import glob
+    for frag in sorted(glob.glob(str(frag_dir) + "/*.fragment")):
+        for line in open(frag):
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, val = line.split("=", 1)
+            if val == "m":
+                ctx.run("./scripts/config -m {}".format(key))
+            elif val.startswith('"'):
+                ctx.run("./scripts/config --set-str {} {}".format(key, val.strip('"')))
+            else:
+                ctx.run("./scripts/config -e {}".format(key))
     # 发行版基线：live 介质与真实装机都需要这些
     for opt in ("CONFIG_SQUASHFS=y", "CONFIG_OVERLAY_FS=y", "CONFIG_EXT4_FS=y",
                 "CONFIG_ISO9660_FS=y", "CONFIG_BLK_DEV_LOOP=y",
