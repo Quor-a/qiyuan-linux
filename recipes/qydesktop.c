@@ -66,6 +66,8 @@ static GtkWidget *taskbar_box   = NULL;
 static guint     active_id     = 0;   /* 最近点击的任务栏窗口（本地高亮反馈） */
 static long      active_until  = 0;   /* 高亮截止时间戳 */
 static GtkWidget *clock_label  = NULL;
+static GtkWidget *clock_btn   = NULL;  /* 顶栏时钟按钮（点击弹出日历） */
+static void on_clock_clicked(GtkWidget *w, gpointer ud);   /* 前向声明 */
 static GtkWidget *mon_label    = NULL;  /* 顶栏 CPU/内存小部件 */
 static GtkWidget *mon_draw     = NULL;  /* 顶栏 CPU/内存迷你条 (cairo) */
 static double    mon_cpu = 0.0, mon_mem = 0.0;  /* 当前使用率 0~1 */
@@ -778,10 +780,14 @@ static void build_bar(void) {
     taskbar_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
     gtk_box_pack_start(GTK_BOX(hbox), taskbar_box, FALSE, FALSE, 8);
 
-    /* 居中时钟 */
+    /* 居中时钟（点击弹出日历） */
+    clock_btn = gtk_button_new();
+    gtk_button_set_relief(GTK_BUTTON(clock_btn), GTK_RELIEF_NONE);
+    add_class(clock_btn, "qy-clock");
     clock_label = gtk_label_new("");
-    add_class(clock_label, "qy-clock");
-    gtk_box_set_center_widget(GTK_BOX(hbox), clock_label);
+    gtk_container_add(GTK_CONTAINER(clock_btn), clock_label);
+    gtk_box_set_center_widget(GTK_BOX(hbox), clock_btn);
+    g_signal_connect(clock_btn, "clicked", G_CALLBACK(on_clock_clicked), NULL);
     tick(clock_label);
     g_timeout_add_seconds(1, tick, clock_label);
 
@@ -947,6 +953,25 @@ static void build_desktop(void) {
 }
 
 /* ---------- 入口 ---------- */
+static void on_clock_clicked(GtkWidget *w, gpointer ud) {
+    (void)ud;
+    GtkWidget *menu = gtk_menu_new();
+    GtkWidget *item = gtk_menu_item_new();
+    GtkWidget *cal = gtk_calendar_new();
+    gtk_container_add(GTK_CONTAINER(item), cal);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+    gtk_widget_show_all(menu);
+    gtk_menu_attach_to_widget(GTK_MENU(menu), w, NULL);
+    gtk_menu_popup_at_widget(GTK_MENU(menu), w, GDK_GRAVITY_SOUTH_WEST, GDK_GRAVITY_NORTH_WEST, NULL);
+    g_printerr("QYDESKTOPDBG: calendar shown\n");
+}
+
+static gboolean auto_calendar(gpointer p) {
+    (void)p;
+    on_clock_clicked(clock_btn, NULL);
+    return G_SOURCE_REMOVE;
+}
+
 static gboolean auto_about(gpointer p);
 
 int main(int argc, char **argv) {
@@ -974,6 +999,9 @@ int main(int argc, char **argv) {
     /* 自动化: QYDESKTOP_ABOUT=1 启动后弹出关于窗口 */
     if (g_getenv("QYDESKTOP_ABOUT"))
         g_timeout_add(1200, (GSourceFunc)auto_about, NULL);
+    /* 自动化: QYDESKTOP_CALENDAR=1 启动后弹出日历 */
+    if (g_getenv("QYDESKTOP_CALENDAR"))
+        g_timeout_add(1000, (GSourceFunc)auto_calendar, NULL);
     gtk_main();
     return 0;
 }
