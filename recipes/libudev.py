@@ -26,8 +26,8 @@ def build(ctx):
     # eudev tag 包不带 configure，需 autoreconf（autoconf/automake/libtool 由宿主提供）
     ctx.run("autoreconf -f -i -s")
     ctx.run("./configure --prefix=/usr --disable-static "
-            "--disable-manpages --disable-selinux --disable-kmod "
-            "--disable-hwdb --disable-introspection "
+            "--disable-manpages --disable-selinux --enable-kmod "
+            "--enable-hwdb --disable-introspection "
             "--with-rootlibdir=/usr/lib --with-rootrundir=/run")
     ctx.run("make")
 

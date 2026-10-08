@@ -29,9 +29,14 @@ compression = "gz"
 
 
 def build(ctx):
-    # kmod 发行 tar 包缺 autotools 辅助文件，须先生成
-    ctx.run("autoreconf -f -i -s")
-    ctx.run("./configure --prefix=/usr --with-zstd --with-xz --with-zlib --with-openssl --disable-manpages")
+    # kmod 发行 tar 包缺 autotools 辅助文件；gtk-doc.m4 缺失时
+    # NOCONFIGURE 环境下仍会触发 aclocal，先补空 m4 再 autoreconf
+    # 上游 tarball 里 m4/gtk-doc.m4 与 libkmod/docs/gtk-doc.make 是指向
+    # /usr/share/gtk-doc 的悬空符号链接（宿主没装 gtk-doc 时必炸 autoreconf）
+    ctx.run("find . -xtype l -delete")
+    ctx.run("mkdir -p m4 libkmod/docs && : > m4/gtk-doc.m4 && : > libkmod/docs/gtk-doc.make")
+    ctx.run("autoreconf -f -i")
+    ctx.run("./configure --prefix=/usr --with-zstd --with-xz --with-zlib --with-openssl --disable-manpages --disable-gtk-doc")
     ctx.run("make")
 
 
