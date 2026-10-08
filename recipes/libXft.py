@@ -14,9 +14,9 @@ license = "MIT"
 # 远程源码的 sha256 尚未填回，构建前会被拒绝：
 # 静默接受未校验的远程源码等于给供应链攻击敞开大门。
 # 在能联网的构建机上执行：qybuild --fetch-checksums libXft
-source = ["https://example.org/src/libXft-2.3.8.tar.xz"]
-sha256 = []
-checksum_pending = True
+source = ["https://xorg.freedesktop.org/archive/individual/lib/libXft-2.3.8.tar.xz"]
+sha256 = ["5e8c3c4bc2d4c0a40aef6b4b38ed2fb74301640da29f6528154b5009b1c6dd49"]
+checksum_pending = False
 
 depends = ["libX11", "libXrender", "freetype", "fontconfig"]
 makedepends = ["libX11", "libXrender", "freetype", "fontconfig"]

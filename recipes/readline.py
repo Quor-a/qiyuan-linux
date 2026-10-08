@@ -29,8 +29,17 @@ compression = "gz"
 
 
 def build(ctx):
-    ctx.run("./configure --prefix=/usr --disable-static")
-    ctx.run("make")
+    # bash 内置的 termcap 支持缺位：readline 必须显式链上 ncursesw，
+    # 否则 libreadline.so 只 NEED libc，UP/BC 等 termcap 能力符号无人
+    # 提供，任何带 LD_LIBRARY_PATH 的构建都会被它炸掉（宿主 awk 实测）。
+    ctx.run("./configure --prefix=/usr --disable-static "
+            "--with-curses=yes "
+            "bash_cv_termcap_lib=libncursesw")
+    # configure 有时不填 SHLIB_LIBS（上游已知问题），直接改 Makefile 兜底。
+    # 注意：UP/BC 符号在 libtinfo（termlib）里而不是 libncursesw 主库——
+    # 本发行版 ncurses 用 --with-termlib 拆分，必须链 tinfow。
+    ctx.run("sed -i 's|^SHLIB_LIBS = *$|SHLIB_LIBS = -ltinfow|' shlib/Makefile")
+    ctx.run("make SHLIB_LIBS=-ltinfow")
 
 
 def package(ctx):
