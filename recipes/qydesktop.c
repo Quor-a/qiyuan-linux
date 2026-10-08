@@ -450,14 +450,63 @@ static gboolean auto_wall_tick(gpointer ud) {
     return G_SOURCE_CONTINUE;
 }
 
+static gboolean auto_close_about(gpointer p) {
+    gtk_widget_destroy(GTK_WIDGET(p));
+    return G_SOURCE_REMOVE;
+}
+
 static void menu_about(GtkMenuItem *mi, gpointer ud) {
+    (void)mi; (void)ud;
     GtkWidget *dlg = gtk_message_dialog_new(NULL, GTK_DIALOG_DESTROY_WITH_PARENT,
                                             GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
-                                            "%s", TR("启元 Linux 桌面 v2.0"));
-    gtk_message_dialog_format_secondary_text(GTK_MESSAGE_DIALOG(dlg), "%s",
-        TR("GTK3 单窗口桌面壳层 · weston + 自研任务栏补丁"));
-    gtk_dialog_run(GTK_DIALOG(dlg));
-    gtk_widget_destroy(dlg);
+                                            "%s", TR("启元 Linux 桌面"));
+    /* 系统信息: 发行版 / 内核 / 内存 */
+    gchar *os = NULL;
+    g_file_get_contents("/etc/os-release", &os, NULL, NULL);
+    gchar *distro = g_strdup(TR("未知发行版"));
+    if (os) {
+        const char *p = strstr(os, "PRETTY_NAME=");
+        if (p) {
+            p += 12;
+            const char *e = strchr(p, '\n');
+            gchar *name = g_strstrip(g_strndup(p, e ? (gsize)(e - p) : strlen(p)));
+            if (name[0] == '"' && name[strlen(name) - 1] == '"') {
+                name[strlen(name) - 1] = 0;
+                g_free(distro);
+                distro = g_strdup(name + 1);
+            } else {
+                g_free(distro);
+                distro = g_strdup(name);
+            }
+            g_free(name);
+        }
+    }
+    g_free(os);
+    gchar *kver = NULL;
+    g_spawn_command_line_sync("uname -r", &kver, NULL, NULL, NULL);
+    gchar *mem = NULL;
+    g_file_get_contents("/proc/meminfo", &mem, NULL, NULL);
+    int mem_mb = -1;
+    if (mem) {
+        const char *p = strstr(mem, "MemTotal:");
+        if (p) mem_mb = atoi(p + 9) / 1024;
+    }
+    g_free(mem);
+    gchar *info = g_strdup_printf("%s\n%s: %s\n%s: %s\n%s: %d MB",
+        TR("GTK3 单窗口桌面壳层 · weston + 自研任务栏补丁"),
+        TR("发行版"), distro,
+        TR("内核"), kver ? g_strstrip(kver) : TR("未知"),
+        TR("内存"), mem_mb);
+    gtk_message_dialog_format_secondary_text(GTK_MESSAGE_DIALOG(dlg), "%s", info);
+    g_free(distro); g_free(kver); g_free(info);
+    g_printerr("QYDESKTOPDBG: about shown\n");
+    if (g_getenv("QYDESKTOP_ABOUT")) {
+        gtk_widget_show_all(dlg);
+        g_timeout_add(4000, auto_close_about, dlg);
+    } else {
+        gtk_dialog_run(GTK_DIALOG(dlg));
+        gtk_widget_destroy(dlg);
+    }
 }
 
 static gboolean desk_button_press(GtkWidget *w, GdkEventButton *ev, gpointer ud) {
@@ -898,6 +947,8 @@ static void build_desktop(void) {
 }
 
 /* ---------- 入口 ---------- */
+static gboolean auto_about(gpointer p);
+
 int main(int argc, char **argv) {
     signal(SIGCHLD, SIG_DFL);
     gtk_init(&argc, &argv);
@@ -920,6 +971,15 @@ int main(int argc, char **argv) {
     const char *vol_env = g_getenv("QYDESKTOP_VOL");
     if (vol_env && vol_env[0])
         g_timeout_add(700, auto_set_volume, (gpointer)vol_env);
+    /* 自动化: QYDESKTOP_ABOUT=1 启动后弹出关于窗口 */
+    if (g_getenv("QYDESKTOP_ABOUT"))
+        g_timeout_add(1200, (GSourceFunc)auto_about, NULL);
     gtk_main();
     return 0;
+}
+
+static gboolean auto_about(gpointer p) {
+    (void)p;
+    menu_about(NULL, NULL);
+    return G_SOURCE_REMOVE;
 }

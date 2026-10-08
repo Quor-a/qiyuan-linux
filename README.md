@@ -1879,3 +1879,13 @@ ngs-about-v2.png`。
 - **自动化**：`QYSEARCH_TERM=qy` → 日志 `QYSEARCHDBG: results=37 term=qy`（应用 + 程序 + 文件混合结果），截图可见列表
 
 构建产物：`qydesktop 0.1.0-179`。
+
+### 关于启元：系统信息对话框（v0.1.0-180，2026-10 实测）
+
+针对排查报告"UI 与美术细节/系统信息"：
+- **"关于启元"对话框增强**：显示发行版（`/etc/os-release` PRETTY_NAME）、内核版本（`uname -r`）、内存大小（`/proc/meminfo MemTotal`）
+- 桌面右键菜单 → 关于启元 即可打开
+- **自动化**：`QYDESKTOP_ABOUT=1` 启动后自动弹出关于窗口 → 日志 `QYDESKTOPDBG: about shown`，4 秒后自动关闭（供截图）
+- 实测日志正常输出，截图中关于窗口可见
+
+构建产物：`qydesktop 0.1.0-180`。
