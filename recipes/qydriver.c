@@ -115,6 +115,7 @@ int main(int argc, char **argv) {
     GtkWidget *win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(win), TR("启元驱动管理器"));
     gtk_window_set_default_size(GTK_WINDOW(win), 680, 420);
+    qy_make_titlebar(GTK_WINDOW(win), TR("启元驱动管理器"));
     g_signal_connect(win, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);

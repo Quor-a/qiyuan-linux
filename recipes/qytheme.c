@@ -62,3 +62,16 @@ void qy_load_theme(void) {
 void qy_add_class(GtkWidget *w, const char *cls) {
     gtk_style_context_add_class(gtk_widget_get_style_context(w), cls);
 }
+
+/* 可拖动标题栏：GTK HeaderBar 作为 CSD 标题栏。
+ * HeaderBar 自带 press/拖动处理（begin_move_drag），
+ * 在没有服务端窗口装饰的合成器（如 weston）上也能按住拖动窗口。 */
+GtkWidget *qy_make_titlebar(GtkWindow *win, const char *title) {
+    GtkWidget *hb = gtk_header_bar_new();
+    gtk_header_bar_set_show_close_button(GTK_HEADER_BAR(hb), TRUE);
+    if (title && title[0])
+        gtk_header_bar_set_title(GTK_HEADER_BAR(hb), title);
+    gtk_window_set_titlebar(win, hb);
+    g_printerr("QYTHEMEDBG: titlebar=%s\n", title ? title : "");
+    return hb;
+}

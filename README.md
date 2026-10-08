@@ -1778,3 +1778,13 @@ ngs-about-v2.png`。
 - 与 qysettings 分辨率页（写同一 mode=）形成双入口闭环
 
 构建产物：`qydesktop 0.1.0-169`。
+
+### 窗口自由拖动：可拖动标题栏（v0.1.0-170，2026-10 实测）
+
+针对排查报告"窗口不能自由拖动"：
+- **`qy_make_titlebar()` 统一标题栏助手**（qytheme）：用 GTK HeaderBar 作为 CSD 标题栏，在无服务端装饰的合成器（weston）上也能**按住标题栏自由拖动窗口**（HeaderBar 自带 begin_move_drag），并带关闭按钮
+- 任何应用一行接入：`qy_make_titlebar(GTK_WINDOW(win), TR("标题"))`
+- **首个接入：qydriver 驱动管理器**；实测日志 `QYTHEMEDBG: titlebar=...`，截图中窗口顶部显示主题色标题栏条带
+- 后续应用（qyfiles/qynet/qymon 等）可复用同一助手
+
+构建产物：`qydesktop 0.1.0-170`。
