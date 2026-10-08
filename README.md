@@ -1344,3 +1344,16 @@ ngs-about-v2.png`。
   开关+提示渲染正常，qybluetooth.conf 写入 bluetooth=off
 
 构建产物：`qydesktop 0.1.0-113`。
+
+### 系统设置：触摸板页（v0.1.0-114，2026-10 实测）
+
+按设置中心「设备→触摸板」需求，新增触摸板页（蓝牙页之后）：
+- 「启用触摸板」GtkSwitch，切换即写 /etc/qytouchpad.conf
+- 「灵敏度」GtkScale 滑块（1-5）+ 应用按钮
+- 自动化：`QY_SETTINGS_TOUCHPAD=off` 启动后自动关闭
+- l10n：触摸板/启用触摸板/灵敏度
+- 实测：`QY_SETTINGS_PAGE=25` 直达触摸板页
+  （QYSETTINGS_DEBUG: set page=25 total=26），
+  开关+滑块+按钮渲染正常，qytouchpad.conf 写入 touchpad=off
+
+构建产物：`qydesktop 0.1.0-114`。
