@@ -2,6 +2,7 @@
 #include "qyl10n.h"
 #include "qytheme.h"
 #include <gtk/gtk.h>
+#include <glib/gstdio.h>
 #include <sys/utsname.h>
 #include <sys/sysinfo.h>
 #include <unistd.h>
@@ -1495,6 +1496,32 @@ static gboolean auto_sshd_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 恢复默认设置：删除全部 qy*.conf ---------- */
+static void do_reset_settings(void) {
+    static const char *files[] = {
+        "/etc/qywallpaper.conf", "/etc/qynotif.conf", "/etc/qyfirewall.conf",
+        "/etc/qyssh.conf", "/etc/qywifi.conf", "/etc/qybluetooth.conf",
+        "/etc/qydisplay.conf", "/etc/qyhdr.conf", "/etc/qygraphics.conf",
+        "/etc/qypen.conf"
+    };
+    int removed = 0;
+    for (size_t i = 0; i < G_N_ELEMENTS(files); i++)
+        if (g_remove(files[i]) == 0) removed++;
+    g_printerr("QYSETTINGSDBG: reset done (%d files removed)\n", removed);
+}
+
+static void on_reset_clicked(GtkWidget *w, gpointer ud) {
+    (void)w; (void)ud;
+    do_reset_settings();
+}
+
+/* 自动化验证: QY_SETTINGS_RESET=1 启动后恢复默认设置 */
+static gboolean auto_reset_settings(gpointer p) {
+    (void)p;
+    do_reset_settings();
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 通知: 应用通知开关 ---------- */
 #define NOTIF_CONF "/etc/qynotif.conf"
 static int g_notif_loading = 0;
@@ -2395,11 +2422,19 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_box_pack_start(GTK_BOX(ssh_row), ssh_sw, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vfw), ssh_row, FALSE, FALSE, 0);
 
+        /* 恢复默认设置按钮 */
+        GtkWidget *reset_btn = gtk_button_new_with_label(TR("恢复默认设置"));
+        gtk_widget_set_tooltip_text(reset_btn, TR("删除全部 qy*.conf，恢复出厂默认设置"));
+        g_signal_connect(reset_btn, "clicked", G_CALLBACK(on_reset_clicked), NULL);
+        gtk_box_pack_start(GTK_BOX(vfw), reset_btn, FALSE, FALSE, 0);
+
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vfw, gtk_label_new(TR("防火墙")));
         if (env_fw)
             g_timeout_add(1000, auto_firewall_apply, NULL);
         if (env_ssh)
             g_timeout_add(1000, auto_sshd_apply, NULL);
+        if (g_getenv("QY_SETTINGS_RESET"))
+            g_timeout_add(1400, auto_reset_settings, NULL);
     }
 
     /* 代理页: HTTP/HTTPS 代理（写 /etc/environment） */

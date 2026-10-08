@@ -1907,3 +1907,12 @@ ngs-about-v2.png`。
 - **自动化**：`QYFILES_NEWFILE=1` 启动后直接创建"未命名.txt" → 日志 `QYFILESDBG: newfile created /root/未命名.txt`，实测文件已生成（0 字节）
 
 构建产物：`qydesktop 0.1.0-182`。
+
+### 系统设置：恢复默认设置（v0.1.0-183，2026-10 实测）
+
+针对排查报告"系统能力/体验细节"：
+- **qysettings 防火墙页新增"恢复默认设置"按钮**：一键删除核心 `qy*.conf`（壁纸/通知/防火墙/SSH/WiFi/蓝牙/显示/HDR/显卡/触控笔），恢复出厂默认
+- 非核心配置（自动启动/书签/输入法等）保留，避免误删用户数据
+- **自动化**：`QY_SETTINGS_RESET=1` 启动后自动执行 → 日志 `QYSETTINGSDBG: reset done (10 files removed)`，实测 `qywallpaper.conf`/`qyfirewall.conf` 等被清除
+
+构建产物：`qydesktop 0.1.0-183`。
