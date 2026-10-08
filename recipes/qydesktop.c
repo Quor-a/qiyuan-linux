@@ -670,6 +670,41 @@ static GtkWidget *make_tray_btn(const char *icon, const char *tip, const char *c
     return b;
 }
 
+/* ---------- 音量快捷滑块（amixer Master） ---------- */
+static void on_vol_scale_changed(GtkRange *range, gpointer ud) {
+    (void)ud;
+    int v = (int)gtk_range_get_value(range);
+    gchar *cmd = g_strdup_printf("amixer -q sset Master %d%% 2>/dev/null", v);
+    g_spawn_command_line_async(cmd, NULL);
+    g_printerr("QYDESKTOPDBG: volume=%d\n", v);
+    g_free(cmd);
+}
+
+static void on_vol_btn_clicked(GtkWidget *w, gpointer ud) {
+    (void)ud;
+    GtkWidget *menu = gtk_menu_new();
+    GtkWidget *item = gtk_menu_item_new();
+    GtkWidget *scale = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0, 100, 5);
+    gtk_range_set_value(GTK_RANGE(scale), 70);
+    gtk_widget_set_size_request(scale, 160, -1);
+    gtk_container_add(GTK_CONTAINER(item), scale);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu), item);
+    g_signal_connect(scale, "value-changed", G_CALLBACK(on_vol_scale_changed), NULL);
+    gtk_widget_show_all(menu);
+    gtk_menu_attach_to_widget(GTK_MENU(menu), w, NULL);
+    gtk_menu_popup_at_widget(GTK_MENU(menu), w, GDK_GRAVITY_SOUTH_WEST, GDK_GRAVITY_NORTH_WEST, NULL);
+}
+
+/* 自动化: QYDESKTOP_VOL=70 启动后设置音量 */
+static gboolean auto_set_volume(gpointer p) {
+    int v = atoi((const char *)p);
+    gchar *cmd = g_strdup_printf("amixer -q sset Master %d%% 2>/dev/null", v);
+    g_spawn_command_line_async(cmd, NULL);
+    g_printerr("QYDESKTOPDBG: volume=%d\n", v);
+    g_free(cmd);
+    return G_SOURCE_REMOVE;
+}
+
 static void build_bar(void) {
     GtkWidget *bar = gtk_event_box_new();
     add_class(bar, "qy-bar");
@@ -742,7 +777,12 @@ static void build_bar(void) {
     /* 系统托盘: 网络/声音/剪贴板/截图/锁屏 */
     GtkWidget *tray_hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
     gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_btn("🌐", TR("网络"), "qynet"), FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_btn("🔊", TR("声音"), "qysettings"), FALSE, FALSE, 0);
+    GtkWidget *vol_btn = gtk_button_new_with_label("🔊");
+    gtk_button_set_relief(GTK_BUTTON(vol_btn), GTK_RELIEF_NONE);
+    add_class(vol_btn, "qy-status-btn");
+    gtk_widget_set_tooltip_text(vol_btn, TR("声音"));
+    g_signal_connect(vol_btn, "clicked", G_CALLBACK(on_vol_btn_clicked), NULL);
+    gtk_box_pack_start(GTK_BOX(tray_hb), vol_btn, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_btn("📋", TR("剪贴板"), "qyclip"), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_btn("📷", TR("截图"), "qyshot"), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_btn("🔒", TR("锁屏"), "qylock"), FALSE, FALSE, 0);
@@ -876,6 +916,10 @@ int main(int argc, char **argv) {
     /* 自动化: QYDESKTOP_RIGHTCLICK=1 启动后模拟桌面右键 */
     if (g_getenv("QYDESKTOP_RIGHTCLICK"))
         g_timeout_add(1000, auto_desktop_rightclick, NULL);
+    /* 自动化: QYDESKTOP_VOL=70 启动后设置音量 */
+    const char *vol_env = g_getenv("QYDESKTOP_VOL");
+    if (vol_env && vol_env[0])
+        g_timeout_add(700, auto_set_volume, (gpointer)vol_env);
     gtk_main();
     return 0;
 }
