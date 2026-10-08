@@ -159,6 +159,11 @@ static void activate(GtkApplication *app, gpointer ud) {
     qy_add_class(logo, "qy-about-logo");
     gtk_box_pack_start(GTK_BOX(v1), logo, FALSE, FALSE, 8);
     gtk_box_pack_start(GTK_BOX(v1), row(TR("操作系统"), osrel), FALSE, FALSE, 0);
+    {
+        gchar *platform = g_strdup_printf("启元 Linux %s", u.machine);
+        gtk_box_pack_start(GTK_BOX(v1), row(TR("系统平台"), platform), FALSE, FALSE, 0);
+        g_free(platform);
+    }
     gtk_box_pack_start(GTK_BOX(v1), row(TR("内核版本"), u.release), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v1), row(TR("处理器架构"), u.machine), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v1), row(TR("CPU 型号"), cpumodel), FALSE, FALSE, 0);

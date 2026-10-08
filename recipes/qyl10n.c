@@ -183,6 +183,7 @@ static const pair tbl[] = {
     { "打开压缩包", "Open Archive" },
     { "打开文件", "Open File" },
     { "操作系统", "OS" },
+    { "系统平台", "Platform" },
     { "改密", "Password" },
     { "文件", "File" },
     { "文档", "Documents" },
