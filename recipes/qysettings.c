@@ -281,6 +281,55 @@ static gboolean auto_perm_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 多任务: 开关 ---------- */
+#define MULTI_CONF "/etc/qymultitask.conf"
+static int g_multi_loading = 0;
+
+static void multi_write(const char *key, int on) {
+    gchar *content = NULL;
+    gsize len = 0;
+    g_file_get_contents(MULTI_CONF, &content, &len, NULL);
+    GString *out = g_string_new(NULL);
+    char *line = content;
+    int replaced = 0;
+    size_t klen = strlen(key);
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+        if (strncmp(line, key, klen) == 0 && line[klen] == '=') {
+            g_string_append_printf(out, "%s=%s", key, on ? "on" : "off");
+            replaced = 1;
+        } else {
+            g_string_append_len(out, line, llen);
+        }
+        if (nl) g_string_append_c(out, '\n');
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(content);
+    if (!replaced)
+        g_string_append_printf(out, "%s=%s\n", key, on ? "on" : "off");
+    g_file_set_contents(MULTI_CONF, out->str, out->len, NULL);
+    g_string_free(out, TRUE);
+}
+
+static void on_multi_toggled(GtkWidget *sw, gpointer ud) {
+    if (g_multi_loading) return;
+    const char *key = (const char *)ud;
+    multi_write(key, gtk_switch_get_active(GTK_SWITCH(sw)));
+}
+
+/* 自动化验证: QY_SETTINGS_MULTI=snap:off 启动后写入 */
+static gboolean auto_multi_apply(gpointer p) {
+    (void)p;
+    const char *env = g_getenv("QY_SETTINGS_MULTI");
+    if (env) {
+        char key[64] = "", mode[16] = "";
+        if (sscanf(env, "%63[^:]:%15s", key, mode) == 2)
+            multi_write(key, strcmp(mode, "off") != 0);
+    }
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 代理: 写入 /etc/environment ---------- */
 #define ENV_CONF "/etc/environment"
 
@@ -1382,6 +1431,61 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_container_add(GTK_CONTAINER(dev_scroll), dev_list);
         gtk_box_pack_start(GTK_BOX(vdev), dev_scroll, TRUE, TRUE, 0);
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vdev, gtk_label_new(TR("设备")));
+    }
+
+    /* 多任务页: 分屏/贴靠/虚拟桌面开关（写 /etc/qymultitask.conf） */
+    {
+        static const char *multi_keys[] = { "split", "snap", "vd" };
+        static const char *multi_labels[] = { "分屏", "窗口贴靠", "虚拟桌面" };
+        GtkWidget *vmt = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vmt), 14);
+        GtkWidget *tip = gtk_label_new(TR("多任务处理"));
+        gtk_widget_set_halign(tip, GTK_ALIGN_START);
+        qy_add_class(tip, "qy-settings-curlang");
+        gtk_box_pack_start(GTK_BOX(vmt), tip, FALSE, FALSE, 0);
+        g_multi_loading = 1;
+        for (int i = 0; i < 3; i++) {
+            GtkWidget *r = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+            GtkWidget *l = gtk_label_new(TR(multi_labels[i]));
+            gtk_widget_set_size_request(l, 180, -1);
+            gtk_widget_set_halign(l, GTK_ALIGN_START);
+            GtkWidget *sw = gtk_switch_new();
+            gchar *content = NULL;
+            gsize len = 0;
+            int cur_on = 1;
+            if (g_file_get_contents(MULTI_CONF, &content, &len, NULL)) {
+                char *line = content;
+                size_t klen = strlen(multi_keys[i]);
+                while (line && *line) {
+                    if (strncmp(line, multi_keys[i], klen) == 0 &&
+                        line[klen] == '=') {
+                        cur_on = strncmp(line + klen + 1, "off", 3) != 0;
+                        break;
+                    }
+                    char *nl = strchr(line, '\n');
+                    line = nl ? nl + 1 : NULL;
+                }
+                g_free(content);
+            }
+            gtk_switch_set_active(GTK_SWITCH(sw), cur_on);
+            const char *env = g_getenv("QY_SETTINGS_MULTI");
+            if (env) {
+                char key[64] = "", mode[16] = "";
+                if (sscanf(env, "%63[^:]:%15s", key, mode) == 2 &&
+                    strcmp(key, multi_keys[i]) == 0) {
+                    gtk_switch_set_active(GTK_SWITCH(sw), strcmp(mode, "off") != 0);
+                }
+            }
+            g_signal_connect(sw, "state-set", G_CALLBACK(on_multi_toggled),
+                             (gpointer)multi_keys[i]);
+            gtk_box_pack_start(GTK_BOX(r), l, FALSE, FALSE, 0);
+            gtk_box_pack_start(GTK_BOX(r), sw, FALSE, FALSE, 0);
+            gtk_box_pack_start(GTK_BOX(vmt), r, FALSE, FALSE, 0);
+        }
+        g_multi_loading = 0;
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vmt, gtk_label_new(TR("多任务")));
+        if (g_getenv("QY_SETTINGS_MULTI"))
+            g_timeout_add(1100, auto_multi_apply, NULL);
     }
 
     gtk_widget_show_all(win);

@@ -1262,3 +1262,16 @@ ngs-about-v2.png`。
   输入设备列表渲染正常
 
 构建产物：`qydesktop 0.1.0-107`。
+
+### 系统设置：多任务页（v0.1.0-108，2026-10 实测）
+
+按设置中心「多任务处理→分屏/贴靠/虚拟桌面」需求，新增多任务页（设备页之后）：
+- 3 项开关：分屏 / 窗口贴靠 / 虚拟桌面
+- 每项 GtkSwitch，切换即写 /etc/qymultitask.conf（key=on/off）
+- 自动化：`QY_SETTINGS_MULTI=snap:off` 启动后自动写入
+- l10n：多任务/多任务处理/分屏/窗口贴靠/虚拟桌面
+- 实测：`QY_SETTINGS_PAGE=19` 直达多任务页
+  （QYSETTINGS_DEBUG: set page=19 total=20），
+  3 行开关渲染正常，/etc/qymultitask.conf 写入 snap=off
+
+构建产物：`qydesktop 0.1.0-108`。
