@@ -248,6 +248,27 @@ static void refresh_row_status(void) {
     load_repo(g_filter, g_status_filter);
 }
 
+/* 刷新仓库按钮: 重载列表 + 状态栏短暂提示 */
+static gboolean restore_count(gpointer p) {
+    (void)p;
+    update_count_label();
+    return G_SOURCE_REMOVE;
+}
+
+static void on_refresh(GtkWidget *w, gpointer ud) {
+    (void)w; (void)ud;
+    refresh_row_status();
+    if (count_label) gtk_label_set_text(GTK_LABEL(count_label), TR("仓库已刷新"));
+    g_timeout_add_seconds(5, restore_count, NULL);
+}
+
+/* 自动化验证: QYSTORE_REFRESH=1 启动后自动刷新仓库 */
+static gboolean on_refresh_auto(gpointer p) {
+    (void)p;
+    on_refresh(NULL, NULL);
+    return G_SOURCE_REMOVE;
+}
+
 static void show_row(GtkTreeView *tv, GtkTreeIter *itp);
 
 static void on_row_activated(GtkTreeView *tv, GtkTreePath *path,
@@ -377,10 +398,16 @@ int main(int argc, char **argv) {
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
     gtk_container_add(GTK_CONTAINER(win), vbox);
 
+    GtkWidget *search_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
     GtkWidget *search = gtk_search_entry_new();
     gtk_entry_set_placeholder_text(GTK_ENTRY(search), TR("搜索软件包…"));
     g_signal_connect(search, "search-changed", G_CALLBACK(on_search), NULL);
-    gtk_box_pack_start(GTK_BOX(vbox), search, FALSE, FALSE, 0);
+    GtkWidget *b_refresh = gtk_button_new_with_label(TR("刷新"));
+    qy_add_class(b_refresh, "qy-btn");
+    g_signal_connect(b_refresh, "clicked", G_CALLBACK(on_refresh), NULL);
+    gtk_box_pack_start(GTK_BOX(search_row), search, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(search_row), b_refresh, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox), search_row, FALSE, FALSE, 0);
 
     /* 状态筛选行: 全部 / 已安装 / 可安装 */
     GtkWidget *filter_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
@@ -447,6 +474,10 @@ int main(int argc, char **argv) {
             show_row(GTK_TREE_VIEW(tv), &first);
     }
     gtk_widget_show_all(win);
+
+    /* 自动化验证: QYSTORE_REFRESH=1 启动后 2 秒自动刷新仓库 */
+    if (getenv("QYSTORE_REFRESH"))
+        g_timeout_add_seconds(2, on_refresh_auto, NULL);
     gtk_main();
     return 0;
 }

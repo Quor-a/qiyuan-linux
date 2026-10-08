@@ -157,6 +157,7 @@ static const pair tbl[] = {
     { "初始密码", "Initial password" },
     { "删除失败", "Delete failed" },
     { "删除失败: %s", "Delete failed: %s" },
+    { "仓库已刷新", "Repo refreshed" },
     { "刷新", "Refresh" },
     { "加入 wheel 组（可 qysudo 提权）", "Add to wheel (qysudo)" },
     { "单元目录", "Unit dir" },
