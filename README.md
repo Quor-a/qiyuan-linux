@@ -1677,3 +1677,14 @@ ngs-about-v2.png`。
 - 启动器新增音乐播放器（娱乐类）
 
 构建产物：`qydesktop 0.1.0-152`。
+
+### 窗口总览 qyswitcher / Alt-Tab（v0.1.0-153，2026-10 实测）
+
+按「工作区/Alt-Tab」需求：
+- Alt-Tab 由 weston 14 合成器内置（mod+Tab 循环窗口）
+- 新增窗口总览 qyswitcher：X11 窗口列表 + 运行中启元应用，点击切换/启动
+- qysw-x11 辅助程序：枚举/激活 X 窗口（XRaiseWindow + XSetInputFocus）
+- 自动化 QYSWITCH_AUTO / QYSWITCH_DISPLAY；实测运行中应用列表正常显示
+- 启动器新增窗口总览（系统类）
+
+构建产物：`qydesktop 0.1.0-153`。
