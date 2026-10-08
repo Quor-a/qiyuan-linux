@@ -1249,3 +1249,16 @@ ngs-about-v2.png`。
   entry+应用按钮渲染正常，/etc/environment 写入 4 个代理变量
 
 构建产物：`qydesktop 0.1.0-106`。
+
+### 系统设置：设备页（v0.1.0-107，2026-10 实测）
+
+按设置中心「设备→USB/输入设备」需求，新增设备页（代理页之后）：
+- 输入设备：/proc/bus/input/devices 枚举（Power Button 等，🖱 前缀）
+- USB 设备：/sys/bus/usb/devices 读 manufacturer/product（🔌 前缀）
+- 无设备时显示「未检测到外接设备」
+- l10n：设备/ USB 与输入设备/未检测到外接设备
+- 实测：`QY_SETTINGS_PAGE=18` 直达设备页
+  （QYSETTINGS_DEBUG: set page=18 total=19），
+  输入设备列表渲染正常
+
+构建产物：`qydesktop 0.1.0-107`。

@@ -6,6 +6,7 @@
 #include <sys/sysinfo.h>
 #include <unistd.h>
 #include <time.h>
+#include <dirent.h>
 
 /* ---------- 语言页回调 ---------- */
 /* 同步 weston 顶栏时钟格式（顶栏由 weston 补丁渲染，读 weston.ini 的
@@ -1301,6 +1302,86 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vpx, gtk_label_new(TR("代理")));
         if (g_getenv("QY_SETTINGS_PROXY"))
             g_timeout_add(1050, auto_proxy_apply, NULL);
+    }
+
+    /* 设备页: USB 与输入设备 */
+    {
+        GtkWidget *vdev = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vdev), 14);
+        GtkWidget *tip = gtk_label_new(TR("USB 与输入设备"));
+        gtk_widget_set_halign(tip, GTK_ALIGN_START);
+        qy_add_class(tip, "qy-settings-curlang");
+        gtk_box_pack_start(GTK_BOX(vdev), tip, FALSE, FALSE, 0);
+        GtkWidget *dev_scroll = gtk_scrolled_window_new(NULL, NULL);
+        gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(dev_scroll),
+                                       GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
+        GtkWidget *dev_list = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
+        int n = 0;
+        FILE *inf = fopen("/proc/bus/input/devices", "r");
+        if (inf) {
+            char line[256];
+            while (fgets(line, sizeof line, inf)) {
+                if (strncmp(line, "N: Name=", 8) == 0) {
+                    char *p = line + 8;
+                    char *nl = strchr(p, '\n');
+                    if (nl) *nl = 0;
+                    gchar *txt = g_strdup_printf("🖱 %s", p);
+                    GtkWidget *il = gtk_label_new(txt);
+                    gtk_widget_set_halign(il, GTK_ALIGN_START);
+                    gtk_box_pack_start(GTK_BOX(dev_list), il, FALSE, FALSE, 0);
+                    g_free(txt);
+                    n++;
+                }
+            }
+            fclose(inf);
+        }
+        DIR *ud = opendir("/sys/bus/usb/devices");
+        if (ud) {
+            struct dirent *de;
+            while ((de = readdir(ud))) {
+                if (de->d_name[0] == '.') continue;
+                char mp[160];
+                char vendor[128] = "", product[128] = "";
+                snprintf(mp, sizeof mp, "/sys/bus/usb/devices/%s/manufacturer",
+                         de->d_name);
+                FILE *vf = fopen(mp, "r");
+                if (vf) {
+                    if (fgets(vendor, sizeof vendor, vf)) {
+                        char *nl = strchr(vendor, '\n');
+                        if (nl) *nl = 0;
+                    }
+                    fclose(vf);
+                }
+                snprintf(mp, sizeof mp, "/sys/bus/usb/devices/%s/product",
+                         de->d_name);
+                FILE *pf = fopen(mp, "r");
+                if (pf) {
+                    if (fgets(product, sizeof product, pf)) {
+                        char *nl = strchr(product, '\n');
+                        if (nl) *nl = 0;
+                    }
+                    fclose(pf);
+                }
+                if (vendor[0] || product[0]) {
+                    gchar *txt = g_strdup_printf("🔌 %s %s (%s)", vendor,
+                                                 product, de->d_name);
+                    GtkWidget *ul = gtk_label_new(txt);
+                    gtk_widget_set_halign(ul, GTK_ALIGN_START);
+                    gtk_box_pack_start(GTK_BOX(dev_list), ul, FALSE, FALSE, 0);
+                    g_free(txt);
+                    n++;
+                }
+            }
+            closedir(ud);
+        }
+        if (n == 0) {
+            GtkWidget *empty = gtk_label_new(TR("未检测到外接设备"));
+            gtk_widget_set_halign(empty, GTK_ALIGN_START);
+            gtk_box_pack_start(GTK_BOX(dev_list), empty, FALSE, FALSE, 0);
+        }
+        gtk_container_add(GTK_CONTAINER(dev_scroll), dev_list);
+        gtk_box_pack_start(GTK_BOX(vdev), dev_scroll, TRUE, TRUE, 0);
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vdev, gtk_label_new(TR("设备")));
     }
 
     gtk_widget_show_all(win);
