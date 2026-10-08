@@ -281,6 +281,50 @@ static gboolean auto_perm_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 壁纸: 写 /etc/qywallpaper.conf ---------- */
+#define WALLPAPER_CONF "/etc/qywallpaper.conf"
+static GtkWidget *g_wallpaper_combo = NULL;
+
+static void wallpaper_write(const char *name) {
+    gchar *content = NULL;
+    gsize len = 0;
+    g_file_get_contents(WALLPAPER_CONF, &content, &len, NULL);
+    GString *out = g_string_new(NULL);
+    char *line = content;
+    int replaced = 0;
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+        if (strncmp(line, "wallpaper=", 11) == 0) {
+            g_string_append_printf(out, "wallpaper=%s", name);
+            replaced = 1;
+        } else {
+            g_string_append_len(out, line, llen);
+        }
+        if (nl) g_string_append_c(out, '\n');
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(content);
+    if (!replaced)
+        g_string_append_printf(out, "wallpaper=%s\n", name);
+    g_file_set_contents(WALLPAPER_CONF, out->str, out->len, NULL);
+    g_string_free(out, TRUE);
+}
+
+static void on_wallpaper_apply(GtkWidget *w, gpointer ud) {
+    (void)w; (void)ud;
+    const char *name = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(g_wallpaper_combo));
+    if (name && name[0]) wallpaper_write(name);
+}
+
+/* 自动化验证: QY_SETTINGS_WALLPAPER=qiyuan.png 启动后写入 */
+static gboolean auto_wallpaper_apply(gpointer p) {
+    (void)p;
+    const char *env = g_getenv("QY_SETTINGS_WALLPAPER");
+    if (env && env[0]) wallpaper_write(env);
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 窗口行为: 开关+动作写 /etc/qywinbehavior.conf ---------- */
 #define WIN_CONF "/etc/qywinbehavior.conf"
 static int g_win_loading = 0;
@@ -3219,6 +3263,87 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vwb, gtk_label_new(TR("窗口行为")));
         if (g_getenv("QY_SETTINGS_WIN"))
             g_timeout_add(1950, auto_win_apply, NULL);
+    }
+
+    /* 壁纸页: 桌面背景选择（写 /etc/qywallpaper.conf） */
+    {
+        GtkWidget *vwl = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vwl), 14);
+        gtk_box_pack_start(GTK_BOX(vwl), row(TR("壁纸"), TR("桌面背景图片")), FALSE, FALSE, 0);
+        /* 当前壁纸 */
+        gchar *cur_wall = g_strdup("qiyuan.png");
+        gchar *content = NULL;
+        gsize len = 0;
+        if (g_file_get_contents(WALLPAPER_CONF, &content, &len, NULL)) {
+            char *line = content;
+            while (line && *line) {
+                if (strncmp(line, "wallpaper=", 11) == 0) {
+                    char *p = line + 11;
+                    char *nl = strchr(p, '\n');
+                    if (nl) *nl = 0;
+                    if (*p) { g_free(cur_wall); cur_wall = g_strdup(p); }
+                    break;
+                }
+                char *nl = strchr(line, '\n');
+                line = nl ? nl + 1 : NULL;
+            }
+            g_free(content);
+        }
+        gtk_box_pack_start(GTK_BOX(vwl), row(TR("当前壁纸"), cur_wall), FALSE, FALSE, 0);
+        g_free(cur_wall);
+        /* 壁纸列表（/usr/share/backgrounds/*.png） */
+        GtkWidget *wl_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *wl_l = gtk_label_new(TR("壁纸"));
+        gtk_widget_set_size_request(wl_l, 150, -1);
+        gtk_widget_set_halign(wl_l, GTK_ALIGN_START);
+        g_wallpaper_combo = gtk_combo_box_text_new();
+        int wall_idx = 0, cur_idx = 0;
+        GDir *wdir = g_dir_open("/usr/share/backgrounds", 0, NULL);
+        if (wdir) {
+            const gchar *wn;
+            while ((wn = g_dir_read_name(wdir))) {
+                if (g_str_has_suffix(wn, ".png") || g_str_has_suffix(wn, ".jpg")) {
+                    gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(g_wallpaper_combo), wn);
+                    if (!strcmp(wn, cur_wall) || wall_idx == 0)
+                        cur_idx = wall_idx;
+                    wall_idx++;
+                }
+            }
+            g_dir_close(wdir);
+        }
+        if (wall_idx == 0) {
+            gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(g_wallpaper_combo), "qiyuan.png");
+            cur_idx = 0;
+        }
+        gtk_combo_box_set_active(GTK_COMBO_BOX(g_wallpaper_combo), cur_idx);
+        const char *env_wl = g_getenv("QY_SETTINGS_WALLPAPER");
+        if (env_wl && env_wl[0]) {
+            GtkTreeModel *wmodel = gtk_combo_box_get_model(GTK_COMBO_BOX(g_wallpaper_combo));
+            GtkTreeIter wit;
+            int widx = -1, wpos = 0;
+            if (gtk_tree_model_get_iter_first(wmodel, &wit)) {
+                do {
+                    gchar *wtxt = NULL;
+                    gtk_tree_model_get(wmodel, &wit, 0, &wtxt, -1);
+                    if (wtxt && !strcmp(wtxt, env_wl)) { widx = wpos; }
+                    g_free(wtxt);
+                    if (widx >= 0) break;
+                    wpos++;
+                } while (gtk_tree_model_iter_next(wmodel, &wit));
+            }
+            if (widx >= 0)
+                gtk_combo_box_set_active(GTK_COMBO_BOX(g_wallpaper_combo), widx);
+        }
+        GtkWidget *wl_btn = gtk_button_new_with_label(TR("应用"));
+        qy_add_class(wl_btn, "qy-btn");
+        g_signal_connect(wl_btn, "clicked", G_CALLBACK(on_wallpaper_apply), NULL);
+        gtk_box_pack_start(GTK_BOX(wl_row), wl_l, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(wl_row), g_wallpaper_combo, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(wl_row), wl_btn, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vwl), wl_row, FALSE, FALSE, 0);
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vwl, gtk_label_new(TR("壁纸")));
+        if (env_wl)
+            g_timeout_add(2000, auto_wallpaper_apply, NULL);
     }
 
     gtk_widget_show_all(win);

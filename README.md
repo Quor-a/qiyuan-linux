@@ -1518,3 +1518,17 @@ ngs-about-v2.png`。
   复制/删除/重命名/新建文件夹/回收站/还原/彻底删除
 
 构建产物：`qydesktop 0.1.0-126`。
+
+### 系统设置：壁纸页（v0.1.0-127，2026-10 实测）
+
+按「UI/美术细节」需求，新增桌面壁纸设置页（窗口行为页之后）：
+- 「壁纸」说明 + 「当前壁纸」显示（读 /etc/qywallpaper.conf）
+- 「壁纸」下拉：列出 /usr/share/backgrounds/ 下 .png/.jpg 壁纸 + 应用按钮
+- 应用后写 /etc/qywallpaper.conf（wallpaper=文件名）
+- 自动化：`QY_SETTINGS_WALLPAPER=qiyuan.png` 启动后自动写入
+- l10n：桌面背景图片/当前壁纸（壁纸已有）
+- 实测：`QY_SETTINGS_PAGE=37` 直达壁纸页
+  （QYSETTINGS_DEBUG: set page=37 total=38），
+  当前壁纸+下拉+按钮渲染正常，qywallpaper.conf 写入 qiyuan.png
+
+构建产物：`qydesktop 0.1.0-127`。

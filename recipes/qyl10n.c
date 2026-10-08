@@ -356,6 +356,8 @@ static const pair tbl[] = {
     { "最大化", "Maximize" },
     { "卷起", "Shade" },
     { "搜索当前目录", "Search current folder" },
+    { "桌面背景图片", "Desktop background image" },
+    { "当前壁纸", "Current wallpaper" },
     { "设备管理", "Devices" },
     { "请先在列表中选择目标磁盘", "Select a target disk first" },
     { "输出音量 (Master)", "Master volume" },
