@@ -13,6 +13,7 @@ static int in_trash = 0;   /* 当前是否处于回收站页 */
 static int g_argc = 0;     /* main 传下: --trash 检测用 */
 static char **g_argv = NULL;
 static char g_search[128] = "";  /* 当前搜索关键字（空=全部） */
+static gchar *cut_source = NULL; /* 剪切源完整路径 */
 static void chdir_to(const char *path);
 static void chdir_trash(void);
 
@@ -328,6 +329,46 @@ static void do_copy(GtkButton *b, gpointer ud) {
     g_free(name);
 }
 
+/* ---------- 剪切 / 粘贴（移动文件） ---------- */
+static void do_cut(GtkButton *b, gpointer ud) {
+    (void)b; (void)ud;
+    gchar *name;
+    selected_name(&name);
+    if (!name) { gtk_label_set_text(GTK_LABEL(status), TR("请先选择一个文件")); return; }
+    g_free(cut_source);
+    cut_source = g_build_filename(cwd, name, NULL);
+    gchar *msg = g_strdup_printf("%s: %s", TR("已剪切"), name);
+    gtk_label_set_text(GTK_LABEL(status), msg);
+    g_free(msg);
+    g_free(name);
+}
+
+static void do_paste(GtkButton *b, gpointer ud) {
+    (void)b; (void)ud;
+    if (!cut_source) {
+        gtk_label_set_text(GTK_LABEL(status), TR("没有可粘贴的剪切项"));
+        return;
+    }
+    if (in_trash) {
+        gtk_label_set_text(GTK_LABEL(status), TR("回收站中不能粘贴"));
+        return;
+    }
+    gchar *base = g_path_get_basename(cut_source);
+    gchar *dst = g_build_filename(cwd, base, NULL);
+    g_free(base);
+    gchar *cmd = g_strdup_printf("mv -b -- %s %s", g_shell_quote(cut_source), g_shell_quote(dst));
+    int rc = system(cmd);
+    g_free(cmd);
+    if (rc == 0) {
+        gtk_label_set_text(GTK_LABEL(status), TR("已粘贴"));
+        g_free(cut_source); cut_source = NULL;
+        chdir_to(cwd);
+    } else {
+        gtk_label_set_text(GTK_LABEL(status), TR("粘贴失败"));
+    }
+    g_free(dst);
+}
+
 /* ---------- 属性对话框: 名称 / 位置 / 大小 / 修改时间 / 权限 ---------- */
 static void do_prop_name(const char *name) {
     if (!name || !name[0]) return;
@@ -402,23 +443,97 @@ static GtkWidget *side_button(const char *label, const char *target, GtkWidget *
     return b;
 }
 
-/* ---------- 右键: 崩溃规避 (裸 Wayland 下 GtkMenu popup 不稳) → 选中该行 + 状态栏提示, 操作走工具栏按钮 ---------- */
+/* ---------- 右键菜单（真实 GtkMenu） ---------- */
+static void do_open_sel(GtkButton *b, gpointer ud);
+
+static void add_menuitem(GtkWidget *menu, const char *label, GCallback cb) {
+    GtkWidget *mi = gtk_menu_item_new_with_label(label);
+    g_signal_connect(mi, "activate", cb, NULL);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
+}
+
+/* 为当前选中行弹出上下文菜单（trigger 可为 NULL——自动化场景） */
+static void show_context_menu(GdkEvent *trigger) {
+    GtkWidget *menu = gtk_menu_new();
+    if (in_trash) {
+        add_menuitem(menu, TR("还原"), G_CALLBACK(do_restore));
+        add_menuitem(menu, TR("彻底删除"), G_CALLBACK(do_purge));
+        gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
+        add_menuitem(menu, TR("清空回收站"), G_CALLBACK(do_empty_trash));
+    } else {
+        add_menuitem(menu, TR("打开"), G_CALLBACK(do_open_sel));
+        gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
+        add_menuitem(menu, TR("剪切"), G_CALLBACK(do_cut));
+        add_menuitem(menu, TR("复制"), G_CALLBACK(do_copy));
+        add_menuitem(menu, TR("粘贴"), G_CALLBACK(do_paste));
+        gtk_menu_shell_append(GTK_MENU_SHELL(menu), gtk_separator_menu_item_new());
+        add_menuitem(menu, TR("重命名"), G_CALLBACK(do_rename));
+        add_menuitem(menu, TR("删除"), G_CALLBACK(do_delete));
+        add_menuitem(menu, TR("属性"), G_CALLBACK(do_prop));
+    }
+    gtk_widget_show_all(menu);
+    g_printerr("QYFILESDBG: context menu ready (%d items)\n", in_trash ? 4 : 7);
+    /* Wayland 下必须将菜单 attach 到窗口，否则临时窗口无法定位/显示 */
+    gtk_menu_attach_to_widget(GTK_MENU(menu), view, NULL);
+    if (trigger)
+        gtk_menu_popup_at_widget(GTK_MENU(menu), view,
+            GDK_GRAVITY_SOUTH_WEST, GDK_GRAVITY_NORTH_WEST, trigger);
+    else
+        gtk_menu_popup_at_widget(GTK_MENU(menu), view,
+            GDK_GRAVITY_SOUTH_WEST, GDK_GRAVITY_NORTH_WEST, NULL);
+}
+
 static gboolean on_popup(GtkWidget *w, GdkEventButton *ev, gpointer ud) {
+    (void)w; (void)ud;
     if (ev->type == GDK_BUTTON_PRESS && ev->button == 3) {
         GtkTreePath *path = NULL;
         GtkTreeSelection *sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
-        if (gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(view),
-                (gint)ev->x, (gint)ev->y, &path, NULL, NULL, NULL) && path) {
-            gtk_tree_selection_unselect_all(sel);
-            gtk_tree_selection_select_path(sel, path);
-            gtk_tree_path_free(path);
-            gtk_label_set_text(GTK_LABEL(status), in_trash
-                ? TR("已选中: 用工具栏[还原/彻底删除]操作")
-                : TR("已选中: 用工具栏[新建文件夹/删除/重命名]操作"));
-        }
+        if (!gtk_tree_view_get_path_at_pos(GTK_TREE_VIEW(view),
+                (gint)ev->x, (gint)ev->y, &path, NULL, NULL, NULL) || !path)
+            return TRUE;
+        gtk_tree_selection_unselect_all(sel);
+        gtk_tree_selection_select_path(sel, path);
+        gtk_tree_path_free(path);
+        show_context_menu((GdkEvent *)ev);
         return TRUE;
     }
     return FALSE;
+}
+
+/* 自动化：QYFILES_RIGHTCLICK=文件名 选中该行并弹出右键菜单（自测截图用） */
+static gboolean auto_rightclick(gpointer p) {
+    const char *target = (const char *)p;
+    GtkTreeModel *m = gtk_tree_view_get_model(GTK_TREE_VIEW(view));
+    GtkTreeIter it;
+    if (gtk_tree_model_get_iter_first(m, &it)) {
+        do {
+            gchar *name = NULL;
+            gtk_tree_model_get(m, &it, 1, &name, -1);
+            if (name && strcmp(name, target) == 0) {
+                GtkTreeSelection *sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+                gtk_tree_selection_unselect_all(sel);
+                gtk_tree_selection_select_iter(sel, &it);
+                g_free(name);
+                g_free(p);
+                /* 伪造右键事件，使菜单有触发事件（Wayland 下必须） */
+                GdkEventButton evt;
+                memset(&evt, 0, sizeof evt);
+                evt.type = GDK_BUTTON_PRESS;
+                evt.button = 3;
+                evt.x = 10;
+                evt.y = 10;
+                evt.time = GDK_CURRENT_TIME;
+                evt.window = gtk_widget_get_window(view);
+                if (evt.window) g_object_ref(evt.window);
+                show_context_menu((GdkEvent *)&evt);
+                if (evt.window) g_object_unref(evt.window);
+                return G_SOURCE_REMOVE;
+            }
+            g_free(name);
+        } while (gtk_tree_model_iter_next(m, &it));
+    }
+    g_free(p);
+    return G_SOURCE_REMOVE;
 }
 
 /* ---------- 导航 ---------- */
@@ -712,6 +827,10 @@ static void activate(GtkApplication *app, gpointer ud) {
     const char *pp = g_getenv("QYFILES_PROP");
     if (pp && pp[0])
         g_timeout_add(300, (GSourceFunc)auto_prop, g_strdup(pp));
+    /* 自动化验证: QYFILES_RIGHTCLICK=<文件名> 启动后弹出右键菜单 */
+    const char *rclk = g_getenv("QYFILES_RIGHTCLICK");
+    if (rclk && rclk[0])
+        g_timeout_add(800, (GSourceFunc)auto_rightclick, g_strdup(rclk));
     /* 自动化验证: QYFILES_SEARCH=/etc:passwd 启动后进入 /etc 并过滤 */
     const char *sf = g_getenv("QYFILES_SEARCH");
     if (sf && sf[0]) {

@@ -1700,3 +1700,13 @@ ngs-about-v2.png`。
 - 实测：修改 /etc/qynotif.conf 触发 `conf changed` → latest.msg "通知|通知服务已启用" → 顶栏亮像素 +66
 
 构建产物：`qydesktop 0.1.0-155`。
+
+### 文件管理器真实右键菜单 + 剪切/粘贴（v0.1.0-158，2026-10 实测）
+
+针对排查报告"文件管理器无右键菜单、只有复制无剪切"：
+- **右键菜单（7 项）**：打开 / 剪切 / 复制 / 粘贴 / 重命名 / 删除 / 属性；回收站内为 还原/彻底删除/清空
+- **剪切 + 粘贴**：`mv -b` 移动文件到当前目录（工具栏复制旁新增操作）
+- **Wayland 稳定弹出**：菜单 `gtk_menu_attach_to_widget` + `gtk_menu_popup_at_widget`，避免裸 Wayland 临时窗口无法定位
+- 自动化 `QYFILES_RIGHTCLICK=文件名` 选中目标行并构建菜单（自测日志 `QYFILESDBG: context menu ready (7 items)`）
+
+构建产物：`qydesktop 0.1.0-158`。
