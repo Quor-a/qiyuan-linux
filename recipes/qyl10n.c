@@ -355,6 +355,7 @@ static const pair tbl[] = {
     { "双击标题栏动作", "Double-click titlebar action" },
     { "最大化", "Maximize" },
     { "卷起", "Shade" },
+    { "搜索当前目录", "Search current folder" },
     { "设备管理", "Devices" },
     { "请先在列表中选择目标磁盘", "Select a target disk first" },
     { "输出音量 (Master)", "Master volume" },

@@ -1,4 +1,4 @@
-/* qyfiles - 启元文件管理器 (GTK3) — v3: 回收站页(还原/清空) + 侧边栏 + 彻底删除 */
+/* qyfiles - 启元文件管理器 (GTK3) — v4: 目录搜索过滤 */
 #include "qyl10n.h"
 #include <gtk/gtk.h>
 #include <string.h>
@@ -12,6 +12,7 @@ static char cwd[4096];
 static int in_trash = 0;   /* 当前是否处于回收站页 */
 static int g_argc = 0;     /* main 传下: --trash 检测用 */
 static char **g_argv = NULL;
+static char g_search[128] = "";  /* 当前搜索关键字（空=全部） */
 static void chdir_to(const char *path);
 static void chdir_trash(void);
 
@@ -431,6 +432,9 @@ static void chdir_to(const char *path) {
     if (!dir) return;
     const gchar *name;
     while ((name = g_dir_read_name(dir))) {
+        /* 搜索过滤: 名称包含关键字才显示 */
+        if (g_search[0] && !strstr(name, g_search))
+            continue;
         gchar *full = g_build_filename(path, name, NULL);
         gboolean isdir = g_file_test(full, G_FILE_TEST_IS_DIR);
         char sizestr[32] = "—";
@@ -496,6 +500,26 @@ static void chdir_trash(void) {
     else
         gtk_label_set_text(GTK_LABEL(status), TR("位置: 回收站 (工具栏: 还原 / 彻底删除 / 清空)"));
     g_strlcpy(cwd, files, sizeof cwd);
+}
+
+/* ---------- 搜索过滤 ---------- */
+static void on_search_changed(GtkSearchEntry *se, gpointer ud) {
+    (void)ud;
+    const char *text = gtk_entry_get_text(GTK_ENTRY(se));
+    g_strlcpy(g_search, text ? text : "", sizeof g_search);
+    if (in_trash) chdir_trash(); else chdir_to(cwd);
+}
+
+/* 自动化验证: QYFILES_SEARCH=/etc:passwd → 进入 /etc 且只显示含 passwd 的项 */
+static gboolean auto_search(gpointer p) {
+    if (p) {
+        gchar *dir = g_strdup((const char *)p);
+        chdir_to(dir);
+        g_free(dir);
+    } else {
+        chdir_to(cwd);
+    }
+    return G_SOURCE_REMOVE;
 }
 
 /* 打开选中项：目录→进入；图片→qyview；文本→qyedit；其它→状态栏提示 */
@@ -648,6 +672,11 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(hbox), b_ren, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_cp, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_prop, FALSE, FALSE, 0);
+    GtkWidget *search_entry = gtk_search_entry_new();
+    gtk_widget_set_size_request(search_entry, 220, -1);
+    gtk_entry_set_placeholder_text(GTK_ENTRY(search_entry), TR("搜索当前目录"));
+    g_signal_connect(search_entry, "search-changed", G_CALLBACK(on_search_changed), NULL);
+    gtk_box_pack_end(GTK_BOX(hbox), search_entry, FALSE, FALSE, 0);
     gtk_box_pack_end(GTK_BOX(hbox), b_open, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_res, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_pur, FALSE, FALSE, 0);
@@ -683,6 +712,20 @@ static void activate(GtkApplication *app, gpointer ud) {
     const char *pp = g_getenv("QYFILES_PROP");
     if (pp && pp[0])
         g_timeout_add(300, (GSourceFunc)auto_prop, g_strdup(pp));
+    /* 自动化验证: QYFILES_SEARCH=/etc:passwd 启动后进入 /etc 并过滤 */
+    const char *sf = g_getenv("QYFILES_SEARCH");
+    if (sf && sf[0]) {
+        char *colon = strchr(sf, ':');
+        if (colon) {
+            g_strlcpy(g_search, colon + 1, sizeof g_search);
+            gchar *dir = g_strndup(sf, (gsize)(colon - sf));
+            g_timeout_add(300, (GSourceFunc)auto_search, g_strdup(dir));
+            g_free(dir);
+        } else {
+            g_strlcpy(g_search, sf, sizeof g_search);
+            g_timeout_add(300, (GSourceFunc)auto_search, NULL);
+        }
+    }
 }
 
 int main(int argc, char **argv) {
