@@ -6,7 +6,7 @@
 
 name = "qydesktop"
 version = "0.1.0"
-release = 92
+release = 93
 summary = "启元桌面 shell（GTK3 单窗口 + 主题）"
 license = "MIT"
 
@@ -34,6 +34,7 @@ RECIPE_CTL_C = Path(__file__).parent / "qyctl.c"
 RECIPE_ARC_C = Path(__file__).parent / "qyarc.c"
 RECIPE_STORE_C = Path(__file__).parent / "qystore.c"
 RECIPE_INST_C = Path(__file__).parent / "qypkg-inst.c"
+RECIPE_NET_C = Path(__file__).parent / "qynet.c"
 
 
 def build(ctx):
@@ -47,6 +48,7 @@ def build(ctx):
     shutil.copy(RECIPE_VIEW_C, Path(ctx.srcdir) / "qyview.c")
     shutil.copy(RECIPE_CTL_C, Path(ctx.srcdir) / "qyctl.c")
     shutil.copy(RECIPE_ARC_C, Path(ctx.srcdir) / "qyarc.c")
+    shutil.copy(RECIPE_NET_C, Path(ctx.srcdir) / "qynet.c")
     shutil.copy(RECIPE_STORE_C, Path(ctx.srcdir) / "qystore.c")
     shutil.copy(RECIPE_INST_C, Path(ctx.srcdir) / "qypkg-inst.c")
     shutil.copy(Path(__file__).parent / "qystore.desktop", Path(ctx.srcdir) / "qystore.desktop")
@@ -89,6 +91,7 @@ def build(ctx):
         "gcc qyctl.c -o qyctl -O2 -Wall && "
         "gcc qyarc.c qytheme.c qyl10n.c -o qyarc $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
         "gcc qystore.c qytheme.c qyl10n.c -o qystore $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qynet.c qytheme.c qyl10n.c -o qynet $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
         "gcc qypkg-inst.c -o qypkg-inst -O2".format(ctx.sysroot)
     )
 
@@ -105,6 +108,7 @@ def package(ctx):
     ctx.run("cp qyctl {}/usr/bin/qyctl".format(ctx.destdir))
     ctx.run("cp qyarc {}/usr/bin/qyarc".format(ctx.destdir))
     ctx.run("cp qystore {}/usr/bin/qystore".format(ctx.destdir))
+    ctx.run("cp qynet {}/usr/bin/qynet".format(ctx.destdir))
     ctx.run("cp qypkg-inst {}/usr/bin/qypkg-inst".format(ctx.destdir))
     ctx.run("cp qysetup {}/usr/bin/qysetup".format(ctx.destdir))
     ctx.run("cp qyuseradd.sh {}/usr/bin/qyuseradd && chmod +x {}/usr/bin/qyuseradd".format(ctx.destdir, ctx.destdir))
