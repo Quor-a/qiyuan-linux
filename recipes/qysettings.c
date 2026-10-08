@@ -281,6 +281,54 @@ static gboolean auto_perm_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 启动项: 自启应用开关 ---------- */
+#define AUTOSTART_CONF "/etc/qyautostart.conf"
+
+static void on_autostart_toggled(GtkWidget *sw, gpointer ud) {
+    const char *app = (const char *)ud;
+    int on = gtk_switch_get_active(GTK_SWITCH(sw));
+    gchar *content = NULL;
+    gsize len = 0;
+    g_file_get_contents(AUTOSTART_CONF, &content, &len, NULL);
+    GString *out = g_string_new(NULL);
+    char *line = content;
+    int replaced = 0;
+    size_t klen = strlen(app);
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+        if (strncmp(line, app, klen) == 0 && line[klen] == '=') {
+            g_string_append_printf(out, "%s=%s", app, on ? "on" : "off");
+            replaced = 1;
+        } else {
+            g_string_append_len(out, line, llen);
+        }
+        if (nl) g_string_append_c(out, '\n');
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(content);
+    if (!replaced)
+        g_string_append_printf(out, "%s=%s\n", app, on ? "on" : "off");
+    g_file_set_contents(AUTOSTART_CONF, out->str, out->len, NULL);
+    g_string_free(out, TRUE);
+}
+
+/* 自动化验证: QY_SETTINGS_AUTOSTART=qymon:off 启动后写入 */
+static gboolean auto_autostart_apply(gpointer p) {
+    (void)p;
+    const char *env = g_getenv("QY_SETTINGS_AUTOSTART");
+    if (env) {
+        char app[64] = "", mode[16] = "";
+        if (sscanf(env, "%63[^:]:%15s", app, mode) == 2) {
+            GtkWidget *sw = gtk_switch_new();
+            gtk_switch_set_active(GTK_SWITCH(sw), strcmp(mode, "off") != 0);
+            on_autostart_toggled(sw, app);
+            gtk_widget_destroy(sw);
+        }
+    }
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 笔和Ink: 开关写 /etc/qypen.conf ---------- */
 #define PEN_CONF "/etc/qypen.conf"
 static int g_pen_loading = 0;
@@ -2845,6 +2893,63 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vpn, gtk_label_new(TR("笔和Ink")));
         if (g_getenv("QY_SETTINGS_PEN"))
             g_timeout_add(1800, auto_pen_apply, NULL);
+    }
+
+    /* 启动项页: 开机自启应用开关（写 /etc/qyautostart.conf） */
+    {
+        static const char *ast_apps[][2] = {
+            { "系统监视", "qymon" },
+            { "终端", "weston-terminal" },
+            { "文件管理器", "qyfiles" },
+            { "软件中心", "qystore" },
+        };
+        GtkWidget *vst = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vst), 14);
+        GtkWidget *tip = gtk_label_new(TR("哪些应用开机自动启动"));
+        gtk_widget_set_halign(tip, GTK_ALIGN_START);
+        qy_add_class(tip, "qy-settings-curlang");
+        gtk_box_pack_start(GTK_BOX(vst), tip, FALSE, FALSE, 0);
+        for (int i = 0; i < 4; i++) {
+            GtkWidget *r = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+            GtkWidget *l = gtk_label_new(TR(ast_apps[i][0]));
+            gtk_widget_set_size_request(l, 180, -1);
+            gtk_widget_set_halign(l, GTK_ALIGN_START);
+            GtkWidget *sw = gtk_switch_new();
+            gchar *content = NULL;
+            gsize len = 0;
+            int cur_on = 0;
+            if (g_file_get_contents(AUTOSTART_CONF, &content, &len, NULL)) {
+                char *line = content;
+                const char *key = ast_apps[i][1];
+                size_t klen = strlen(key);
+                while (line && *line) {
+                    if (strncmp(line, key, klen) == 0 && line[klen] == '=') {
+                        cur_on = strncmp(line + klen + 1, "off", 3) != 0;
+                        break;
+                    }
+                    char *nl = strchr(line, '\n');
+                    line = nl ? nl + 1 : NULL;
+                }
+                g_free(content);
+            }
+            const char *env = g_getenv("QY_SETTINGS_AUTOSTART");
+            if (env) {
+                char app[64] = "", mode[16] = "";
+                if (sscanf(env, "%63[^:]:%15s", app, mode) == 2 &&
+                    strcmp(app, ast_apps[i][1]) == 0) {
+                    cur_on = strcmp(mode, "off") != 0;
+                }
+            }
+            gtk_switch_set_active(GTK_SWITCH(sw), cur_on);
+            g_signal_connect(sw, "state-set", G_CALLBACK(on_autostart_toggled),
+                             (gpointer)ast_apps[i][1]);
+            gtk_box_pack_start(GTK_BOX(r), l, FALSE, FALSE, 0);
+            gtk_box_pack_start(GTK_BOX(r), sw, FALSE, FALSE, 0);
+            gtk_box_pack_start(GTK_BOX(vst), r, FALSE, FALSE, 0);
+        }
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vst, gtk_label_new(TR("启动项")));
+        if (g_getenv("QY_SETTINGS_AUTOSTART"))
+            g_timeout_add(1850, auto_autostart_apply, NULL);
     }
 
     gtk_widget_show_all(win);

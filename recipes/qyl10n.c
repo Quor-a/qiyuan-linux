@@ -339,6 +339,8 @@ static const pair tbl[] = {
     { "手写笔设置", "Pen settings" },
     { "手写笔", "Pen" },
     { "书写时忽略触摸", "Ignore touch while writing" },
+    { "启动项", "Startup apps" },
+    { "哪些应用开机自动启动", "Choose apps that start automatically" },
     { "设备管理", "Devices" },
     { "请先在列表中选择目标磁盘", "Select a target disk first" },
     { "输出音量 (Master)", "Master volume" },

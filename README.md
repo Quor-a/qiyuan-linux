@@ -1463,3 +1463,16 @@ ngs-about-v2.png`。
   2 个开关渲染正常，qypen.conf 写入 pen=off
 
 构建产物：`qydesktop 0.1.0-122`。
+
+### 系统设置：启动项页（v0.1.0-123，2026-10 实测）
+
+按「开机相关」需求，新增开机自启管理页（笔和Ink页之后）：
+- 4 个自启应用开关：系统监视/终端/文件管理器/软件中心
+- 每项 GtkSwitch，切换即写 /etc/qyautostart.conf（app=on/off）
+- 自动化：`QY_SETTINGS_AUTOSTART=qymon:off` 启动后自动写入
+- l10n：启动项/哪些应用开机自动启动
+- 实测：`QY_SETTINGS_PAGE=34` 直达启动项页
+  （QYSETTINGS_DEBUG: set page=34 total=35），
+  4 行开关渲染正常，qyautostart.conf 写入 qymon=off
+
+构建产物：`qydesktop 0.1.0-123`。
