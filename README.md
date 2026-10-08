@@ -1925,3 +1925,12 @@ ngs-about-v2.png`。
 - 配合已有 QYEDIT_FONT_BIGGER/FONT_SIZE 自动化，文本编辑器自测覆盖更完整
 
 构建产物：`qydesktop 0.1.0-184`。
+
+### 系统时区设置（v0.1.0-185，2026-10 实测）
+
+针对排查报告"系统能力/体验细节"：
+- **qysettings 防火墙页新增时区下拉**：上海/东京/UTC/伦敦/纽约，切换即写 `/etc/timezone` 并软链 `/etc/localtime`
+- **自动化**：`QY_SETTINGS_TZ=UTC` → 日志 `QYSETTINGSDBG: timezone=UTC`，实测 `/etc/timezone` 变为 UTC、`date` 输出 `UTC +0000`
+- 与顶栏时钟联动（weston 读 localtime 显示正确本地时间）
+
+构建产物：`qydesktop 0.1.0-185`。

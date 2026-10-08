@@ -1522,6 +1522,31 @@ static gboolean auto_reset_settings(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 时区设置：写 /etc/timezone + 软链 /etc/localtime ---------- */
+static void apply_timezone(const char *tz) {
+    if (!tz || !tz[0]) return;
+    g_file_set_contents("/etc/timezone", tz, -1, NULL);
+    gchar *zone = g_strdup_printf("/usr/share/zoneinfo/%s", tz);
+    gchar *cmd = g_strdup_printf("ln -sf %s /etc/localtime", zone);
+    g_spawn_command_line_async(cmd, NULL);
+    g_printerr("QYSETTINGSDBG: timezone=%s\n", tz);
+    g_free(zone);
+    g_free(cmd);
+}
+
+static void on_tz_changed(GtkComboBox *combo, gpointer ud) {
+    (void)ud;
+    const char *tz = gtk_combo_box_get_active_id(combo);
+    apply_timezone(tz);
+}
+
+/* 自动化验证: QY_SETTINGS_TZ=UTC 启动后切换时区 */
+static gboolean auto_tz_apply(gpointer p) {
+    const char *tz = (const char *)p;
+    apply_timezone(tz);
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 通知: 应用通知开关 ---------- */
 #define NOTIF_CONF "/etc/qynotif.conf"
 static int g_notif_loading = 0;
@@ -2427,6 +2452,33 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_widget_set_tooltip_text(reset_btn, TR("删除全部 qy*.conf，恢复出厂默认设置"));
         g_signal_connect(reset_btn, "clicked", G_CALLBACK(on_reset_clicked), NULL);
         gtk_box_pack_start(GTK_BOX(vfw), reset_btn, FALSE, FALSE, 0);
+
+        /* 时区选择 */
+        GtkWidget *tz_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *tz_l = gtk_label_new(TR("时区"));
+        gtk_widget_set_size_request(tz_l, 180, -1);
+        gtk_widget_set_halign(tz_l, GTK_ALIGN_START);
+        GtkWidget *tz_combo = gtk_combo_box_text_new();
+        gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(tz_combo), "Asia/Shanghai", "上海 Asia/Shanghai");
+        gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(tz_combo), "Asia/Tokyo", "东京 Asia/Tokyo");
+        gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(tz_combo), "UTC", "UTC");
+        gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(tz_combo), "Europe/London", "伦敦 Europe/London");
+        gtk_combo_box_text_append(GTK_COMBO_BOX_TEXT(tz_combo), "America/New_York", "纽约 America/New_York");
+        gchar *tz_cur = NULL;
+        g_file_get_contents("/etc/timezone", &tz_cur, NULL, NULL);
+        const char *active_tz = tz_cur ? g_strstrip(tz_cur) : "Asia/Shanghai";
+        if (!gtk_combo_box_set_active_id(GTK_COMBO_BOX(tz_combo), active_tz))
+            gtk_combo_box_set_active_id(GTK_COMBO_BOX(tz_combo), "Asia/Shanghai");
+        g_free(tz_cur);
+        const char *env_tz = g_getenv("QY_SETTINGS_TZ");
+        if (env_tz) {
+            gtk_combo_box_set_active_id(GTK_COMBO_BOX(tz_combo), env_tz);
+            g_timeout_add(1000, auto_tz_apply, g_strdup(env_tz));
+        }
+        g_signal_connect(tz_combo, "changed", G_CALLBACK(on_tz_changed), NULL);
+        gtk_box_pack_start(GTK_BOX(tz_row), tz_l, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(tz_row), tz_combo, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vfw), tz_row, FALSE, FALSE, 0);
 
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vfw, gtk_label_new(TR("防火墙")));
         if (env_fw)
