@@ -1384,3 +1384,16 @@ ngs-about-v2.png`。
   说明+端口+开关渲染正常，qyremotedesktop.conf 写入 rdp=off
 
 构建产物：`qydesktop 0.1.0-116`。
+
+### 系统设置：投影页（v0.1.0-117，2026-10 实测）
+
+按设置中心「系统→投影」需求，新增投影页（远程桌面页之后）：
+- 「投影」说明 + 「投影模式」下拉：仅电脑屏幕/复制屏幕/扩展桌面/仅第二屏幕
+- 应用后写 /etc/qyproject.conf（mode=pc_only/mirror/extend/second_only）
+- 自动化：`QY_SETTINGS_PROJECT=mode:extend` 启动后自动写入
+- l10n：投影/选择第二屏幕的投影模式/投影模式/仅电脑屏幕/仅第二屏幕
+- 实测：`QY_SETTINGS_PAGE=28` 直达投影页
+  （QYSETTINGS_DEBUG: set page=28 total=29），
+  说明+下拉+按钮渲染正常，qyproject.conf 写入 mode=extend
+
+构建产物：`qydesktop 0.1.0-117`。

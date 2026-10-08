@@ -281,6 +281,77 @@ static gboolean auto_perm_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 投影: 模式写 /etc/qyproject.conf ---------- */
+#define PROJECT_CONF "/etc/qyproject.conf"
+static GtkWidget *g_proj_combo = NULL;
+
+static void on_project_apply(GtkWidget *w, gpointer ud) {
+    (void)w; (void)ud;
+    const char *modes[] = { "pc_only", "mirror", "extend", "second_only" };
+    int act = gtk_combo_box_get_active(GTK_COMBO_BOX(g_proj_combo));
+    if (act < 0) act = 0;
+    if (act > 3) act = 3;
+    gchar *content = NULL;
+    gsize len = 0;
+    g_file_get_contents(PROJECT_CONF, &content, &len, NULL);
+    GString *out = g_string_new(NULL);
+    char *line = content;
+    int replaced = 0;
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+        if (strncmp(line, "mode=", 5) == 0) {
+            g_string_append_printf(out, "mode=%s", modes[act]);
+            replaced = 1;
+        } else {
+            g_string_append_len(out, line, llen);
+        }
+        if (nl) g_string_append_c(out, '\n');
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(content);
+    if (!replaced)
+        g_string_append_printf(out, "mode=%s\n", modes[act]);
+    g_file_set_contents(PROJECT_CONF, out->str, out->len, NULL);
+    g_string_free(out, TRUE);
+}
+
+/* 自动化验证: QY_SETTINGS_PROJECT=mode:extend 启动后写入 */
+static gboolean auto_project_apply(gpointer p) {
+    (void)p;
+    const char *env = g_getenv("QY_SETTINGS_PROJECT");
+    if (env && strstr(env, "mode:")) {
+        const char *mode = strstr(env, "mode:") + 5;
+        gchar *content = NULL;
+        gsize len = 0;
+        g_file_get_contents(PROJECT_CONF, &content, &len, NULL);
+        GString *out = g_string_new(NULL);
+        if (content) g_string_append(out, content);
+        g_free(content);
+        if (strstr(out->str, "mode=")) {
+            GString *tmp = g_string_new(NULL);
+            char *line = out->str;
+            while (line && *line) {
+                char *nl = strchr(line, '\n');
+                size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+                if (strncmp(line, "mode=", 5) == 0)
+                    g_string_append_printf(tmp, "mode=%s", mode);
+                else
+                    g_string_append_len(tmp, line, llen);
+                if (nl) g_string_append_c(tmp, '\n');
+                line = nl ? nl + 1 : NULL;
+            }
+            g_string_free(out, TRUE);
+            out = tmp;
+        } else {
+            g_string_append_printf(out, "mode=%s\n", mode);
+        }
+        g_file_set_contents(PROJECT_CONF, out->str, out->len, NULL);
+        g_string_free(out, TRUE);
+    }
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 远程桌面: 开关写 /etc/qyremotedesktop.conf ---------- */
 #define RDP_CONF "/etc/qyremotedesktop.conf"
 static int g_rdp_loading = 0;
@@ -2270,6 +2341,38 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vrd, gtk_label_new(TR("远程桌面")));
         if (env_rdp)
             g_timeout_add(1500, auto_rdp_apply, NULL);
+    }
+
+    /* 投影页: 投影模式（写 /etc/qyproject.conf） */
+    {
+        GtkWidget *vpj = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vpj), 14);
+        gtk_box_pack_start(GTK_BOX(vpj), row(TR("投影"), TR("选择第二屏幕的投影模式")), FALSE, FALSE, 0);
+        GtkWidget *pj_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *pj_l = gtk_label_new(TR("投影模式"));
+        gtk_widget_set_size_request(pj_l, 150, -1);
+        gtk_widget_set_halign(pj_l, GTK_ALIGN_START);
+        g_proj_combo = gtk_combo_box_text_new();
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(g_proj_combo), TR("仅电脑屏幕"));
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(g_proj_combo), TR("复制屏幕"));
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(g_proj_combo), TR("扩展桌面"));
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(g_proj_combo), TR("仅第二屏幕"));
+        gtk_combo_box_set_active(GTK_COMBO_BOX(g_proj_combo), 2);
+        const char *env_pj = g_getenv("QY_SETTINGS_PROJECT");
+        if (env_pj && strstr(env_pj, "mode:extend"))
+            gtk_combo_box_set_active(GTK_COMBO_BOX(g_proj_combo), 2);
+        else if (env_pj && strstr(env_pj, "mode:mirror"))
+            gtk_combo_box_set_active(GTK_COMBO_BOX(g_proj_combo), 1);
+        GtkWidget *pj_btn = gtk_button_new_with_label(TR("应用"));
+        qy_add_class(pj_btn, "qy-btn");
+        g_signal_connect(pj_btn, "clicked", G_CALLBACK(on_project_apply), NULL);
+        gtk_box_pack_start(GTK_BOX(pj_row), pj_l, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(pj_row), g_proj_combo, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(pj_row), pj_btn, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vpj), pj_row, FALSE, FALSE, 0);
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vpj, gtk_label_new(TR("投影")));
+        if (env_pj)
+            g_timeout_add(1550, auto_project_apply, NULL);
     }
 
     gtk_widget_show_all(win);
