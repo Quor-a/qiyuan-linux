@@ -281,6 +281,52 @@ static gboolean auto_perm_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 按流量计费: 开关 ---------- */
+#define METERED_CONF "/etc/qymetered.conf"
+static int g_metered_loading = 0;
+
+static void on_metered_toggled(GtkWidget *sw, gpointer ud) {
+    if (g_metered_loading) return;
+    (void)ud;
+    int on = gtk_switch_get_active(GTK_SWITCH(sw));
+    gchar *content = NULL;
+    gsize len = 0;
+    g_file_get_contents(METERED_CONF, &content, &len, NULL);
+    GString *out = g_string_new(NULL);
+    char *line = content;
+    int replaced = 0;
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+        if (strncmp(line, "metered=", 9) == 0) {
+            g_string_append_printf(out, "metered=%s", on ? "on" : "off");
+            replaced = 1;
+        } else {
+            g_string_append_len(out, line, llen);
+        }
+        if (nl) g_string_append_c(out, '\n');
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(content);
+    if (!replaced)
+        g_string_append_printf(out, "metered=%s\n", on ? "on" : "off");
+    g_file_set_contents(METERED_CONF, out->str, out->len, NULL);
+    g_string_free(out, TRUE);
+}
+
+/* 自动化验证: QY_SETTINGS_METERED=on 启动后开启 */
+static gboolean auto_metered_apply(gpointer p) {
+    (void)p;
+    const char *env = g_getenv("QY_SETTINGS_METERED");
+    if (env) {
+        GtkWidget *sw = gtk_switch_new();
+        gtk_switch_set_active(GTK_SWITCH(sw), strcmp(env, "off") != 0);
+        on_metered_toggled(sw, NULL);
+        gtk_widget_destroy(sw);
+    }
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 打印机: 添加请求写 /etc/qyprinter.conf ---------- */
 #define PRINTER_CONF "/etc/qyprinter.conf"
 
@@ -2534,6 +2580,72 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vpr, gtk_label_new(TR("打印机")));
         if (g_getenv("QY_SETTINGS_PRINTER"))
             g_timeout_add(1650, auto_printer_apply, NULL);
+    }
+
+    /* 流量计费页: 开关 + 数据用量（写 /etc/qymetered.conf） */
+    {
+        GtkWidget *vmt = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vmt), 14);
+        gtk_box_pack_start(GTK_BOX(vmt), row(TR("按流量计费的连接"), TR("限制后台数据下载")), FALSE, FALSE, 0);
+        /* 数据用量: /proc/net/dev 累加 rx+tx */
+        double total_b = 0;
+        FILE *nd = fopen("/proc/net/dev", "r");
+        if (nd) {
+            char line[512];
+            while (fgets(line, sizeof line, nd)) {
+                if (strchr(line, ':')) {
+                    char *p = strchr(line, ':') + 1;
+                    unsigned long long rx = 0, tx = 0;
+                    if (sscanf(p, "%llu", &rx) == 1) {
+                        char *q = p;
+                        int i = 0;
+                        for (i = 0; i < 8 && q; i++) {
+                            while (*q == ' ') q++;
+                            while (*q && *q != ' ') q++;
+                        }
+                        if (q) sscanf(q, "%llu", &tx);
+                    }
+                    total_b += (double)rx + (double)tx;
+                }
+            }
+            fclose(nd);
+        }
+        gchar *usage = g_strdup_printf("%.2f GB", total_b / (1024.0 * 1024.0 * 1024.0));
+        gtk_box_pack_start(GTK_BOX(vmt), row(TR("本月数据用量"), usage), FALSE, FALSE, 0);
+        g_free(usage);
+        GtkWidget *m_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *m_l = gtk_label_new(TR("按流量计费"));
+        gtk_widget_set_size_request(m_l, 180, -1);
+        gtk_widget_set_halign(m_l, GTK_ALIGN_START);
+        GtkWidget *m_sw = gtk_switch_new();
+        g_metered_loading = 1;
+        gchar *content = NULL;
+        gsize len = 0;
+        int cur_on = 0;
+        if (g_file_get_contents(METERED_CONF, &content, &len, NULL)) {
+            char *line = content;
+            while (line && *line) {
+                if (strncmp(line, "metered=", 9) == 0) {
+                    cur_on = strncmp(line + 9, "off", 3) != 0;
+                    break;
+                }
+                char *nl = strchr(line, '\n');
+                line = nl ? nl + 1 : NULL;
+            }
+            g_free(content);
+        }
+        const char *env_mt = g_getenv("QY_SETTINGS_METERED");
+        if (env_mt)
+            cur_on = strcmp(env_mt, "off") != 0;
+        gtk_switch_set_active(GTK_SWITCH(m_sw), cur_on);
+        g_signal_connect(m_sw, "state-set", G_CALLBACK(on_metered_toggled), NULL);
+        gtk_box_pack_start(GTK_BOX(m_row), m_l, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(m_row), m_sw, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vmt), m_row, FALSE, FALSE, 0);
+        g_metered_loading = 0;
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vmt, gtk_label_new(TR("流量计费")));
+        if (env_mt)
+            g_timeout_add(1700, auto_metered_apply, NULL);
     }
 
     gtk_widget_show_all(win);

@@ -1423,3 +1423,16 @@ ngs-about-v2.png`。
   状态行+添加按钮渲染正常，qyprinter.conf 写入时间戳
 
 构建产物：`qydesktop 0.1.0-119`。
+
+### 系统设置：流量计费页（v0.1.0-120，2026-10 实测）
+
+按设置中心「设备→按流量计费的连接下载」需求，新增流量计费页（打印机页之后）：
+- 「按流量计费的连接」说明 + 「本月数据用量」（/proc/net/dev 统计 GB）
+- 「按流量计费」GtkSwitch，切换即写 /etc/qymetered.conf（metered=on/off）
+- 自动化：`QY_SETTINGS_METERED=on` 启动后自动开启
+- l10n：按流量计费的连接/限制后台数据下载/本月数据用量/按流量计费
+- 实测：`QY_SETTINGS_PAGE=31` 直达流量计费页
+  （QYSETTINGS_DEBUG: set page=31 total=32），
+  数据用量+开关渲染正常，qymetered.conf 写入 metered=on
+
+构建产物：`qydesktop 0.1.0-120`。
