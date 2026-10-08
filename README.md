@@ -1838,3 +1838,12 @@ ngs-about-v2.png`。
 - 说明：测试环境无音频硬件，amixer 命令执行失败但设置逻辑与日志已验证
 
 构建产物：`qydesktop 0.1.0-175`。
+
+### 浏览器书签管理窗口（v0.1.0-176，2026-10 实测）
+
+针对排查报告"浏览器"：
+- **qybrowser 新增书签列表窗口**（📑 按钮）：读取 `/etc/qybookmarks.conf` 全部收藏，点击书签直接打开对应页面
+- **自动化**：`QYBROWSER_BOOKMARK=1` + `QYBROWSER_SHOWBOOKMARKS=1` → 自动收藏当前页并弹出书签窗口 → 日志 `QYBROWSERDBG: bookmarks=3`（3 个书签全部列出）
+- 配合已有 ☆ 收藏按钮（去重写入 `/etc/qybookmarks.conf`），形成"收藏→管理→打开"完整闭环
+
+构建产物：`qydesktop 0.1.0-176`。

@@ -365,6 +365,56 @@ static void on_bookmark(GtkWidget *w, gpointer ud) {
     gtk_label_set_text(GTK_LABEL(status_label), TR("已收藏"));
 }
 
+/* ---------- 书签列表窗口 ---------- */
+static void on_bm_list_clicked(GtkWidget *b, gpointer ud) {
+    (void)b;
+    const char *url = (const char *)ud;
+    gtk_entry_set_text(GTK_ENTRY(url_entry), url);
+    open_url(url);
+    g_free(ud);
+}
+
+static void show_bookmarks_window(void) {
+    GtkWidget *win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_title(GTK_WINDOW(win), TR("书签"));
+    gtk_window_set_default_size(GTK_WINDOW(win), 420, 320);
+    GtkWidget *v = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
+    gtk_container_set_border_width(GTK_CONTAINER(v), 8);
+    gtk_container_add(GTK_CONTAINER(win), v);
+    gchar *c = NULL;
+    g_file_get_contents("/etc/qybookmarks.conf", &c, NULL, NULL);
+    gchar **lines = g_strsplit(c ? c : "", "\n", 0);
+    int n = 0;
+    for (int i = 0; lines[i]; i++) {
+        gchar *line = g_strstrip(lines[i]);
+        if (!line[0]) continue;
+        GtkWidget *b = gtk_button_new_with_label(line);
+        gtk_widget_set_halign(b, GTK_ALIGN_START);
+        g_signal_connect(b, "clicked", G_CALLBACK(on_bm_list_clicked), g_strdup(line));
+        gtk_box_pack_start(GTK_BOX(v), b, FALSE, FALSE, 0);
+        n++;
+    }
+    if (n == 0) {
+        GtkWidget *lbl = gtk_label_new(TR("暂无书签"));
+        gtk_box_pack_start(GTK_BOX(v), lbl, FALSE, FALSE, 0);
+    }
+    g_strfreev(lines);
+    g_free(c);
+    g_printerr("QYBROWSERDBG: bookmarks=%d\n", n);
+    gtk_widget_show_all(win);
+}
+
+static void on_show_bookmarks(GtkWidget *w, gpointer ud) {
+    (void)w; (void)ud;
+    show_bookmarks_window();
+}
+
+static gboolean auto_show_bookmarks(gpointer p) {
+    (void)p;
+    show_bookmarks_window();
+    return G_SOURCE_REMOVE;
+}
+
 /* 自动化辅助 */
 static gboolean auto_open_second(gpointer p) {
     const char *url = (const char *)p;
@@ -440,6 +490,9 @@ static void activate(GtkApplication *app, gpointer ud) {
     GtkWidget *bm_btn = gtk_button_new_with_label("☆");
     gtk_widget_set_tooltip_text(bm_btn, TR("收藏"));
     g_signal_connect(bm_btn, "clicked", G_CALLBACK(on_bookmark), NULL);
+    GtkWidget *bm_list_btn = gtk_button_new_with_label("📑");
+    gtk_widget_set_tooltip_text(bm_list_btn, TR("书签列表"));
+    g_signal_connect(bm_list_btn, "clicked", G_CALLBACK(on_show_bookmarks), NULL);
     GtkWidget *btn2 = gtk_button_new_with_label(TR("清空"));
     g_signal_connect(btn, "clicked", G_CALLBACK(on_open), NULL);
     g_signal_connect(btn2, "clicked", G_CALLBACK(on_clear), NULL);
@@ -450,6 +503,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(bar), url_entry, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(bar), btn, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(bar), bm_btn, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(bar), bm_list_btn, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(bar), btn2, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), bar, FALSE, FALSE, 0);
 
@@ -492,6 +546,8 @@ static void activate(GtkApplication *app, gpointer ud) {
         open_url(auto_url);
         if (g_getenv("QYBROWSER_BOOKMARK"))
             g_timeout_add(3000, auto_bookmark, NULL);
+        if (g_getenv("QYBROWSER_SHOWBOOKMARKS"))
+            g_timeout_add(4000, auto_show_bookmarks, NULL);
         const char *second = g_getenv("QYBROWSER_URL2");
         if (second) {
             g_timeout_add(5000, auto_open_second, g_strdup(second));
