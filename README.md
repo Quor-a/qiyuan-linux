@@ -1799,3 +1799,13 @@ ngs-about-v2.png`。
 - 说明：测试环境为 git 创建 `/dev/urandom` 设备节点；真机 devtmpfs 自带
 
 构建产物：`qydesktop 0.1.0-171`。
+
+### WiFi/蓝牙设置闭环：无硬件明确提示（v0.1.0-172，2026-10 实测）
+
+针对排查报告"蓝牙/WiFi"：
+- **qynotifd 消费 qywifi.conf/qybluetooth.conf**（qysettings 开关写入）：执行 `ip link set wlan0 up` / `rfkill unblock bluetooth; hciconfig hci0 up`
+- **无硬件时明确提示**：检测 `/sys/class/net/wlan0`、`/sys/class/bluetooth/hci0` 不存在 → 通知"未检测到无线网卡（wlan0）"、"未检测到蓝牙适配器"（顶栏气泡显示）
+- **实测**（测试环境无无线/蓝牙硬件）：`qynotifd: conf changed: qywifi.conf` → latest.msg `WiFi|未检测到无线网卡（wlan0）`；蓝牙同理
+- 设置页开关 → qynotifd 实际执行 → 桌面通知，形成完整闭环
+
+构建产物：`qydesktop 0.1.0-172`。

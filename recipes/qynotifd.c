@@ -103,7 +103,14 @@ static void handle_conf(const char *basename) {
         gchar cmd[128];
         g_snprintf(cmd, sizeof cmd, "ip link set dev wlan0 %s 2>/dev/null", on ? "up" : "down");
         g_spawn_command_line_async(cmd, NULL);
-        send_notif("WiFi", on ? "WiFi 已开启" : "WiFi 已关闭");
+        if (on) {
+            if (access("/sys/class/net/wlan0", F_OK) == 0)
+                send_notif("WiFi", "WiFi 已开启");
+            else
+                send_notif("WiFi", "未检测到无线网卡（wlan0）");
+        } else {
+            send_notif("WiFi", "WiFi 已关闭");
+        }
         return;
     }
     if (g_str_has_prefix(basename, "qybluetooth")) {
@@ -111,7 +118,14 @@ static void handle_conf(const char *basename) {
         gchar cmd[128];
         g_snprintf(cmd, sizeof cmd, "rfkill unblock bluetooth 2>/dev/null; %s", on ? "hciconfig hci0 up 2>/dev/null" : "hciconfig hci0 down 2>/dev/null");
         g_spawn_command_line_async(cmd, NULL);
-        send_notif("蓝牙", on ? "蓝牙已开启" : "蓝牙已关闭");
+        if (on) {
+            if (access("/sys/class/bluetooth/hci0", F_OK) == 0)
+                send_notif("蓝牙", "蓝牙已开启");
+            else
+                send_notif("蓝牙", "未检测到蓝牙适配器");
+        } else {
+            send_notif("蓝牙", "蓝牙已关闭");
+        }
         return;
     }
     if (g_str_has_prefix(basename, "qyfirewall")) {
