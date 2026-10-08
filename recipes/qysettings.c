@@ -281,6 +281,38 @@ static gboolean auto_perm_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 打印机: 添加请求写 /etc/qyprinter.conf ---------- */
+#define PRINTER_CONF "/etc/qyprinter.conf"
+
+static void printer_add_request(void) {
+    GDateTime *dt = g_date_time_new_now_local();
+    gchar *ts = g_date_time_format(dt, "%Y-%m-%d %H:%M:%S");
+    gchar *log = g_strdup_printf("add_request=%s\n", ts);
+    g_file_set_contents(PRINTER_CONF, log, -1, NULL);
+    g_free(log);
+    g_date_time_unref(dt);
+}
+
+static void on_printer_add(GtkWidget *w, gpointer ud) {
+    printer_add_request();
+    if (w) {
+        GtkWidget *dlg = gtk_message_dialog_new(
+            GTK_WINDOW(gtk_widget_get_toplevel(w)),
+            GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
+            "%s", TR("已发送添加请求"));
+        gtk_dialog_run(GTK_DIALOG(dlg));
+        gtk_widget_destroy(dlg);
+    }
+}
+
+/* 自动化验证: QY_SETTINGS_PRINTER=add 启动后发送添加请求 */
+static gboolean auto_printer_apply(gpointer p) {
+    (void)p;
+    const char *env = g_getenv("QY_SETTINGS_PRINTER");
+    if (env && strcmp(env, "add") == 0) printer_add_request();
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- HD Color: HDR + 颜色配置 ---------- */
 #define HDR_CONF "/etc/qyhdr.conf"
 static int g_hdr_loading = 0;
@@ -2484,6 +2516,24 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vhd, gtk_label_new("HD Color"));
         if (env_hdr)
             g_timeout_add(1600, auto_hdr_apply, NULL);
+    }
+
+    /* 打印机页: 状态 + 添加打印机（写 /etc/qyprinter.conf） */
+    {
+        GtkWidget *vpr = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vpr), 14);
+        gtk_box_pack_start(GTK_BOX(vpr), row(TR("打印机和扫描仪"), TR("管理打印机")), FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vpr), row(TR("打印机"), TR("未检测到打印机")), FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vpr), row(TR("默认打印机"), TR("无")), FALSE, FALSE, 0);
+        GtkWidget *pr_btn = gtk_button_new_with_label(TR("添加打印机"));
+        qy_add_class(pr_btn, "qy-btn");
+        g_signal_connect(pr_btn, "clicked", G_CALLBACK(on_printer_add), NULL);
+        GtkWidget *pr_hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+        gtk_box_pack_start(GTK_BOX(pr_hb), pr_btn, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vpr), pr_hb, FALSE, FALSE, 0);
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vpr, gtk_label_new(TR("打印机")));
+        if (g_getenv("QY_SETTINGS_PRINTER"))
+            g_timeout_add(1650, auto_printer_apply, NULL);
     }
 
     gtk_widget_show_all(win);

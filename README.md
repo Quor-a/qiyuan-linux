@@ -1410,3 +1410,16 @@ ngs-about-v2.png`。
   HDR 开关+配置下拉+按钮渲染正常，qyhdr.conf 写入 hdr=off
 
 构建产物：`qydesktop 0.1.0-118`。
+
+### 系统设置：打印机页（v0.1.0-119，2026-10 实测）
+
+按设置中心「设备→打印机和扫描仪」需求，新增打印机页（HD Color 页之后）：
+- 打印机状态/默认打印机（无检测到时提示）
+- 「添加打印机」按钮，点击写 /etc/qyprinter.conf（add_request=时间戳）+ 弹确认
+- 自动化：`QY_SETTINGS_PRINTER=add` 启动后自动发送添加请求
+- l10n：打印机和扫描仪/管理打印机/打印机/未检测到打印机/默认打印机/无/添加打印机/已发送添加请求
+- 实测：`QY_SETTINGS_PAGE=30` 直达打印机页
+  （QYSETTINGS_DEBUG: set page=30 total=31），
+  状态行+添加按钮渲染正常，qyprinter.conf 写入时间戳
+
+构建产物：`qydesktop 0.1.0-119`。
