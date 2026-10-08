@@ -35,6 +35,20 @@ list row button:hover {
     background-color: rgba(255, 255, 255, 0.10);
 }
 
+/* ---------- 锁屏 ---------- */
+#qylock-win {
+    background-color: #0b1220;
+}
+#qylock-clock {
+    font-size: 96px;
+    font-weight: bold;
+    color: #f5f6f7;
+}
+#qylock-date {
+    font-size: 26px;
+    color: rgba(255, 255, 255, 0.65);
+}
+
 /* ---------- 顶栏 ---------- */
 .qy-bar {
     background-color: rgba(11, 18, 32, 0.94);

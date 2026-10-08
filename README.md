@@ -1636,3 +1636,13 @@ ngs-about-v2.png`。
 - 实测：QYCLIP_AUTO 写入历史，窗口白色像素 9350→51（深色列表生效）
 
 构建产物：`qydesktop 0.1.0-145`。
+
+### 锁屏 qylock（v0.1.0-148，2026-10 实测）
+
+按「锁屏」需求，新增启元锁屏：
+- 全屏锁屏：96px 大时钟 + 日期 + 密码解锁
+- 密码来自 /etc/qylockpass.conf（默认 qiyuan），错误提示重试
+- 启动器可直达；自动化 QYLOCK_AUTO=密码 验证解锁
+- 实测：锁屏深色全屏 + 中央大时钟（7308 亮像素），QYLOCK_AUTO=qiyuan 解锁退出 exit=0
+
+构建产物：`qydesktop 0.1.0-148`。
