@@ -5,7 +5,7 @@ https://www.perl.org
 """
 
 name = "perl"
-version = "5.40.2"
+version = "5.40.1"
 release = 1
 summary = "Perl 脚本语言（很多构建系统依赖它）"
 homepage = "https://www.perl.org"
