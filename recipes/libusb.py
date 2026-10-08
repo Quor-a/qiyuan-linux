@@ -8,14 +8,14 @@ ADB、刷机工具、USB 转串口、软件定义无线电都依赖它。
 from __future__ import annotations
 
 name = "libusb"
-version = "1.0.29"
+version = "1.0.28"
 release = 1
 summary = "用户态 USB 设备访问"
 homepage = "https://libusb.info/"
 license = "LGPL-2.1-or-later"
 
-source = ["https://ghproxy.net/https://github.com/libusb/libusb/releases/download/v1.0.29/libusb-1.0.29.tar.bz2"]
-sha256 = ["5977fc950f8d1395ccea9bd48c06b3f808fd3c2c961b44b0c2e6e29fc3a70a85"]
+source = ["https://github.com/libusb/libusb/releases/download/v1.0.28/libusb-1.0.28.tar.bz2"]
+sha256 = ["966bb0d231f94a474eaae2e67da5ec844d3527a1f386456394ff432580634b29"]
 
 depends = []
 makedepends = ["pkgconf"]
