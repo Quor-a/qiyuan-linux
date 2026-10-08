@@ -25,6 +25,7 @@ static char line_buf[256];
 static long prev_total = 0, prev_idle = 0;
 static unsigned long mem_total_kb = 1;
 static GtkWidget *cpu_label = NULL, *mem_label = NULL, *info_label = NULL;
+static GtkWidget *title_label = NULL;
 static GtkWidget *disk_label = NULL;
 static unsigned long net_rx_prev = 0, net_tx_prev = 0;   /* 网络速率 */
 static gint64 net_time_prev = 0;
@@ -172,6 +173,15 @@ static gboolean tick(gpointer ud) {
     }
     g_snprintf(big, sizeof big, TR("磁盘 %d%%"), (int)(disk * 100 + 0.5));
     if (disk_label) gtk_label_set_text(GTK_LABEL(disk_label), big);
+    /* 窗口标题实时显示 CPU 使用率 */
+    GtkWidget *win = gtk_widget_get_toplevel(GTK_WIDGET(ud));
+    if (win && GTK_IS_WINDOW(win)) {
+        gchar *ttl = g_strdup_printf("%s — CPU %d%%", TR("启元系统监视器"),
+                                     (int)(last_cpu * 100 + 0.5));
+        gtk_window_set_title(GTK_WINDOW(win), ttl);
+        if (title_label) gtk_label_set_text(GTK_LABEL(title_label), ttl);
+        g_free(ttl);
+    }
     gtk_widget_queue_draw(GTK_WIDGET(ud));
     return G_SOURCE_CONTINUE;
 }
@@ -252,6 +262,12 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_widget_set_margin_top(vbox, 10);
     gtk_widget_set_margin_bottom(vbox, 8);
     gtk_container_add(GTK_CONTAINER(win), vbox);
+
+    /* 顶部标题: 启元系统监视器 — CPU xx% */
+    title_label = gtk_label_new(NULL);
+    add_class(title_label, "qy-mon-title");
+    gtk_label_set_xalign(GTK_LABEL(title_label), 0.0);
+    gtk_box_pack_start(GTK_BOX(vbox), title_label, FALSE, FALSE, 0);
 
     /* 顶部大数字: CPU / 内存 / 磁盘 */
     GtkWidget *hrow = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 24);

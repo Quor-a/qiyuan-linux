@@ -324,6 +324,12 @@ notebook tab:checked {
 }
 
 /* ---------- 系统监视器 ---------- */
+.qy-mon-title {
+    font-size: 13px;
+    font-weight: bold;
+    color: #E5E7EB;
+    margin-bottom: 4px;
+}
 .qy-mon-cpu {
     font-size: 32px;
     font-weight: bold;
