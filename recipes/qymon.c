@@ -20,6 +20,7 @@ static void add_class(GtkWidget *w, const char *cls) {
 static double cpu_hist[NHIST];  /* 0..1 */
 static double mem_hist[NHIST];  /* 0..1 */
 static double disk_hist[NHIST]; /* 0..1 */
+static double net_hist[NHIST];  /* 0..1 (KB/s / 1024 归一化) */
 static int hist_n = 0;
 static char line_buf[256];
 static long prev_total = 0, prev_idle = 0;
@@ -96,11 +97,12 @@ static gboolean tick(gpointer ud) {
             prev_total = total; prev_idle = idle + iow;
             if (hist_n < NHIST) {
                 cpu_hist[hist_n] = usage; mem_hist[hist_n] = -1;
-                disk_hist[hist_n] = -1; hist_n++;
+                disk_hist[hist_n] = -1; net_hist[hist_n] = -1; hist_n++;
             } else {
                 memmove(cpu_hist, cpu_hist + 1, sizeof(double) * (NHIST - 1));
                 memmove(mem_hist, mem_hist + 1, sizeof(double) * (NHIST - 1));
                 memmove(disk_hist, disk_hist + 1, sizeof(double) * (NHIST - 1));
+                memmove(net_hist, net_hist + 1, sizeof(double) * (NHIST - 1));
                 cpu_hist[NHIST - 1] = usage;
             }
         }
@@ -151,6 +153,9 @@ static gboolean tick(gpointer ud) {
         }
         double rx = 0, tx = 0;
         if (read_net_speed(&rx, &tx)) {
+            double net_kbs = rx + tx;
+            if (net_kbs > 1024) net_kbs = 1024;
+            if (hist_n > 0) net_hist[hist_n - 1] = net_kbs / 1024.0;
             size_t L = strlen(info);
             g_snprintf(info + L, sizeof info - L, " · ↓%.0fKB/s ↑%.0fKB/s", rx, tx);
         }
@@ -273,6 +278,7 @@ static gboolean on_draw(GtkWidget *da, cairo_t *cr, gpointer ud) {
         draw_series(cr, cpu_hist, hist_n, 0.95, 0.55, 0.15, w, h / 2 - 4);   /* CPU 橙 */
         draw_series(cr, mem_hist, hist_n, 0.45, 0.65, 0.95, w, h / 2 - 4);   /* MEM 蓝 */
         draw_series(cr, disk_hist, hist_n, 0.20, 0.83, 0.60, w, h / 2 - 4); /* DISK 绿 */
+        draw_series(cr, net_hist, hist_n, 0.72, 0.38, 0.95, w, h / 2 - 4); /* NET 紫 */
     }
     /* 图例文字（带彩色方块） */
     cairo_set_font_size(cr, 12);
@@ -286,6 +292,14 @@ static gboolean on_draw(GtkWidget *da, cairo_t *cr, gpointer ud) {
     cairo_set_source_rgb(cr, 0.9, 0.9, 0.9);
     cairo_move_to(cr, 24, 18);
     cairo_show_text(cr, g_strdup_printf("CPU %3.0f%%", last_cpu * 100));
+    /* NET 紫方块 + 文字 (KB/s) */
+    double last_net = hist_n ? net_hist[hist_n - 1] : 0;
+    cairo_set_source_rgb(cr, 0.72, 0.38, 0.95);
+    cairo_rectangle(cr, w - 190, 8, 10, 10);
+    cairo_fill(cr);
+    cairo_set_source_rgb(cr, 0.9, 0.9, 0.9);
+    cairo_move_to(cr, w - 176, 18);
+    cairo_show_text(cr, g_strdup_printf("NET %3.0f KB/s", last_net * 1024));
     /* MEM 蓝方块 + 文字 */
     cairo_set_source_rgb(cr, 0.45, 0.65, 0.95);
     cairo_rectangle(cr, 8, h / 2.0 + 4, 10, 10);
