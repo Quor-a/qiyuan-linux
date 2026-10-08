@@ -233,6 +233,25 @@ static void act_open(GtkWidget *w, gpointer data)
     gtk_widget_destroy(dlg);
 }
 
+/* 执行解压到指定目录（共享给 解压到… / 解压到当前目录） */
+static void do_extract_to(const char *dir)
+{
+    const char *t = arc_type(g_arc);
+    char cmd[PATH_MAX * 2 + 128];
+    if (strcmp(t, "7z") == 0 || strcmp(t, "zip") == 0 || strcmp(t, "rar") == 0)
+        snprintf(cmd, sizeof cmd, "7za x -y -o'%s' '%s'", dir, g_arc);
+    else if (t[0] == 't')
+        snprintf(cmd, sizeof cmd, "tar xf '%s' -C '%s' 2>/dev/null || busybox tar -xzf '%s' -C '%s' 2>/dev/null || busybox tar -xf '%s' -C '%s'", g_arc, dir, g_arc, dir, g_arc, dir);
+    else if (strcmp(t, "gz") == 0 || strcmp(t, "xz") == 0 || strcmp(t, "zst") == 0) {
+        snprintf(cmd, sizeof cmd, "cp '%s' '%s/' && cd '%s' && ", g_arc, dir, dir);
+        size_t n = strlen(cmd);
+        if (strcmp(t, "gz") == 0) snprintf(cmd + n, sizeof cmd - n, "gunzip -f '%s'", strrchr(g_arc, '/') ? g_arc : g_arc);
+        /* 简化：gzip -d 在目标目录对副本执行 */
+    }
+    gboolean ok = run_shell_sync(cmd, NULL, FALSE);
+    status_set(ok ? TR("已解压到 %s") : TR("解压失败"), dir);
+}
+
 static void act_extract(GtkWidget *w, gpointer data)
 {
     (void)w; (void)data;
@@ -243,23 +262,28 @@ static void act_extract(GtkWidget *w, gpointer data)
         TR("_解压"), GTK_RESPONSE_ACCEPT, NULL);
     if (gtk_dialog_run(GTK_DIALOG(dlg)) == GTK_RESPONSE_ACCEPT) {
         char *dir = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(dlg));
-        const char *t = arc_type(g_arc);
-        char cmd[PATH_MAX * 2 + 128];
-        if (strcmp(t, "7z") == 0 || strcmp(t, "zip") == 0 || strcmp(t, "rar") == 0)
-            snprintf(cmd, sizeof cmd, "7za x -y -o'%s' '%s'", dir, g_arc);
-        else if (t[0] == 't')
-            snprintf(cmd, sizeof cmd, "tar xf '%s' -C '%s' 2>/dev/null || busybox tar -xzf '%s' -C '%s' 2>/dev/null || busybox tar -xf '%s' -C '%s'", g_arc, dir, g_arc, dir, g_arc, dir);
-        else if (strcmp(t, "gz") == 0 || strcmp(t, "xz") == 0 || strcmp(t, "zst") == 0) {
-            snprintf(cmd, sizeof cmd, "cp '%s' '%s/' && cd '%s' && ", g_arc, dir, dir);
-            size_t n = strlen(cmd);
-            if (strcmp(t, "gz") == 0) snprintf(cmd + n, sizeof cmd - n, "gunzip -f '%s'", strrchr(g_arc, '/') ? g_arc : g_arc);
-            /* 简化：gzip -d 在目标目录对副本执行 */
-        }
-        gboolean ok = run_shell_sync(cmd, NULL, FALSE);
-        status_set(ok ? TR("已解压到 %s") : TR("解压失败"), dir);
+        do_extract_to(dir);
         g_free(dir);
     }
     gtk_widget_destroy(dlg);
+}
+
+/* 解压到当前目录（压缩包所在目录） */
+static void act_extract_cwd(GtkWidget *w, gpointer data)
+{
+    (void)w; (void)data;
+    if (!g_arc[0]) { status_set(TR("先打开一个压缩包")); return; }
+    char *dir = g_path_get_dirname(g_arc);
+    do_extract_to(dir);
+    g_free(dir);
+}
+
+/* 自动化验证: --extract-cwd 打开后自动解压到当前目录 */
+static gboolean auto_extract_cwd(gpointer p)
+{
+    (void)p;
+    act_extract_cwd(NULL, NULL);
+    return G_SOURCE_REMOVE;
 }
 
 static void act_new(GtkWidget *w, gpointer data)
@@ -342,6 +366,8 @@ static void activate(GtkApplication *app, gpointer user_data)
     gtk_toolbar_insert(GTK_TOOLBAR(bar), b, -1);
     b = gtk_tool_button_new(NULL, TR("解压到")); g_signal_connect(b, "clicked", G_CALLBACK(act_extract), NULL);
     gtk_toolbar_insert(GTK_TOOLBAR(bar), b, -1);
+    b = gtk_tool_button_new(NULL, TR("解压到当前目录")); g_signal_connect(b, "clicked", G_CALLBACK(act_extract_cwd), NULL);
+    gtk_toolbar_insert(GTK_TOOLBAR(bar), b, -1);
     b = gtk_tool_button_new(NULL, TR("新建"));   g_signal_connect(b, "clicked", G_CALLBACK(act_new), NULL);
     gtk_toolbar_insert(GTK_TOOLBAR(bar), b, -1);
     b = gtk_tool_button_new(NULL, TR("删除"));   g_signal_connect(b, "clicked", G_CALLBACK(act_delete), NULL);
@@ -370,7 +396,18 @@ static void activate(GtkApplication *app, gpointer user_data)
        这里给 sel 的 ACCEPT 走 on_add_response 由 act_new 的 run 直接 return 前接入 */
     gtk_widget_show_all(win);
     /* --open <path>：启动即打开压缩包（自动化测试与 CLI 友好）；
-       裸路径参数也直接打开（qyarc <archive>） */
+       裸路径参数也直接打开（qyarc <archive>）；
+       --extract-cwd：打开后自动解压到压缩包所在目录 */
+    /* 调试：确认自动化参数是否传入（开发验证用，正式保留无碍） */
+    {
+        g_printerr("QYARC dbg argc=%d", g_argc);
+        for (int i = 1; i < g_argc; i++) g_printerr(" argv[%d]=%s", i, g_argv[i]);
+        g_printerr("\n");
+    }
+    /* 先整体扫描 --extract-cwd（--open 分支会 break，需提前确定 want_cwd） */
+    gboolean want_cwd = FALSE;
+    for (int i = 1; i < g_argc; i++)
+        if (strcmp(g_argv[i], "--extract-cwd") == 0) want_cwd = TRUE;
     for (int i = 1; i < g_argc; i++) {
         if (strcmp(g_argv[i], "--open") == 0 && i + 1 < g_argc) {
             snprintf(g_arc, sizeof g_arc, "%s", g_argv[i + 1]);
@@ -386,6 +423,8 @@ static void activate(GtkApplication *app, gpointer user_data)
             }
         }
     }
+    if (want_cwd && g_arc[0])
+        g_timeout_add(400, auto_extract_cwd, NULL);
     if (!g_arc[0]) status_set(TR("打开一个压缩包开始"));
 }
 

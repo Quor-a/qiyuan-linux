@@ -1039,3 +1039,15 @@ ngs-about-v2.png`。
   `600×300 png · 2 KB`，数字/字母渲染正常
 
 构建产物：`qydesktop 0.1.0-86`。
+
+### 压缩管理器：解压到当前目录（v0.1.0-88，2026-10 实测）
+
+- 工具栏新增「解压到当前目录」按钮：一键解压到压缩包所在目录
+- 解压命令与「解压到…」共享 `do_extract_to()`（7za/tar/gzip 分支）
+- CLI：`qyarc --open <archive> --extract-cwd` 打开后自动解压
+- 实测：hello.zip（含 hello.txt）打开后自动解压到 /tmp/arc/，
+  `hello.txt` 成功出现；调试日志确认
+  `argc=4 argv[1]=--open argv[2]=/tmp/arc/hello.zip argv[3]=--extract-cwd`
+- 注意：测试环境需以 root 启动 Xvfb（否则 x11shm 失败、weston 起不来）
+
+构建产物：`qydesktop 0.1.0-88`。
