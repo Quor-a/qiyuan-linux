@@ -42,6 +42,24 @@ static gboolean auto_font_bigger(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* 自动化验证: QYEDIT_LINE=3 启动后把光标移到第 3 行并输出行列 */
+static void update_status(GtkTextBuffer *b);   /* 前向声明 */
+static gboolean auto_goto_line(gpointer p) {
+    int line = atoi((const char *)p);
+    GtkTextBuffer *b = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
+    GtkTextIter it;
+    gtk_text_buffer_get_start_iter(b, &it);
+    if (line > 1)
+        gtk_text_iter_forward_lines(&it, line - 1);
+    gtk_text_buffer_place_cursor(b, &it);
+    gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(text_view), &it, 0, FALSE, 0, 0);
+    int row = gtk_text_iter_get_line(&it) + 1;
+    int col = gtk_text_iter_get_line_offset(&it) + 1;
+    g_printerr("QYEDITDBG: cursor line=%d col=%d\n", row, col);
+    update_status(b);
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 状态栏: 行 / 列 / 字符数 ---------- */
 static void update_status(GtkTextBuffer *b) {
     GtkTextIter it;
@@ -216,6 +234,10 @@ int main(int argc, char **argv) {
         g_font_size = fs && atoi(fs) > 0 ? atoi(fs) : 14;
         g_timeout_add(500, auto_font_bigger, NULL);
     }
+    /* 自动化验证: QYEDIT_LINE=3 启动后定位光标到第 3 行 */
+    const char *line_env = getenv("QYEDIT_LINE");
+    if (line_env && atoi(line_env) > 0)
+        g_timeout_add(700, auto_goto_line, g_strdup(line_env));
     gtk_main();
     return 0;
 }

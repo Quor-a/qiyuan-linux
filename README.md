@@ -1916,3 +1916,12 @@ ngs-about-v2.png`。
 - **自动化**：`QY_SETTINGS_RESET=1` 启动后自动执行 → 日志 `QYSETTINGSDBG: reset done (10 files removed)`，实测 `qywallpaper.conf`/`qyfirewall.conf` 等被清除
 
 构建产物：`qydesktop 0.1.0-183`。
+
+### 文本编辑器：光标行列自动化验证（v0.1.0-184，2026-10 实测）
+
+针对排查报告"文件管理/文本编辑"：
+- **qyedit 状态栏已显示"行 · 列 · 字符数"**，本环节补充自动化验证：`QYEDIT_LINE=3` 启动后自动把光标定位到第 3 行
+- 实测日志 `QYEDITDBG: cursor line=3 col=1`（4 行测试文件，光标准确落在第 3 行行首）
+- 配合已有 QYEDIT_FONT_BIGGER/FONT_SIZE 自动化，文本编辑器自测覆盖更完整
+
+构建产物：`qydesktop 0.1.0-184`。
