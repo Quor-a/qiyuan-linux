@@ -544,6 +544,33 @@ static gboolean desk_draw(GtkWidget *w, cairo_t *cr, gpointer ud) {
 }
 
 /* ---------- 顶栏 ---------- */
+static GtkWidget *notif_label = NULL;
+static gchar *last_notif_content = NULL;
+
+/* 通知显示：读取 /tmp/qynotif/latest.msg（qynotify/qynotifd 写入） */
+static gboolean notif_tick(gpointer ud) {
+    (void)ud;
+    gchar *content = NULL;
+    if (g_file_get_contents("/tmp/qynotif/latest.msg", &content, NULL, NULL) && content) {
+        if (!last_notif_content || strcmp(last_notif_content, content) != 0) {
+            char *bar = strchr(content, '|');
+            if (bar) {
+                *bar = 0;
+                gchar *title = g_strdup_printf("🔔 %s", content);
+                gtk_label_set_text(GTK_LABEL(notif_label), title);
+                gtk_widget_set_tooltip_text(notif_label, bar + 1);
+                g_free(title);
+            }
+            g_free(last_notif_content);
+            last_notif_content = g_strdup(content);
+        }
+        g_free(content);
+    } else {
+        gtk_label_set_text(GTK_LABEL(notif_label), "🔔");
+    }
+    return G_SOURCE_CONTINUE;
+}
+
 static void tray_launch(const char *cmd) {
     gchar *s = g_strdup_printf("%s &", cmd);
     g_spawn_command_line_async(s, NULL);
@@ -615,6 +642,12 @@ static void build_bar(void) {
     gtk_widget_set_tooltip_text(power, TR("系统"));
     gtk_box_pack_start(GTK_BOX(st), power, FALSE, FALSE, 0);
 
+    /* 通知显示 */
+    notif_label = gtk_label_new("🔔");
+    add_class(notif_label, "qy-status-btn");
+    gtk_widget_set_tooltip_text(notif_label, TR("通知"));
+    gtk_box_pack_start(GTK_BOX(st), notif_label, FALSE, FALSE, 0);
+
     /* 系统托盘: 网络/声音/剪贴板/截图/锁屏 */
     GtkWidget *tray_hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
     gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_btn("🌐", TR("网络"), "qynet"), FALSE, FALSE, 0);
@@ -628,6 +661,7 @@ static void build_bar(void) {
 
     gtk_fixed_put(GTK_FIXED(desktop_fixed), bar, 0, 0);
     gtk_widget_show_all(bar);
+    g_timeout_add_seconds(1, notif_tick, NULL);
 }
 
 /* ---------- 左侧 Dock ---------- */

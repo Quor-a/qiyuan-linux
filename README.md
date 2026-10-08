@@ -1688,3 +1688,15 @@ ngs-about-v2.png`。
 - 启动器新增窗口总览（系统类）
 
 构建产物：`qydesktop 0.1.0-153`。
+
+### 通知服务 qynotifd / qynotify（v0.1.0-155，2026-10 实测）
+
+针对排查报告"24 个设置页是空壳（只写 conf 无消费端）"，新增通知服务守护进程：
+- **qynotifd** 守护进程：监控 /etc/qy*.conf 变化，为每个开关写入发送真实通知；
+  消费 qyautostart.conf（应用名=on/off 格式，on 则启动）、qynotif.conf（qynotif=off 关闭通知）
+- **qynotify** CLI：发送通知到 /tmp/qynotif/latest.msg
+- **顶栏通知显示**：qydesktop 顶栏实时读取通知（🔔 标题 + 完整消息提示）
+- 特殊动作：WiFi/蓝牙/防火墙/打印机/显示设置 conf 变化时执行对应命令（环境无工具则记日志）
+- 实测：修改 /etc/qynotif.conf 触发 `conf changed` → latest.msg "通知|通知服务已启用" → 顶栏亮像素 +66
+
+构建产物：`qydesktop 0.1.0-155`。
