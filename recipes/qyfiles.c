@@ -16,6 +16,9 @@ static char g_search[128] = "";  /* 当前搜索关键字（空=全部） */
 static GSList *cut_sources = NULL; /* 剪切源列表（多选） */
 static void chdir_to(const char *path);
 static void chdir_trash(void);
+static GdkPixbuf *load_icon_for(const char *name, gboolean isdir);
+static GdkPixbuf *make_dir_icon(void);
+static GdkPixbuf *make_file_icon(double r, double g, double b);
 
 /* v2.0 主题 + 工具栏状态按钮 */
 static void load_theme(void) {
@@ -629,8 +632,10 @@ static void chdir_to(const char *path) {
         }
         g_free(full);
         GtkTreeIter it;
+        GdkPixbuf *pb = load_icon_for(name, isdir);
         gtk_list_store_append(store, &it);
-        gtk_list_store_set(store, &it, 0, isdir ? TR("[目录]") : TR("[文件]"), 1, name, 2, sizestr, -1);
+        gtk_list_store_set(store, &it, 0, isdir ? TR("[目录]") : TR("[文件]"), 1, name, 2, sizestr, 3, pb, -1);
+        if (pb) g_object_unref(pb);
         n++;
         if (isdir) ndir++; else nfile++;
     }
@@ -662,12 +667,14 @@ static void chdir_trash(void) {
             gchar *ti = g_strdup_printf("%s/%s.trashinfo", info, name);
             char orig[4096];
             GtkTreeIter it;
+            GdkPixbuf *pb = make_file_icon(0.72, 0.72, 0.78);
             gtk_list_store_append(store, &it);
             if (read_trashinfo(ti, orig, sizeof orig)) {
-                gtk_list_store_set(store, &it, 0, orig, 1, name, 2, TR("—"), -1);
+                gtk_list_store_set(store, &it, 0, orig, 1, name, 2, TR("—"), 3, pb, -1);
             } else {
-                gtk_list_store_set(store, &it, 0, TR("(无元数据)"), 1, name, 2, TR("—"), -1);
+                gtk_list_store_set(store, &it, 0, TR("(无元数据)"), 1, name, 2, TR("—"), 3, pb, -1);
             }
+            if (pb) g_object_unref(pb);
             g_free(ti);
             n++;
         }
@@ -755,6 +762,106 @@ static void on_activated(GtkTreeView *tv, GtkTreePath *path, GtkTreeViewColumn *
     g_free(name);
 }
 
+/* ---------- 图标视图 ---------- */
+static GtkWidget *icon_view = NULL;
+static GtkWidget *stack = NULL;
+
+/* 内置绘制图标（不依赖图标主题，自包含）：直接操作 pixbuf 像素 */
+static void fill_rect(guint8 *p, int rs, int nc, int x0, int y0, int x1, int y1,
+                       guint8 r, guint8 g, guint8 b, guint8 a) {
+    for (int y = y0; y < y1; y++)
+        for (int x = x0; x < x1; x++) {
+            guint8 *px = p + y * rs + x * nc;
+            px[0] = r; px[1] = g; px[2] = b; px[3] = a;
+        }
+}
+
+/* 文件夹图标 */
+static GdkPixbuf *make_dir_icon(void) {
+    GdkPixbuf *pb = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, 48, 48);
+    gdk_pixbuf_fill(pb, 0x00000000);
+    guint8 *p = gdk_pixbuf_get_pixels(pb);
+    int rs = gdk_pixbuf_get_rowstride(pb);
+    int nc = gdk_pixbuf_get_n_channels(pb);
+    fill_rect(p, rs, nc, 4, 16, 44, 42, 242, 199, 46, 255);
+    fill_rect(p, rs, nc, 2, 8, 17, 18, 247, 217, 82, 255);
+    return pb;
+}
+
+/* 文件图标：按类型着色 */
+static GdkPixbuf *make_file_icon(double r, double g, double b) {
+    GdkPixbuf *pb = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, 48, 48);
+    gdk_pixbuf_fill(pb, 0x00000000);
+    guint8 *p = gdk_pixbuf_get_pixels(pb);
+    int rs = gdk_pixbuf_get_rowstride(pb);
+    int nc = gdk_pixbuf_get_n_channels(pb);
+    int rr = (int)(r * 255), gg = (int)(g * 255), bb = (int)(b * 255);
+    fill_rect(p, rs, nc, 12, 4, 36, 44, rr, gg, bb, 255);
+    fill_rect(p, rs, nc, 16, 14, 32, 17, rr * 7 / 10, gg * 7 / 10, bb * 7 / 10, 255);
+    fill_rect(p, rs, nc, 16, 22, 32, 25, rr * 7 / 10, gg * 7 / 10, bb * 7 / 10, 255);
+    fill_rect(p, rs, nc, 16, 30, 26, 33, rr * 7 / 10, gg * 7 / 10, bb * 7 / 10, 255);
+    return pb;
+}
+
+/* 按文件类型加载图标（目录=文件夹；扩展名映射颜色） */
+static GdkPixbuf *load_icon_for(const char *name, gboolean isdir) {
+    if (isdir) return make_dir_icon();
+    const char *dot = strrchr(name, '.');
+    if (dot) {
+        if (!g_ascii_strcasecmp(dot, ".png") || !g_ascii_strcasecmp(dot, ".jpg")
+            || !g_ascii_strcasecmp(dot, ".jpeg") || !g_ascii_strcasecmp(dot, ".webp")
+            || !g_ascii_strcasecmp(dot, ".gif") || !g_ascii_strcasecmp(dot, ".bmp"))
+            return make_file_icon(0.45, 0.75, 0.45);
+        if (!g_ascii_strcasecmp(dot, ".mp3") || !g_ascii_strcasecmp(dot, ".wav")
+            || !g_ascii_strcasecmp(dot, ".flac") || !g_ascii_strcasecmp(dot, ".ogg"))
+            return make_file_icon(0.45, 0.60, 0.85);
+        if (!g_ascii_strcasecmp(dot, ".mp4") || !g_ascii_strcasecmp(dot, ".mkv")
+            || !g_ascii_strcasecmp(dot, ".avi") || !g_ascii_strcasecmp(dot, ".webm"))
+            return make_file_icon(0.75, 0.50, 0.80);
+        if (!g_ascii_strcasecmp(dot, ".c") || !g_ascii_strcasecmp(dot, ".h")
+            || !g_ascii_strcasecmp(dot, ".py") || !g_ascii_strcasecmp(dot, ".sh")
+            || !g_ascii_strcasecmp(dot, ".js"))
+            return make_file_icon(0.55, 0.55, 0.68);
+        if (!g_ascii_strcasecmp(dot, ".pdf"))
+            return make_file_icon(0.90, 0.45, 0.45);
+    }
+    return make_file_icon(0.90, 0.90, 0.95);
+}
+
+/* 图标视图双击/回车打开 */
+static void on_icon_activated(GtkIconView *iv, GtkTreePath *path, gpointer ud) {
+    (void)iv; (void)ud;
+    GtkTreeModel *m = gtk_icon_view_get_model(iv);
+    GtkTreeIter it;
+    gchar *name = NULL;
+    if (gtk_tree_model_get_iter(m, &it, path))
+        gtk_tree_model_get(m, &it, 1, &name, -1);
+    if (!name) return;
+    open_path(name);
+    g_free(name);
+}
+
+/* 切换列表/图标视图 */
+static void on_toggle_view(GtkButton *b, gpointer ud) {
+    (void)ud;
+    const char *page = stack ? gtk_stack_get_visible_child_name(GTK_STACK(stack)) : "list";
+    if (g_strcmp0(page, "list") == 0 || !page) {
+        gtk_stack_set_visible_child_name(GTK_STACK(stack), "icon");
+        if (b) gtk_button_set_label(b, TR("列表视图"));
+        g_printerr("QYFILESDBG: view=icon\n");
+    } else {
+        gtk_stack_set_visible_child_name(GTK_STACK(stack), "list");
+        if (b) gtk_button_set_label(b, TR("图标视图"));
+        g_printerr("QYFILESDBG: view=list\n");
+    }
+}
+
+/* 自动化: QYFILES_VIEW=icon 启动后切换图标视图 */
+static gboolean auto_view_icon(gpointer p) {
+    on_toggle_view(NULL, p);
+    return G_SOURCE_REMOVE;
+}
+
 static void on_refresh(GtkButton *b, gpointer ud) {
     if (in_trash) chdir_trash();
     else chdir_to(cwd);
@@ -833,6 +940,9 @@ static void activate(GtkApplication *app, gpointer ud) {
     b_open = gtk_button_new_with_label(TR("打开"));
     add_class(b_open, "qy-btn");
     g_signal_connect(b_open, "clicked", G_CALLBACK(do_open_sel), NULL);
+    GtkWidget *b_view = gtk_button_new_with_label(TR("图标视图"));
+    add_class(b_view, "qy-btn");
+    g_signal_connect(b_view, "clicked", G_CALLBACK(on_toggle_view), NULL);
     b_res = gtk_button_new_with_label(TR("还原"));
     add_class(b_res, "qy-btn qy-btn-danger");
     g_signal_connect(b_res, "clicked", G_CALLBACK(do_restore), NULL);
@@ -850,6 +960,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(hbox), b_ren, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_cp, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_prop, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), b_view, FALSE, FALSE, 0);
     GtkWidget *search_entry = gtk_search_entry_new();
     gtk_widget_set_size_request(search_entry, 220, -1);
     gtk_entry_set_placeholder_text(GTK_ENTRY(search_entry), TR("搜索当前目录"));
@@ -860,7 +971,8 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(hbox), b_pur, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_emp, FALSE, FALSE, 0);
 
-    GtkListStore *store = gtk_list_store_new(3, G_TYPE_STRING, G_TYPE_STRING, G_TYPE_STRING);
+    GtkListStore *store = gtk_list_store_new(4, G_TYPE_STRING, G_TYPE_STRING,
+                                             G_TYPE_STRING, GDK_TYPE_PIXBUF);
     view = gtk_tree_view_new_with_model(GTK_TREE_MODEL(store));
     GtkCellRenderer *r1 = gtk_cell_renderer_text_new();
     gtk_tree_view_insert_column_with_attributes(GTK_TREE_VIEW(view), -1, TR("类型/原位置"), r1, "text", 0, NULL);
@@ -891,9 +1003,21 @@ static void activate(GtkApplication *app, gpointer ud) {
     g_printerr("QYFILESDBG: sort col=%d order=%d multi=1\n", sort_col, (int)sort_order);
     GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
     gtk_container_add(GTK_CONTAINER(scroll), view);
-    gtk_box_pack_start(GTK_BOX(vbox), scroll, TRUE, TRUE, 0);
     g_signal_connect(view, "row-activated", G_CALLBACK(on_activated), NULL);
     g_signal_connect(view, "button-press-event", G_CALLBACK(on_popup), NULL);
+    /* 图标视图（与列表共享同一模型，第 3 列 pixbuf） */
+    icon_view = gtk_icon_view_new_with_model(GTK_TREE_MODEL(store));
+    gtk_icon_view_set_text_column(GTK_ICON_VIEW(icon_view), 1);
+    gtk_icon_view_set_pixbuf_column(GTK_ICON_VIEW(icon_view), 3);
+    gtk_icon_view_set_item_width(GTK_ICON_VIEW(icon_view), 100);
+    gtk_icon_view_set_selection_mode(GTK_ICON_VIEW(icon_view), GTK_SELECTION_MULTIPLE);
+    g_signal_connect(icon_view, "item-activated", G_CALLBACK(on_icon_activated), NULL);
+    GtkWidget *scroll_icon = gtk_scrolled_window_new(NULL, NULL);
+    gtk_container_add(GTK_CONTAINER(scroll_icon), icon_view);
+    stack = gtk_stack_new();
+    gtk_stack_add_named(GTK_STACK(stack), scroll, "list");
+    gtk_stack_add_named(GTK_STACK(stack), scroll_icon, "icon");
+    gtk_box_pack_start(GTK_BOX(vbox), stack, TRUE, TRUE, 0);
 
     status = gtk_label_new(TR("位置: /"));
     gtk_widget_set_halign(status, GTK_ALIGN_START);
@@ -919,6 +1043,10 @@ static void activate(GtkApplication *app, gpointer ud) {
     const char *multi = g_getenv("QYFILES_MULTI");
     if (multi && multi[0])
         g_timeout_add(600, (GSourceFunc)auto_multi, g_strdup(multi));
+    /* 自动化验证: QYFILES_VIEW=icon 启动后切换图标视图 */
+    const char *qv = g_getenv("QYFILES_VIEW");
+    if (qv && g_strcmp0(qv, "icon") == 0)
+        g_timeout_add(800, auto_view_icon, NULL);
     /* 自动化验证: QYFILES_SEARCH=/etc:passwd 启动后进入 /etc 并过滤 */
     const char *sf = g_getenv("QYFILES_SEARCH");
     if (sf && sf[0]) {
