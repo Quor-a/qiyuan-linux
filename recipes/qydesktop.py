@@ -6,7 +6,7 @@
 
 name = "qydesktop"
 version = "0.1.0"
-release = 142
+release = 145
 summary = "启元桌面 shell（GTK3 单窗口 + 主题）"
 license = "MIT"
 
@@ -38,6 +38,7 @@ RECIPE_NET_C = Path(__file__).parent / "qynet.c"
 RECIPE_BROWSER_C = Path(__file__).parent / "qybrowser.c"
 RECIPE_SHOT_C = Path(__file__).parent / "qyshot.c"
 RECIPE_SHOTCAP_C = Path(__file__).parent / "qyshot-capture.c"
+RECIPE_CLIP_C = Path(__file__).parent / "qyclip.c"
 
 
 def build(ctx):
@@ -57,6 +58,7 @@ def build(ctx):
     shutil.copy(RECIPE_BROWSER_C, Path(ctx.srcdir) / "qybrowser.c")
     shutil.copy(RECIPE_SHOT_C, Path(ctx.srcdir) / "qyshot.c")
     shutil.copy(RECIPE_SHOTCAP_C, Path(ctx.srcdir) / "qyshot-capture.c")
+    shutil.copy(RECIPE_CLIP_C, Path(ctx.srcdir) / "qyclip.c")
     shutil.copy(Path(__file__).parent / "qystore.desktop", Path(ctx.srcdir) / "qystore.desktop")
     shutil.copy(Path(__file__).parent / "qynet.unit", Path(ctx.srcdir) / "qynet.unit")
     shutil.copy(Path(__file__).parent / "start-qynet.sh", Path(ctx.srcdir) / "start-qynet.sh")
@@ -101,6 +103,7 @@ def build(ctx):
         "gcc qybrowser.c qytheme.c qyl10n.c -o qybrowser $(pkg-config --cflags --libs gtk+-3.0) $(pkg-config --cflags --libs libcurl) -O2 && "
         "gcc qyshot.c qytheme.c qyl10n.c -o qyshot $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qyshot-capture.c -o qyshot-capture -I{0}/usr/include -L{0}/usr/lib -lX11 -O2 && "
+        "gcc qyclip.c qytheme.c qyl10n.c -o qyclip $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qypkg-inst.c -o qypkg-inst -O2".format(ctx.sysroot)
     )
 
@@ -121,6 +124,7 @@ def package(ctx):
     ctx.run("cp qybrowser {}/usr/bin/qybrowser".format(ctx.destdir))
     ctx.run("cp qyshot {}/usr/bin/qyshot".format(ctx.destdir))
     ctx.run("cp qyshot-capture {}/usr/bin/qyshot-capture".format(ctx.destdir))
+    ctx.run("cp qyclip {}/usr/bin/qyclip".format(ctx.destdir))
     ctx.run("cp qypkg-inst {}/usr/bin/qypkg-inst".format(ctx.destdir))
     ctx.run("cp qysetup {}/usr/bin/qysetup".format(ctx.destdir))
     ctx.run("cp qyuseradd.sh {}/usr/bin/qyuseradd && chmod +x {}/usr/bin/qyuseradd".format(ctx.destdir, ctx.destdir))

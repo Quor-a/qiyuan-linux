@@ -15,6 +15,26 @@ entry {
     border-radius: 8px;
 }
 
+/* ---------- 列表（剪贴板/文件列表等统一深色） ---------- */
+list {
+    background-color: #141a26;
+    color: #f5f6f7;
+}
+list row {
+    background-color: transparent;
+    color: #f5f6f7;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+list row button {
+    background-color: transparent;
+    color: #f5f6f7;
+    border-radius: 4px;
+    padding: 6px 10px;
+}
+list row button:hover {
+    background-color: rgba(255, 255, 255, 0.10);
+}
+
 /* ---------- 顶栏 ---------- */
 .qy-bar {
     background-color: rgba(11, 18, 32, 0.94);
