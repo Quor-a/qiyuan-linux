@@ -1581,3 +1581,15 @@ ngs-about-v2.png`。
   深色窗口 718x556 + 亮文本像素 6925（地址栏与正文渲染），下载+渲染成功
 
 构建产物：`qydesktop 0.1.0-134`。
+
+### 自定义桌面分辨率真实生效（v0.1.0-136，2026-10 实测）
+
+按「自定义桌面分辨率」需求，补全设置中心显示页的闭环：
+- 显示页应用分辨率后弹确认框「重启桌面 / 稍后」
+- 自动化 QY_SETTINGS_RES=1024x768 写入 weston.ini `mode=1024x768`（实测成功）
+- start-weston.sh 解析 weston.ini 的 `mode=`，headless 后端用
+  `--width/--height` 创建对应尺寸输出（DRM 后端原生读 weston.ini）
+- 实测：weston.ini `mode=1024x768` → weston 窗口 1024x768（xwininfo 确认）
+- 截图 docs/screenshots/qysettings-resolution-1024.png
+
+构建产物：`qydesktop 0.1.0-136`。

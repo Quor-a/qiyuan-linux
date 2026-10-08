@@ -130,7 +130,7 @@ static void launch_app(GtkButton *b, gpointer cmd) {
     g_spawn_command_line_async(buf, NULL);
 }
 
-/* 应用桌面分辨率: 改写 /etc/xdg/weston/weston.ini 的 mode= */
+/* 应用桌面分辨率: 改写 /etc/xdg/weston/weston.ini 的 mode=，提示重启桌面 */
 static void on_res_apply(GtkWidget *w, gpointer ud) {
     (void)w;
     GtkWidget *combo = GTK_WIDGET(ud);
@@ -160,6 +160,23 @@ static void on_res_apply(GtkWidget *w, gpointer ud) {
         g_string_append_printf(out, "\n[output]\nname=Virtual-1\nmode=%s\n", sel);
     g_file_set_contents(path, out->str, out->len, NULL);
     g_string_free(out, TRUE);
+
+    /* 自动化验证(QY_SETTINGS_RES)不弹对话框，直接生效 */
+    if (g_getenv("QY_SETTINGS_RES")) return;
+
+    /* 交互模式: 提示重启桌面以应用分辨率 */
+    GtkWidget *parent = gtk_widget_get_toplevel(combo);
+    if (!GTK_IS_WINDOW(parent)) parent = NULL;
+    GtkWidget *dlg = gtk_message_dialog_new(
+        parent ? GTK_WINDOW(parent) : NULL, GTK_DIALOG_MODAL,
+        GTK_MESSAGE_QUESTION, GTK_BUTTONS_NONE,
+        "%s", TR("分辨率已保存，重启桌面后生效。"));
+    gtk_dialog_add_buttons(GTK_DIALOG(dlg), TR("稍后"), GTK_RESPONSE_CANCEL,
+                           TR("重启桌面"), GTK_RESPONSE_OK, NULL);
+    if (gtk_dialog_run(GTK_DIALOG(dlg)) == GTK_RESPONSE_OK) {
+        g_spawn_command_line_async("/usr/bin/qyctl restart weston", NULL);
+    }
+    gtk_widget_destroy(dlg);
 }
 
 /* 自动化验证: QY_SETTINGS_RES=N 启动后自动应用分辨率 */
