@@ -164,6 +164,91 @@ static gboolean load_initial_conf(gpointer ud) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 自动锁屏（消费 /etc/xdg/weston/weston.ini 的 idle-time） ---------- */
+static guint lock_timer = 0;
+static guint unlock_poll = 0;
+static int lock_idle_secs = 0;
+
+static gboolean lock_cb(gpointer ud);
+static gboolean unlock_poll_cb(gpointer ud);
+
+static int read_idle_secs(void) {
+    gchar *c = NULL;
+    if (!g_file_get_contents("/etc/xdg/weston/weston.ini", &c, NULL, NULL) || !c) {
+        g_free(c);
+        return 0;
+    }
+    int secs = 0;
+    gchar *line = c;
+    while (line && *line) {
+        if (strncmp(line, "idle-time=", 10) == 0) {
+            secs = atoi(line + 10);
+            break;
+        }
+        gchar *nl = strchr(line, '\n');
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(c);
+    return secs;
+}
+
+/* qylock 是否正在运行（pidof 退出码 0=运行中） */
+static gboolean qylock_running(void) {
+    return system("pidof qylock >/dev/null 2>&1") == 0;
+}
+
+static gboolean unlock_poll_cb(gpointer ud) {
+    (void)ud;
+    if (!qylock_running()) {
+        g_printerr("qynotifd: unlocked, rearm autolock (%ds)\n", lock_idle_secs);
+        unlock_poll = 0;
+        if (lock_idle_secs > 0)
+            lock_timer = g_timeout_add_seconds((guint)lock_idle_secs, lock_cb, NULL);
+        return G_SOURCE_REMOVE;
+    }
+    return G_SOURCE_CONTINUE;
+}
+
+static gboolean lock_cb(gpointer ud) {
+    (void)ud;
+    if (qylock_running()) {
+        /* 已锁：等待解锁 */
+        if (!unlock_poll)
+            unlock_poll = g_timeout_add(2000, unlock_poll_cb, NULL);
+        return G_SOURCE_REMOVE;
+    }
+    g_printerr("qynotifd: autolock idle=%ds triggered\n", lock_idle_secs);
+    /* qylock 是 Wayland 客户端，需带桌面会话环境启动（用 g_spawn_async 显式传 env） */
+    const char *xrd = g_getenv("XDG_RUNTIME_DIR");
+    const char *wld = g_getenv("WAYLAND_DISPLAY");
+    if (!xrd) xrd = "/tmp/qyxdg";
+    if (!wld) wld = "qy";
+    gchar **envp = g_environ_setenv(g_get_environ(), "XDG_RUNTIME_DIR", xrd, TRUE);
+    envp = g_environ_setenv(envp, "WAYLAND_DISPLAY", wld, TRUE);
+    gchar *argv[] = { "/usr/bin/qylock", NULL };
+    g_spawn_async(NULL, argv, envp,
+                  G_SPAWN_SEARCH_PATH, NULL, NULL, NULL, NULL);
+    g_strfreev(envp);
+    if (!unlock_poll)
+        unlock_poll = g_timeout_add(2000, unlock_poll_cb, NULL);
+    return G_SOURCE_REMOVE;
+}
+
+/* 轮询 weston.ini：idle-time 变化时重新武装锁屏定时器 */
+static gboolean lock_poll_cb(gpointer ud) {
+    (void)ud;
+    int secs = read_idle_secs();
+    if (secs != lock_idle_secs) {
+        lock_idle_secs = secs;
+        if (lock_timer) { g_source_remove(lock_timer); lock_timer = 0; }
+        if (secs > 0 && !qylock_running()) {
+            g_printerr("qynotifd: autolock idle=%ds armed\n", secs);
+            lock_timer = g_timeout_add_seconds((guint)secs, lock_cb, NULL);
+        }
+    }
+    return G_SOURCE_CONTINUE;
+}
+
 int main(int argc, char **argv) {
     (void)argc; (void)argv;
     GMainLoop *loop = g_main_loop_new(NULL, FALSE);
@@ -181,6 +266,7 @@ int main(int argc, char **argv) {
     g_object_unref(dir);
 
     g_timeout_add(500, load_initial_conf, NULL);
+    g_timeout_add(5000, lock_poll_cb, NULL);
     g_printerr("qynotifd: started\n");
     g_main_loop_run(loop);
     g_object_unref(mon);

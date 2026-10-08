@@ -1719,3 +1719,13 @@ ngs-about-v2.png`。
 - **构建系统修复**：`qyos/builder.py` 的 `rglob("*.la")` 改为 `os.walk` 并跳过挂载的 `/proc`，避免扫描 `map_files` 触发 PermissionError（挂载 proc 构建时必现）
 
 构建产物：`qydesktop 0.1.0-161`。
+
+### 自动锁屏（v0.1.0-163，2026-10 实测）
+
+针对排查报告"自动锁屏缺失"：
+- **qynotifd 消费 `/etc/xdg/weston/weston.ini` 的 `idle-time`**（设置中心"熄屏时间"写的就是它）：到点自动启动 qylock 锁屏
+- **解锁后重新计时**：轮询 `pidof qylock`，解锁退出后重新武装定时器
+- **Wayland 环境传递**：`g_spawn_async` 显式携带 `XDG_RUNTIME_DIR`/`WAYLAND_DISPLAY` 启动 qylock（修复 `g_spawn_command_line_async` 无法解析 `VAR=val cmd` 前缀导致锁屏启动失败的问题）
+- 实测：`idle-time=5` → 日志 `armed → triggered` → 锁屏界面（98.8% 深色 + 大时钟），解锁后 `rearm`
+
+构建产物：`qydesktop 0.1.0-163`。
