@@ -1749,3 +1749,12 @@ ngs-about-v2.png`。
 - **自动化**：`QYFILES_VIEW=icon` 启动自动切换 → 日志 `QYFILESDBG: view=icon`，截图像素分析确认 5 列 × 2 行图标网格（黄色文件夹 + 彩色文件）
 
 构建产物：`qydesktop 0.1.0-165`。
+
+### 开机自启完善：防重复启动（v0.1.0-166，2026-10 实测）
+
+针对排查报告"启动项管理"：
+- **qynotifd `run_autostart` 增加 `pidof` 防重复**：应用已在运行时，设置页重复保存/conf 变化不会重复拉起进程
+- **实测**：`/etc/qyautostart.conf` 写 `qymon=on` → qynotifd 启动日志 `autostart qymon`，qymon 进程出现；再次触发 conf 变化 → `autostart qymon already running`（不重复启动）
+- 与 qysettings"启动项"页闭环：开关写 qyautostart.conf → qynotifd 消费并实际启动应用
+
+构建产物：`qydesktop 0.1.0-166`。

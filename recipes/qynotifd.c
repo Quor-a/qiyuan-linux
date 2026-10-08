@@ -62,6 +62,13 @@ static void run_autostart(void) {
         const char *name = line;
         gboolean on = (eq[1] == 'o' && eq[2] == 'n');
         if (on && g_str_has_prefix(name, "qy")) {
+            /* 防重复：应用已在运行则跳过（设置页重复保存不会重复启动） */
+            char chk[128];
+            snprintf(chk, sizeof chk, "pidof %s >/dev/null 2>&1", name);
+            if (system(chk) == 0) {
+                g_printerr("qynotifd: autostart %s already running\n", name);
+                continue;
+            }
             gchar *cmd = g_strdup_printf("%s &", name);
             g_spawn_command_line_async(cmd, NULL);
             g_free(cmd);
