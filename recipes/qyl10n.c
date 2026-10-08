@@ -85,6 +85,7 @@ static const pair tbl[] = {
     { "负载均值", "Load Average" },
     { "内存", "Memory" },
     { "内存 %d%%", "MEM %d%%" },
+    { "内存占用 TOP 5", "Top 5 Memory" },
     { "磁盘 %d%%", "DISK %d%%" },
     { "运行 %d天 %02d:%02d · 负载 %.2f %.2f %.2f · 进程 %ld/%ld",
       "Up %dd %02d:%02d · Load %.2f %.2f %.2f · Proc %ld/%ld" },

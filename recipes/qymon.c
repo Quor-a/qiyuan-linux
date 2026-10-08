@@ -27,6 +27,7 @@ static unsigned long mem_total_kb = 1;
 static GtkWidget *cpu_label = NULL, *mem_label = NULL, *info_label = NULL;
 static GtkWidget *title_label = NULL;
 static GtkWidget *disk_label = NULL;
+static GtkWidget *proc_label = NULL;   /* 内存占用 TOP 5 进程列表 */
 static unsigned long net_rx_prev = 0, net_tx_prev = 0;   /* 网络速率 */
 static gint64 net_time_prev = 0;
 
@@ -155,6 +156,58 @@ static gboolean tick(gpointer ud) {
         }
         if (info_label) gtk_label_set_text(GTK_LABEL(info_label), info);
     }
+    /* --- 内存占用 TOP 5 进程列表 --- */
+    {
+        typedef struct { char name[64]; long rss; } ProcEnt;
+        ProcEnt procs[256];
+        int np = 0;
+        GDir *dir = g_dir_open("/proc", 0, NULL);
+        if (dir) {
+            const char *pn;
+            while ((pn = g_dir_read_name(dir)) && np < 256) {
+                if (!g_ascii_isdigit(pn[0])) continue;
+                char path[64], line[256];
+                g_snprintf(path, sizeof path, "/proc/%s/comm", pn);
+                FILE *f = fopen(path, "r");
+                if (f) {
+                    if (fgets(line, sizeof line, f)) {
+                        char *nl = strchr(line, '\n');
+                        if (nl) *nl = 0;
+                        g_strlcpy(procs[np].name, line, sizeof procs[np].name);
+                    }
+                    fclose(f);
+                } else {
+                    g_strlcpy(procs[np].name, "?", sizeof procs[np].name);
+                }
+                long rss = 0;
+                g_snprintf(path, sizeof path, "/proc/%s/status", pn);
+                f = fopen(path, "r");
+                if (f) {
+                    while (fgets(line, sizeof line, f)) {
+                        if (!strncmp(line, "VmRSS:", 6)) { rss = atol(line + 6); break; }
+                    }
+                    fclose(f);
+                }
+                procs[np].rss = rss;
+                np++;
+            }
+            g_dir_close(dir);
+        }
+        for (int i = 0; i < np && i < 5; i++) {
+            int best = i;
+            for (int j = i + 1; j < np; j++)
+                if (procs[j].rss > procs[best].rss) best = j;
+            ProcEnt t = procs[i]; procs[i] = procs[best]; procs[best] = t;
+        }
+        GString *s = g_string_new(NULL);
+        g_string_append_printf(s, "<b>%s</b>\n", TR("内存占用 TOP 5"));
+        for (int i = 0; i < np && i < 5; i++) {
+            g_string_append_printf(s, "%s   %ld MB\n",
+                                   procs[i].name, (procs[i].rss + 512) / 1024);
+        }
+        if (proc_label) gtk_label_set_markup(GTK_LABEL(proc_label), s->str);
+        g_string_free(s, TRUE);
+    }
     /* --- 大数字百分比标签 --- */
     double last_cpu = hist_n ? cpu_hist[hist_n - 1] : 0;
     double last_mem = hist_n ? mem_hist[hist_n - 1] : 0;
@@ -254,7 +307,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     qy_load_theme();
     GtkWidget *win = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(win), TR("启元系统监视器"));
-    gtk_window_set_default_size(GTK_WINDOW(win), 560, 380);
+    gtk_window_set_default_size(GTK_WINDOW(win), 560, 480);
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
     gtk_widget_set_margin_start(vbox, 12);
@@ -287,9 +340,15 @@ static void activate(GtkApplication *app, gpointer ud) {
 
     /* 实时曲线区 */
     GtkWidget *da = gtk_drawing_area_new();
-    gtk_widget_set_size_request(da, -1, 220);
+    gtk_widget_set_size_request(da, -1, 160);
     g_signal_connect(da, "draw", G_CALLBACK(on_draw), NULL);
     gtk_box_pack_start(GTK_BOX(vbox), da, TRUE, TRUE, 0);
+
+    /* 内存占用 TOP 5 进程列表 */
+    proc_label = gtk_label_new(NULL);
+    add_class(proc_label, "qy-mon-proc");
+    gtk_label_set_xalign(GTK_LABEL(proc_label), 0.0);
+    gtk_box_pack_start(GTK_BOX(vbox), proc_label, FALSE, FALSE, 0);
 
     /* 底部信息栏: 运行时间 / 负载 / 进程 */
     info_label = gtk_label_new("");
