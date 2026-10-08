@@ -478,6 +478,46 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vdrv, gtk_label_new(TR("驱动")));
     }
 
+    /* 存储页: df -kP 磁盘占用（挂载点/容量/已用/进度条） */
+    {
+        GtkWidget *vst = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        GtkWidget *tip = gtk_label_new(TR("磁盘占用（df 实时数据）"));
+        gtk_widget_set_halign(tip, GTK_ALIGN_START);
+        qy_add_class(tip, "qy-settings-curlang");
+        gtk_box_pack_start(GTK_BOX(vst), tip, FALSE, FALSE, 0);
+        FILE *df = popen("df -kP 2>/dev/null", "r");
+        char line[1024];
+        int first = 1;
+        if (df) {
+            while (fgets(line, sizeof line, df)) {
+                if (first) { first = 0; continue; } /* 跳过表头 */
+                char fs[128] = "", mp[128] = "";
+                unsigned long blocks = 0, used = 0, avail = 0;
+                int pct = 0;
+                if (sscanf(line, "%127s %lu %lu %lu %d%% %127s",
+                           fs, &blocks, &used, &avail, &pct, mp) == 6) {
+                    GtkWidget *row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+                    GtkWidget *l = gtk_label_new(mp);
+                    gtk_widget_set_size_request(l, 110, -1);
+                    gtk_widget_set_halign(l, GTK_ALIGN_START);
+                    GtkWidget *pb = gtk_progress_bar_new();
+                    gtk_progress_bar_set_fraction(GTK_PROGRESS_BAR(pb),
+                                                  used / (double)(blocks + 1));
+                    gchar *info = g_strdup_printf("%d%% · %lu MB / %lu MB",
+                                                  pct, used / 1024, blocks / 1024);
+                    GtkWidget *il = gtk_label_new(info);
+                    g_free(info);
+                    gtk_box_pack_start(GTK_BOX(row), l, FALSE, FALSE, 0);
+                    gtk_box_pack_start(GTK_BOX(row), pb, TRUE, TRUE, 0);
+                    gtk_box_pack_start(GTK_BOX(row), il, FALSE, FALSE, 0);
+                    gtk_box_pack_start(GTK_BOX(vst), row, FALSE, FALSE, 0);
+                }
+            }
+            pclose(df);
+        }
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vst, gtk_label_new(TR("存储")));
+    }
+
     gtk_widget_show_all(win);
 
     /* 日期时间每秒刷新 */

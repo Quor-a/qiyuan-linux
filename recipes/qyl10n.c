@@ -42,6 +42,8 @@ static const pair tbl[] = {
     { "English", "English" },
     { "驱动", "Drivers" },
     { "已加载内核模块 %d 个：", "Loaded kernel modules: %d" },
+    { "存储", "Storage" },
+    { "磁盘占用（df 实时数据）", "Disk usage (live df data)" },
     { "无已加载模块", "No kernel modules loaded" },
     /* 编辑器/查看器 */
     { "打开", "Open" },

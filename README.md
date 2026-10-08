@@ -1134,3 +1134,15 @@ ngs-about-v2.png`。
   截图确认下拉框+应用按钮渲染，weston.ini mode=1366x768 写入成功
 
 构建产物：`qydesktop 0.1.0-96`。
+
+### 系统设置：存储页（v0.1.0-97，2026-10 实测）
+
+按设置中心「系统→存储」需求，新增存储页（驱动页之后）：
+- `df -kP` 实时读取磁盘占用：挂载点 / 容量 / 已用百分比 / 进度条
+- 每行：挂载点 + GtkProgressBar + 「N% · X MB / Y MB」
+- l10n：存储/磁盘占用（df 实时数据）
+- 实测：`QY_SETTINGS_PAGE=9` 直达存储页
+  （QYSETTINGS_DEBUG: set page=9 total=10），
+  渲染出 /dev（udev）0% 进度条行
+
+构建产物：`qydesktop 0.1.0-97`。
