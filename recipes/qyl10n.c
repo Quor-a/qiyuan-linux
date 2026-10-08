@@ -182,6 +182,7 @@ static const pair tbl[] = {
     { "内存总量", "Total memory" },
     { "内核版本", "Kernel" },
     { "分辨率", "Resolution" },
+    { "分辨率已设置为 %s，重启桌面后生效", "Resolution set to %s; restart desktop to apply" },
     { "切换后重新启动生效 / Takes effect after reboot", "Takes effect after reboot / 重启后生效" },
     { "创建失败", "Create failed" },
     { "创建失败（重名？）", "Create failed (duplicate?)" },

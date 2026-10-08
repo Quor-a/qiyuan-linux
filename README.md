@@ -1768,3 +1768,13 @@ ngs-about-v2.png`。
 - 中英双语 l10n 已补（驱动管理器/已加载模块/模块/使用数/USB 提示）
 
 构建产物：`qydesktop 0.1.0-168`。
+
+### 顶栏分辨率快捷切换（v0.1.0-169，2026-10 实测）
+
+针对排查报告"自定义桌面分辨率"：
+- **qydesktop 顶栏新增分辨率按钮**（右侧状态区）：点击弹出 1280x800 / 1024x768 / 1920x1080 / 2560x1440 菜单
+- 选择后**写入 `/etc/xdg/weston/weston.ini` 的 `mode=`**（start-weston.sh 重启桌面时读取并传给合成器），同时发送顶栏通知
+- **自动化**：`QYDESKTOP_RES=1024x768` 启动即应用 → 日志 `QYDESKTOPDBG: resolution=1024x768`，weston.ini 实测写入 `mode=1024x768`
+- 与 qysettings 分辨率页（写同一 mode=）形成双入口闭环
+
+构建产物：`qydesktop 0.1.0-169`。

@@ -546,6 +546,73 @@ static gboolean desk_draw(GtkWidget *w, cairo_t *cr, gpointer ud) {
 /* ---------- 顶栏 ---------- */
 static GtkWidget *notif_label = NULL;
 static gchar *last_notif_content = NULL;
+static GtkWidget *res_label = NULL;
+
+/* 分辨率快捷切换：改写 weston.ini 的 mode=（start-weston.sh 消费） */
+static void apply_resolution(const char *mode) {
+    if (!mode || !mode[0]) return;
+    const char *path = "/etc/xdg/weston/weston.ini";
+    gchar *content = NULL;
+    if (!g_file_get_contents(path, &content, NULL, NULL)) {
+        content = g_strdup("[core]\nshell=desktop-shell.so\n");
+    }
+    GString *out = g_string_new(NULL);
+    char *line = content;
+    int replaced = 0;
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t len = nl ? (size_t)(nl - line) : strlen(line);
+        if (strncmp(line, "mode=", 5) == 0) {
+            g_string_append_printf(out, "mode=%s", mode);
+            if (nl) g_string_append_c(out, '\n');
+            replaced = 1;
+        } else {
+            g_string_append_len(out, line, len);
+            if (nl) g_string_append_c(out, '\n');
+        }
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(content);
+    if (!replaced)
+        g_string_append_printf(out, "\n[output]\nname=Virtual-1\nmode=%s\n", mode);
+    g_file_set_contents(path, out->str, out->len, NULL);
+    g_string_free(out, TRUE);
+    g_printerr("QYDESKTOPDBG: resolution=%s\n", mode);
+    /* 顶栏按钮同步显示 */
+    if (res_label) gtk_label_set_text(GTK_LABEL(res_label), mode);
+    /* 通知用户（qydesktop 顶栏气泡读取） */
+    gchar *body = g_strdup_printf(TR("分辨率已设置为 %s，重启桌面后生效"), mode);
+    gchar *full = g_strdup_printf("%s|%s\n", TR("分辨率"), body);
+    g_mkdir_with_parents("/tmp/qynotif", 0755);
+    g_file_set_contents("/tmp/qynotif/latest.msg", full, -1, NULL);
+    g_free(body); g_free(full);
+}
+
+/* 分辨率菜单项激活 */
+static void on_res_activate(GtkMenuItem *mi, gpointer ud) {
+    (void)mi;
+    apply_resolution((const char *)ud);
+}
+
+/* 分辨率按钮点击：弹出可选模式菜单 */
+static void on_res_btn_clicked(GtkWidget *w, gpointer ud) {
+    static const char *modes[] = { "1280x800", "1024x768", "1920x1080", "2560x1440", NULL };
+    GtkWidget *menu = gtk_menu_new();
+    for (int i = 0; modes[i]; i++) {
+        GtkWidget *it = gtk_menu_item_new_with_label(modes[i]);
+        g_signal_connect(it, "activate", G_CALLBACK(on_res_activate), (gpointer)modes[i]);
+        gtk_menu_shell_append(GTK_MENU_SHELL(menu), it);
+    }
+    gtk_widget_show_all(menu);
+    gtk_menu_attach_to_widget(GTK_MENU(menu), w, NULL);
+    gtk_menu_popup_at_widget(GTK_MENU(menu), w, GDK_GRAVITY_SOUTH_WEST, GDK_GRAVITY_NORTH_WEST, NULL);
+}
+
+/* 自动化: QYDESKTOP_RES=1024x768 启动后自动设置分辨率 */
+static gboolean auto_res_apply(gpointer p) {
+    apply_resolution((const char *)p);
+    return G_SOURCE_REMOVE;
+}
 
 /* 通知显示：读取 /tmp/qynotif/latest.msg（qynotify/qynotifd 写入） */
 static gboolean notif_tick(gpointer ud) {
@@ -635,6 +702,15 @@ static void build_bar(void) {
     add_class(mon_label, "qy-mon-widget");
     gtk_box_pack_start(GTK_BOX(st), mon_label, FALSE, FALSE, 6);
     g_timeout_add_seconds(2, mon_tick, mon_label);
+    /* 分辨率快捷切换（写 weston.ini mode=，start-weston.sh 消费） */
+    GtkWidget *res_btn = gtk_button_new();
+    gtk_button_set_relief(GTK_BUTTON(res_btn), GTK_RELIEF_NONE);
+    add_class(res_btn, "qy-status-btn");
+    res_label = gtk_label_new("1280x800");
+    gtk_container_add(GTK_CONTAINER(res_btn), res_label);
+    g_signal_connect(res_btn, "clicked", G_CALLBACK(on_res_btn_clicked), NULL);
+    gtk_widget_set_tooltip_text(res_btn, TR("分辨率"));
+    gtk_box_pack_start(GTK_BOX(st), res_btn, FALSE, FALSE, 0);
     GtkWidget *power = gtk_button_new_with_label("⏻");
     gtk_button_set_relief(GTK_BUTTON(power), GTK_RELIEF_NONE);
     add_class(power, "qy-status-btn");
@@ -778,6 +854,10 @@ int main(int argc, char **argv) {
     if (access("/etc/.qywelcomed", F_OK) != 0) launch_cmd("qywelcome");
     g_timeout_add_seconds(1, taskbar_tick, NULL);
     g_timeout_add_seconds(2, dock_tick, NULL);
+    /* 自动化: QYDESKTOP_RES=1024x768 启动后自动设置分辨率 */
+    const char *res_env = g_getenv("QYDESKTOP_RES");
+    if (res_env && res_env[0])
+        g_timeout_add(600, auto_res_apply, g_strdup(res_env));
     gtk_main();
     return 0;
 }
