@@ -1210,3 +1210,16 @@ ngs-about-v2.png`。
   开关渲染正常，/etc/qyfocus.conf 写入 dnd=on
 
 构建产物：`qydesktop 0.1.0-103`。
+
+### 系统设置：通知页（v0.1.0-104，2026-10 实测）
+
+按设置中心「通知和操作」需求，新增应用通知开关页（专注页之后）：
+- 6 个应用的通知开关（系统监视/文件管理器/软件中心/文本编辑/图片查看/网络管理）
+- 每项 GtkSwitch，切换即写 /etc/qynotif.conf（app=on/off）
+- 自动化：`QY_SETTINGS_NOTIF=qymon:off` 启动后自动写入
+- l10n：通知/哪些应用可以发送通知
+- 实测：`QY_SETTINGS_PAGE=15` 直达通知页
+  （QYSETTINGS_DEBUG: set page=15 total=16），
+  6 行开关渲染正常，/etc/qynotif.conf 写入 qymon=off
+
+构建产物：`qydesktop 0.1.0-104`。

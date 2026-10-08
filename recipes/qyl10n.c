@@ -163,6 +163,7 @@ static const pair tbl[] = {
     { "摄像头", "Camera" },
     { "麦克风", "Microphone" },
     { "通知", "Notifications" },
+    { "哪些应用可以发送通知", "Choose apps that can send notifications" },
     { "后台应用", "Background apps" },
     { "文件系统访问", "Filesystem access" },
     { "文件大小", "Size" },

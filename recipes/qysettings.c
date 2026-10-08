@@ -280,6 +280,76 @@ static gboolean auto_perm_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 通知: 应用通知开关 ---------- */
+#define NOTIF_CONF "/etc/qynotif.conf"
+static int g_notif_loading = 0;
+
+static void on_notif_toggled(GtkWidget *sw, gpointer ud) {
+    if (g_notif_loading) return;
+    const char *app = (const char *)ud;
+    int on = gtk_switch_get_active(GTK_SWITCH(sw));
+    gchar *content = NULL;
+    gsize len = 0;
+    g_file_get_contents(NOTIF_CONF, &content, &len, NULL);
+    GString *out = g_string_new(NULL);
+    char *line = content;
+    int replaced = 0;
+    size_t klen = strlen(app);
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+        if (strncmp(line, app, klen) == 0 && line[klen] == '=') {
+            g_string_append_printf(out, "%s=%s", app, on ? "on" : "off");
+            replaced = 1;
+        } else {
+            g_string_append_len(out, line, llen);
+        }
+        if (nl) g_string_append_c(out, '\n');
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(content);
+    if (!replaced)
+        g_string_append_printf(out, "%s=%s\n", app, on ? "on" : "off");
+    g_file_set_contents(NOTIF_CONF, out->str, out->len, NULL);
+    g_string_free(out, TRUE);
+}
+
+/* 自动化验证: QY_SETTINGS_NOTIF=qymon:off 启动后关闭对应应用通知 */
+static gboolean auto_notif_apply(gpointer p) {
+    (void)p;
+    const char *env = g_getenv("QY_SETTINGS_NOTIF");
+    if (env) {
+        char app[64] = "", mode[16] = "";
+        if (sscanf(env, "%63[^:]:%15s", app, mode) == 2) {
+            gchar *content = NULL;
+            gsize len = 0;
+            g_file_get_contents(NOTIF_CONF, &content, &len, NULL);
+            GString *out = g_string_new(NULL);
+            char *line = content;
+            int replaced = 0;
+            size_t klen = strlen(app);
+            while (line && *line) {
+                char *nl = strchr(line, '\n');
+                size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+                if (strncmp(line, app, klen) == 0 && line[klen] == '=') {
+                    g_string_append_printf(out, "%s=%s", app, strcmp(mode, "off") != 0 ? "on" : "off");
+                    replaced = 1;
+                } else {
+                    g_string_append_len(out, line, llen);
+                }
+                if (nl) g_string_append_c(out, '\n');
+                line = nl ? nl + 1 : NULL;
+            }
+            g_free(content);
+            if (!replaced)
+                g_string_append_printf(out, "%s=%s\n", app, strcmp(mode, "off") != 0 ? "on" : "off");
+            g_file_set_contents(NOTIF_CONF, out->str, out->len, NULL);
+            g_string_free(out, TRUE);
+        }
+    }
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 应用页: 启动已安装应用 ---------- */
 static void on_app_launch(GtkWidget *w, gpointer ud) {
     (void)w;
@@ -982,6 +1052,66 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vfo, gtk_label_new(TR("专注")));
         if (env_f)
             g_timeout_add(900, auto_focus_apply, NULL);
+    }
+
+    /* 通知页: 应用通知开关（写 /etc/qynotif.conf） */
+    {
+        static const char *notif_apps[][2] = {
+            { "系统监视", "qymon" },   { "文件管理器", "qyfiles" },
+            { "软件中心", "qystore" },  { "文本编辑", "qyedit" },
+            { "图片查看", "qyview" }, { "网络管理", "qynet" },
+        };
+        GtkWidget *vno = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vno), 14);
+        GtkWidget *tip = gtk_label_new(TR("哪些应用可以发送通知"));
+        gtk_widget_set_halign(tip, GTK_ALIGN_START);
+        qy_add_class(tip, "qy-settings-curlang");
+        gtk_box_pack_start(GTK_BOX(vno), tip, FALSE, FALSE, 0);
+        g_notif_loading = 1;
+        for (int i = 0; i < 6; i++) {
+            GtkWidget *r = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+            GtkWidget *l = gtk_label_new(TR(notif_apps[i][0]));
+            gtk_widget_set_size_request(l, 180, -1);
+            gtk_widget_set_halign(l, GTK_ALIGN_START);
+            GtkWidget *sw = gtk_switch_new();
+            /* 读当前配置 */
+            gchar *content = NULL;
+            gsize len = 0;
+            int cur_on = 1;
+            if (g_file_get_contents(NOTIF_CONF, &content, &len, NULL)) {
+                char *line = content;
+                size_t klen = strlen(notif_apps[i][1]);
+                while (line && *line) {
+                    if (strncmp(line, notif_apps[i][1], klen) == 0 &&
+                        line[klen] == '=') {
+                        cur_on = strncmp(line + klen + 1, "off", 3) != 0;
+                        break;
+                    }
+                    char *nl = strchr(line, '\n');
+                    line = nl ? nl + 1 : NULL;
+                }
+                g_free(content);
+            }
+            gtk_switch_set_active(GTK_SWITCH(sw), cur_on);
+            /* 自动化: QY_SETTINGS_NOTIF=app:off */
+            const char *env = g_getenv("QY_SETTINGS_NOTIF");
+            if (env) {
+                char app[64] = "", mode[16] = "";
+                if (sscanf(env, "%63[^:]:%15s", app, mode) == 2 &&
+                    strcmp(app, notif_apps[i][1]) == 0) {
+                    gtk_switch_set_active(GTK_SWITCH(sw), strcmp(mode, "off") != 0);
+                }
+            }
+            g_signal_connect(sw, "state-set", G_CALLBACK(on_notif_toggled),
+                             (gpointer)notif_apps[i][1]);
+            gtk_box_pack_start(GTK_BOX(r), l, FALSE, FALSE, 0);
+            gtk_box_pack_start(GTK_BOX(r), sw, FALSE, FALSE, 0);
+            gtk_box_pack_start(GTK_BOX(vno), r, FALSE, FALSE, 0);
+        }
+        g_notif_loading = 0;
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vno, gtk_label_new(TR("通知")));
+        if (g_getenv("QY_SETTINGS_NOTIF"))
+            g_timeout_add(950, auto_notif_apply, NULL);
     }
 
     gtk_widget_show_all(win);
