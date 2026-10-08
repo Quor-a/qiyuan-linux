@@ -33,6 +33,7 @@ static void add_class(GtkWidget *w, const char *cls) {
 /* 工具栏按钮（按 普通目录 / 回收站 切换可见性） */
 static GtkWidget *b_mk = NULL, *b_del = NULL, *b_ren = NULL;
 static GtkWidget *b_open = NULL;
+static GtkWidget *b_cp = NULL;
 static GtkWidget *b_res = NULL, *b_pur = NULL, *b_emp = NULL;
 
 static void set_mode_buttons(void) {
@@ -42,6 +43,7 @@ static void set_mode_buttons(void) {
     gtk_widget_set_visible(b_del, !trash);
     gtk_widget_set_visible(b_ren, !trash);
     gtk_widget_set_visible(b_open, !trash);
+    gtk_widget_set_visible(b_cp, !trash);
     gtk_widget_set_visible(b_res, trash);
     gtk_widget_set_visible(b_pur, trash);
     gtk_widget_set_visible(b_emp, trash);
@@ -265,6 +267,63 @@ static void do_mkdir(void) {
     }
     gtk_widget_destroy(dlg);
     chdir_to(cwd);
+}
+
+/* 复制选中文件为副本（"名字 副本.ext" / 已存在则 副本.2.ext） */
+static void do_copy_named(const char *name) {
+    if (!name || !name[0]) return;
+    const char *dot = strrchr(name, '.');
+    const char *suffix = TR("副本");
+    gchar *dst = NULL;
+    if (dot && dot != name) {
+        gchar *base = g_strndup(name, dot - name);
+        dst = g_strdup_printf("%s%s%s", base, suffix, dot);
+        g_free(base);
+    } else {
+        dst = g_strdup_printf("%s%s", name, suffix);
+    }
+    if (g_file_test(dst, G_FILE_TEST_EXISTS)) {
+        for (int i = 2; ; i++) {
+            g_free(dst); dst = NULL;
+            if (dot && dot != name) {
+                gchar *base = g_strndup(name, dot - name);
+                dst = g_strdup_printf("%s%s.%d%s", base, suffix, i, dot);
+                g_free(base);
+            } else {
+                dst = g_strdup_printf("%s%s.%d", name, suffix, i);
+            }
+            if (!g_file_test(dst, G_FILE_TEST_EXISTS)) break;
+        }
+    }
+    gchar *src_full = g_build_filename(cwd, name, NULL);
+    gchar *dst_full = g_build_filename(cwd, dst, NULL);
+    gchar *cmd = g_strdup_printf("cp -r -- %s %s", g_shell_quote(src_full), g_shell_quote(dst_full));
+    int rc = system(cmd);
+    g_free(cmd); g_free(src_full); g_free(dst_full);
+    if (rc == 0) {
+        gchar *msg = g_strdup_printf("%s: %s", TR("复制成功"), dst);
+        gtk_label_set_text(GTK_LABEL(status), msg);
+        g_free(msg);
+        if (in_trash) chdir_trash(); else chdir_to(cwd);
+    } else {
+        gtk_label_set_text(GTK_LABEL(status), TR("复制失败"));
+    }
+    g_free(dst);
+}
+
+static gboolean auto_copy(gpointer p) {
+    do_copy_named((const char *)p);
+    g_free(p);
+    return G_SOURCE_REMOVE;
+}
+
+static void do_copy(GtkButton *b, gpointer ud) {
+    (void)b; (void)ud;
+    gchar *name;
+    selected_name(&name);
+    if (!name) { gtk_label_set_text(GTK_LABEL(status), TR("请先选择一个文件")); return; }
+    do_copy_named(name);
+    g_free(name);
 }
 
 /* ---------- 侧边栏导航 ---------- */
@@ -505,6 +564,9 @@ static void activate(GtkApplication *app, gpointer ud) {
     b_ren = gtk_button_new_with_label(TR("重命名"));
     add_class(b_ren, "qy-btn");
     g_signal_connect(b_ren, "clicked", G_CALLBACK(do_rename), NULL);
+    b_cp = gtk_button_new_with_label(TR("复制"));
+    add_class(b_cp, "qy-btn");
+    g_signal_connect(b_cp, "clicked", G_CALLBACK(do_copy), NULL);
     b_open = gtk_button_new_with_label(TR("打开"));
     add_class(b_open, "qy-btn");
     g_signal_connect(b_open, "clicked", G_CALLBACK(do_open_sel), NULL);
@@ -523,6 +585,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(hbox), b_mk, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_del, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_ren, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), b_cp, FALSE, FALSE, 0);
     gtk_box_pack_end(GTK_BOX(hbox), b_open, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_res, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_pur, FALSE, FALSE, 0);
@@ -550,6 +613,10 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_widget_show_all(win);
     /* argv[1]=="--trash" → 启动即进回收站视图 (调试/自证用) */
     if (g_argc > 1 && !strcmp(g_argv[1], "--trash")) chdir_trash(); else chdir_to(home);
+    /* 自动化验证: QYFILES_COPY=<文件名> 启动后自动复制该文件 */
+    const char *cp = g_getenv("QYFILES_COPY");
+    if (cp && cp[0])
+        g_timeout_add(300, (GSourceFunc)auto_copy, g_strdup(cp));
 }
 
 int main(int argc, char **argv) {

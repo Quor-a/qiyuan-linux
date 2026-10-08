@@ -279,6 +279,10 @@ static const pair tbl[] = {
     { "旋转", "Rotate" },
     { "请先选择一个文件", "Select a file first" },
     { "暂不支持打开该类型", "Opening this type is not supported" },
+    { "复制", "Copy" },
+    { "副本", " copy" },
+    { "复制成功", "Copied" },
+    { "复制失败", "Copy failed" },
 };
 
 #define NTBL ((int)(sizeof tbl / sizeof tbl[0]))
