@@ -167,6 +167,49 @@ static gboolean auto_res_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 电源: 熄屏时间 ---------- */
+static const int idle_secs[] = { 0, 60, 300, 600, 1800, 3600 };
+
+static void on_idle_apply(GtkWidget *w, gpointer ud) {
+    (void)w;
+    int idx = GPOINTER_TO_INT(ud);
+    int secs = idle_secs[idx];
+    const char *path = "/etc/xdg/weston/weston.ini";
+    gchar *content = NULL;
+    if (!g_file_get_contents(path, &content, NULL, NULL)) return;
+    GString *out = g_string_new(NULL);
+    char *line = content;
+    int in_core = 0, replaced = 0;
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t len = nl ? (size_t)(nl - line) : strlen(line);
+        char line2[256];
+        snprintf(line2, sizeof line2, "%.*s", (int)len, line);
+        int is_core = strncmp(line2, "[core]", 6) == 0;
+        if (is_core) {
+            g_string_append_printf(out, "%s\nidle-time=%d", line2, secs);
+            replaced = 1;
+        } else if (in_core && strncmp(line2, "idle-time=", 11) == 0) {
+            g_string_append_printf(out, "idle-time=%d", secs);
+            replaced = 1;
+        } else {
+            g_string_append_len(out, line, len);
+        }
+        if (nl) g_string_append_c(out, '\n');
+        in_core = is_core;
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(content);
+    g_file_set_contents(path, out->str, out->len, NULL);
+    g_string_free(out, TRUE);
+}
+
+/* 自动化验证: QY_SETTINGS_IDLE=N 秒启动后自动应用 */
+static gboolean auto_idle_apply(gpointer p) {
+    on_idle_apply(NULL, p);
+    return G_SOURCE_REMOVE;
+}
+
 /* 日期时间标签每秒刷新 */
 static gboolean update_dt(gpointer p)
 {
@@ -516,6 +559,60 @@ static void activate(GtkApplication *app, gpointer ud) {
             pclose(df);
         }
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vst, gtk_label_new(TR("存储")));
+    }
+
+    /* 电源页: 熄屏时间（写 weston.ini [core] idle-time=） */
+    {
+        static const char *idle_choices[] = { "从不", "1 分钟", "5 分钟",
+                                               "10 分钟", "30 分钟", "1 小时" };
+        GtkWidget *vpo = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        GtkWidget *tip = gtk_label_new(TR("屏幕熄灭时间（合成器空闲超时）"));
+        gtk_widget_set_halign(tip, GTK_ALIGN_START);
+        qy_add_class(tip, "qy-settings-curlang");
+        gtk_box_pack_start(GTK_BOX(vpo), tip, FALSE, FALSE, 0);
+        GtkWidget *po_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *pl = gtk_label_new(TR("熄屏时间"));
+        gtk_widget_set_size_request(pl, 150, -1);
+        gtk_widget_set_halign(pl, GTK_ALIGN_START);
+        GtkWidget *idle_combo = gtk_combo_box_text_new();
+        int cur_idx = 2; /* 默认 5 分钟 */
+        for (int i = 0; i < (int)G_N_ELEMENTS(idle_choices); i++) {
+            gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(idle_combo),
+                                           TR(idle_choices[i]));
+        }
+        /* 读当前 idle-time（0=从不） */
+        FILE *wf = fopen("/etc/xdg/weston/weston.ini", "r");
+        if (wf) {
+            char line[256];
+            while (fgets(line, sizeof line, wf)) {
+                if (strncmp(line, "idle-time=", 11) == 0) {
+                    int cur = atoi(line + 11);
+                    for (int i = 0; i < (int)G_N_ELEMENTS(idle_secs); i++)
+                        if (idle_secs[i] == cur) cur_idx = i;
+                }
+            }
+            fclose(wf);
+        }
+        /* 环境变量 QY_SETTINGS_IDLE=N 强制选择（自动化验证） */
+        const char *env_idle = g_getenv("QY_SETTINGS_IDLE");
+        if (env_idle) {
+            int want = atoi(env_idle);
+            for (int i = 0; i < (int)G_N_ELEMENTS(idle_secs); i++)
+                if (idle_secs[i] == want) cur_idx = i;
+        }
+        gtk_combo_box_set_active(GTK_COMBO_BOX(idle_combo), cur_idx);
+        GtkWidget *b_idle = gtk_button_new_with_label(TR("应用"));
+        qy_add_class(b_idle, "qy-btn");
+        g_signal_connect(b_idle, "clicked", G_CALLBACK(on_idle_apply),
+                         GINT_TO_POINTER(cur_idx));
+        gtk_box_pack_start(GTK_BOX(po_row), pl, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(po_row), idle_combo, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(po_row), b_idle, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vpo), po_row, FALSE, FALSE, 0);
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vpo, gtk_label_new(TR("电源")));
+        /* 自动化验证: 启动后自动应用 */
+        if (env_idle)
+            g_timeout_add(700, auto_idle_apply, GINT_TO_POINTER(cur_idx));
     }
 
     gtk_widget_show_all(win);

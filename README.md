@@ -1146,3 +1146,16 @@ ngs-about-v2.png`。
   渲染出 /dev（udev）0% 进度条行
 
 构建产物：`qydesktop 0.1.0-97`。
+
+### 系统设置：电源页（v0.1.0-98，2026-10 实测）
+
+按设置中心「电源和睡眠→熄屏时间」需求，新增电源页（存储页之后）：
+- 「熄屏时间」下拉：从不 / 1/5/10/30 分钟 / 1 小时
+- 应用后写 /etc/xdg/weston/weston.ini `[core] idle-time=N`（秒）
+- 自动化：`QY_SETTINGS_IDLE=600` 启动后自动选中并应用
+- l10n：电源/熄屏时间/从不/N 分钟/N 小时
+- 实测：`QY_SETTINGS_PAGE=10` 直达电源页
+  （QYSETTINGS_DEBUG: set page=10 total=11），
+  weston.ini idle-time=600 写入成功
+
+构建产物：`qydesktop 0.1.0-98`。
