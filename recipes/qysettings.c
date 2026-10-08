@@ -289,6 +289,72 @@ static void on_app_launch(GtkWidget *w, gpointer ud) {
     g_free(full);
 }
 
+/* ---------- 专注助手: 免打扰模式 ---------- */
+#define FOCUS_CONF "/etc/qyfocus.conf"
+
+static void on_focus_toggled(GtkWidget *sw, gpointer ud) {
+    (void)ud;
+    int on = gtk_switch_get_active(GTK_SWITCH(sw));
+    gchar *content = NULL;
+    gsize len = 0;
+    g_file_get_contents(FOCUS_CONF, &content, &len, NULL);
+    GString *out = g_string_new(NULL);
+    char *line = content;
+    int replaced = 0;
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+        if (strncmp(line, "dnd=", 4) == 0) {
+            g_string_append_printf(out, "dnd=%s", on ? "on" : "off");
+            replaced = 1;
+        } else {
+            g_string_append_len(out, line, llen);
+        }
+        if (nl) g_string_append_c(out, '\n');
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(content);
+    if (!replaced)
+        g_string_append_printf(out, "dnd=%s\n", on ? "on" : "off");
+    g_file_set_contents(FOCUS_CONF, out->str, out->len, NULL);
+    g_string_free(out, TRUE);
+}
+
+/* 自动化验证: QY_SETTINGS_FOCUS=on 启动后开启免打扰 */
+static gboolean auto_focus_apply(gpointer p) {
+    (void)p;
+    const char *env = g_getenv("QY_SETTINGS_FOCUS");
+    if (env) {
+        gchar *content = NULL;
+        gsize len = 0;
+        g_file_get_contents(FOCUS_CONF, &content, &len, NULL);
+        GString *out = g_string_new(NULL);
+        if (content) g_string_append(out, content);
+        g_free(content);
+        if (strstr(out->str, "dnd=")) {
+            GString *tmp = g_string_new(NULL);
+            char *line = out->str;
+            while (line && *line) {
+                char *nl = strchr(line, '\n');
+                size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+                if (strncmp(line, "dnd=", 4) == 0)
+                    g_string_append_printf(tmp, "dnd=%s", strcmp(env, "on") == 0 ? "on" : "off");
+                else
+                    g_string_append_len(tmp, line, llen);
+                if (nl) g_string_append_c(tmp, '\n');
+                line = nl ? nl + 1 : NULL;
+            }
+            g_string_free(out, TRUE);
+            out = tmp;
+        } else {
+            g_string_append_printf(out, "dnd=%s\n", strcmp(env, "on") == 0 ? "on" : "off");
+        }
+        g_file_set_contents(FOCUS_CONF, out->str, out->len, NULL);
+        g_string_free(out, TRUE);
+    }
+    return G_SOURCE_REMOVE;
+}
+
 /* 日期时间标签每秒刷新 */
 static gboolean update_dt(gpointer p)
 {
@@ -884,6 +950,38 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_container_add(GTK_CONTAINER(ap_scroll), ap_list);
         gtk_box_pack_start(GTK_BOX(vap), ap_scroll, TRUE, TRUE, 0);
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vap, gtk_label_new(TR("应用程序")));
+    }
+
+    /* 专注助手页: 免打扰模式开关（写 /etc/qyfocus.conf） */
+    {
+        GtkWidget *vfo = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vfo), 14);
+        gtk_box_pack_start(GTK_BOX(vfo), row(TR("专注助手"), TR("免打扰时屏蔽通知弹窗")), FALSE, FALSE, 0);
+        GtkWidget *fo_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *fo_l = gtk_label_new(TR("免打扰模式"));
+        gtk_widget_set_size_request(fo_l, 180, -1);
+        gtk_widget_set_halign(fo_l, GTK_ALIGN_START);
+        GtkWidget *fo_sw = gtk_switch_new();
+        FILE *ff = fopen(FOCUS_CONF, "r");
+        int dnd = 0;
+        if (ff) {
+            char line[64];
+            while (fgets(line, sizeof line, ff))
+                if (strncmp(line, "dnd=", 4) == 0)
+                    dnd = strncmp(line + 4, "on", 2) == 0;
+            fclose(ff);
+        }
+        gtk_switch_set_active(GTK_SWITCH(fo_sw), dnd);
+        const char *env_f = g_getenv("QY_SETTINGS_FOCUS");
+        if (env_f)
+            gtk_switch_set_active(GTK_SWITCH(fo_sw), strcmp(env_f, "on") == 0);
+        g_signal_connect(fo_sw, "state-set", G_CALLBACK(on_focus_toggled), NULL);
+        gtk_box_pack_start(GTK_BOX(fo_row), fo_l, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(fo_row), fo_sw, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vfo), fo_row, FALSE, FALSE, 0);
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vfo, gtk_label_new(TR("专注")));
+        if (env_f)
+            g_timeout_add(900, auto_focus_apply, NULL);
     }
 
     gtk_widget_show_all(win);

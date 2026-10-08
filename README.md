@@ -1198,3 +1198,15 @@ ngs-about-v2.png`。
   应用名+命令+启动按钮渲染正常
 
 构建产物：`qydesktop 0.1.0-102`。
+
+### 系统设置：专注助手页（v0.1.0-103，2026-10 实测）
+
+按设置中心「专注助手→免打扰」需求，新增免打扰模式页（应用页之后）：
+- 「免打扰模式」GtkSwitch，切换即写 /etc/qyfocus.conf（dnd=on/off）
+- 自动化：`QY_SETTINGS_FOCUS=on` 启动后自动开启
+- l10n：专注/专注助手/免打扰模式/免打扰时屏蔽通知弹窗
+- 实测：`QY_SETTINGS_PAGE=14` 直达专注页
+  （QYSETTINGS_DEBUG: set page=14 total=15），
+  开关渲染正常，/etc/qyfocus.conf 写入 dnd=on
+
+构建产物：`qydesktop 0.1.0-103`。
