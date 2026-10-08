@@ -33,7 +33,7 @@ static void add_class(GtkWidget *w, const char *cls) {
 /* 工具栏按钮（按 普通目录 / 回收站 切换可见性） */
 static GtkWidget *b_mk = NULL, *b_del = NULL, *b_ren = NULL;
 static GtkWidget *b_open = NULL;
-static GtkWidget *b_cp = NULL;
+static GtkWidget *b_cp = NULL, *b_prop = NULL;
 static GtkWidget *b_res = NULL, *b_pur = NULL, *b_emp = NULL;
 
 static void set_mode_buttons(void) {
@@ -44,6 +44,7 @@ static void set_mode_buttons(void) {
     gtk_widget_set_visible(b_ren, !trash);
     gtk_widget_set_visible(b_open, !trash);
     gtk_widget_set_visible(b_cp, !trash);
+    gtk_widget_set_visible(b_prop, !trash);
     gtk_widget_set_visible(b_res, trash);
     gtk_widget_set_visible(b_pur, trash);
     gtk_widget_set_visible(b_emp, trash);
@@ -326,6 +327,63 @@ static void do_copy(GtkButton *b, gpointer ud) {
     g_free(name);
 }
 
+/* ---------- 属性对话框: 名称 / 位置 / 大小 / 修改时间 / 权限 ---------- */
+static void do_prop_name(const char *name) {
+    if (!name || !name[0]) return;
+    gchar *full = g_build_filename(cwd, name, NULL);
+    struct stat st;
+    if (stat(full, &st) != 0) { g_free(full); return; }
+    char size_buf[64], mtime_buf[64], perm_buf[16];
+    g_snprintf(size_buf, sizeof size_buf, "%lld %s",
+               (long long)st.st_size, TR("字节"));
+    struct tm *tm = localtime(&st.st_mtime);
+    if (tm) strftime(mtime_buf, sizeof mtime_buf, "%Y-%m-%d %H:%M:%S", tm);
+    else g_strlcpy(mtime_buf, "-", sizeof mtime_buf);
+    g_snprintf(perm_buf, sizeof perm_buf, "%o", st.st_mode & 07777);
+    GtkWidget *dlg = gtk_dialog_new_with_buttons(TR("属性"),
+        GTK_WINDOW(gtk_widget_get_toplevel(view)), GTK_DIALOG_MODAL,
+        "_确定", GTK_RESPONSE_OK, NULL);
+    GtkWidget *box = gtk_dialog_get_content_area(GTK_DIALOG(dlg));
+    GtkWidget *grid = gtk_grid_new();
+    gtk_grid_set_row_spacing(GTK_GRID(grid), 6);
+    gtk_grid_set_column_spacing(GTK_GRID(grid), 12);
+    const char *rows[][2] = {
+        { TR("名称"), name },
+        { TR("位置"), cwd },
+        { TR("文件大小"), size_buf },
+        { TR("修改时间"), mtime_buf },
+        { TR("权限"), perm_buf },
+    };
+    for (int i = 0; i < 5; i++) {
+        GtkWidget *k = gtk_label_new(rows[i][0]);
+        gtk_widget_set_halign(k, GTK_ALIGN_START);
+        gtk_grid_attach(GTK_GRID(grid), k, 0, i, 1, 1);
+        GtkWidget *v = gtk_label_new(rows[i][1]);
+        gtk_widget_set_halign(v, GTK_ALIGN_START);
+        gtk_grid_attach(GTK_GRID(grid), v, 1, i, 1, 1);
+    }
+    gtk_box_pack_start(GTK_BOX(box), grid, FALSE, FALSE, 10);
+    gtk_widget_show_all(dlg);
+    gtk_dialog_run(GTK_DIALOG(dlg));
+    gtk_widget_destroy(dlg);
+    g_free(full);
+}
+
+static gboolean auto_prop(gpointer p) {
+    do_prop_name((const char *)p);
+    g_free(p);
+    return G_SOURCE_REMOVE;
+}
+
+static void do_prop(GtkButton *b, gpointer ud) {
+    (void)b; (void)ud;
+    gchar *name;
+    selected_name(&name);
+    if (!name) { gtk_label_set_text(GTK_LABEL(status), TR("请先选择一个文件")); return; }
+    do_prop_name(name);
+    g_free(name);
+}
+
 /* ---------- 侧边栏导航 ---------- */
 static void on_side(GtkButton *b, gpointer ud) {
     const char *p = (const char *)ud;
@@ -567,6 +625,9 @@ static void activate(GtkApplication *app, gpointer ud) {
     b_cp = gtk_button_new_with_label(TR("复制"));
     add_class(b_cp, "qy-btn");
     g_signal_connect(b_cp, "clicked", G_CALLBACK(do_copy), NULL);
+    b_prop = gtk_button_new_with_label(TR("属性"));
+    add_class(b_prop, "qy-btn");
+    g_signal_connect(b_prop, "clicked", G_CALLBACK(do_prop), NULL);
     b_open = gtk_button_new_with_label(TR("打开"));
     add_class(b_open, "qy-btn");
     g_signal_connect(b_open, "clicked", G_CALLBACK(do_open_sel), NULL);
@@ -586,6 +647,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(hbox), b_del, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_ren, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_cp, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), b_prop, FALSE, FALSE, 0);
     gtk_box_pack_end(GTK_BOX(hbox), b_open, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_res, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_pur, FALSE, FALSE, 0);
@@ -617,6 +679,10 @@ static void activate(GtkApplication *app, gpointer ud) {
     const char *cp = g_getenv("QYFILES_COPY");
     if (cp && cp[0])
         g_timeout_add(300, (GSourceFunc)auto_copy, g_strdup(cp));
+    /* 自动化验证: QYFILES_PROP=<文件名> 启动后自动打开属性对话框 */
+    const char *pp = g_getenv("QYFILES_PROP");
+    if (pp && pp[0])
+        g_timeout_add(300, (GSourceFunc)auto_prop, g_strdup(pp));
 }
 
 int main(int argc, char **argv) {
