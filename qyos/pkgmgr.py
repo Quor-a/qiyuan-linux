@@ -21,6 +21,11 @@ from . import repo as repomod
 from . import transaction as txn
 from . import util
 
+# 多个核心包同时提供、内容等价的小工具：安装时后装者覆盖而非报冲突。
+_SHARED_OK = {
+    "sbin/nologin", "usr/sbin/nologin", "bin/nologin", "usr/bin/nologin",
+}
+
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS packages (
   name TEXT PRIMARY KEY,
@@ -278,6 +283,11 @@ class Manager:
                 # 后装者（具体库）覆盖是各发行版的通行做法；其余冲突仍拒绝
                 if f.path.startswith("usr/share/doc/") or f.path.startswith("usr/include/X11/extensions/"):
                     print(f"[覆盖] {owner} 的同名协议头: {f.path}")
+                    continue
+                # nologin 之类被多个核心包同时提供的小工具：后装者覆盖是
+                # 各发行版通行做法（内容等价），不应阻断安装。
+                if f.path in _SHARED_OK:
+                    print(f"[覆盖] {owner} 的同名文件（共享工具）: {f.path}")
                     continue
                 raise PkgError(f"文件冲突: {f.path} 已属于 {owner}")
 
