@@ -30,6 +30,6 @@ def build(ctx):
 def package(ctx):
     ctx.run("make DESTDIR={} install".format(ctx.destdir))
     # cronie 运行必需：spool 目录（存在才不退出）
-        ctx.run("mkdir -p {}/var/spool/cron {}/usr/var/run {}/usr/var/spool/cron".format(ctx.destdir, ctx.destdir, ctx.destdir))
+    ctx.run("mkdir -p {}/var/spool/cron {}/usr/var/run {}/usr/var/spool/cron".format(ctx.destdir, ctx.destdir, ctx.destdir))
     ctx.run("mkdir -p {}/etc/qyinit.d".format(ctx.destdir))
     ctx.run("cp etc/qyinit.d/crond.unit {{}}/etc/qyinit.d/ || true".format(ctx.destdir))
