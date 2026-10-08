@@ -8,6 +8,39 @@ static GtkWidget *text_view = NULL;
 static GtkWidget *win = NULL;
 static GtkWidget *status_label = NULL;
 static gchar *current_path = NULL;
+static int g_font_size = 0;   /* 正文字号（0 = 主题默认） */
+
+/* ---------- 字号调整: 按钮 + / - 与 QYEDIT_FONT_BIGGER 自动化 ---------- */
+static void apply_font(void) {
+    if (!text_view || g_font_size <= 0) return;
+    gchar *desc = g_strdup_printf("monospace %d", g_font_size);
+    PangoFontDescription *fd = pango_font_description_from_string(desc);
+    gtk_widget_override_font(text_view, fd);
+    pango_font_description_free(fd);
+    g_free(desc);
+}
+
+static void font_bigger(GtkWidget *w, gpointer ud) {
+    (void)w; (void)ud;
+    if (g_font_size <= 0) g_font_size = 14;
+    g_font_size++;
+    apply_font();
+}
+
+static void font_smaller(GtkWidget *w, gpointer ud) {
+    (void)w; (void)ud;
+    if (g_font_size <= 0) g_font_size = 14;
+    if (g_font_size > 6) g_font_size--;
+    apply_font();
+}
+
+/* 自动化验证: QYEDIT_FONT_BIGGER=1 启动后自动增大两次 */
+static gboolean auto_font_bigger(gpointer p) {
+    (void)p;
+    font_bigger(NULL, NULL);
+    font_bigger(NULL, NULL);
+    return G_SOURCE_REMOVE;
+}
 
 /* ---------- 状态栏: 行 / 列 / 字符数 ---------- */
 static void update_status(GtkTextBuffer *b) {
@@ -120,15 +153,23 @@ int main(int argc, char **argv) {
     GtkWidget *b_new  = gtk_button_new_with_label(TR("新建"));
     GtkWidget *b_open = gtk_button_new_with_label(TR("打开"));
     GtkWidget *b_save = gtk_button_new_with_label(TR("保存"));
+    GtkWidget *b_fbig = gtk_button_new_with_label(TR("字号 +"));
+    GtkWidget *b_fsmall = gtk_button_new_with_label(TR("字号 -"));
     qy_add_class(b_new, "qy-editor-btn");
     qy_add_class(b_open, "qy-editor-btn");
     qy_add_class(b_save, "qy-editor-btn");
+    qy_add_class(b_fbig, "qy-editor-btn");
+    qy_add_class(b_fsmall, "qy-editor-btn");
     g_signal_connect(b_new,  "clicked", G_CALLBACK(do_new), NULL);
     g_signal_connect(b_open, "clicked", G_CALLBACK(do_open), NULL);
     g_signal_connect(b_save, "clicked", G_CALLBACK(do_save), NULL);
+    g_signal_connect(b_fbig, "clicked", G_CALLBACK(font_bigger), NULL);
+    g_signal_connect(b_fsmall, "clicked", G_CALLBACK(font_smaller), NULL);
     gtk_box_pack_start(GTK_BOX(tb), b_new, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(tb), b_open, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(tb), b_save, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(tb), b_fbig, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(tb), b_fsmall, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), tb, FALSE, FALSE, 3);
 
     text_view = gtk_text_view_new();
@@ -168,6 +209,13 @@ int main(int argc, char **argv) {
     set_title();
     g_signal_connect(win, "destroy", G_CALLBACK(gtk_main_quit), NULL);
     gtk_widget_show_all(win);
+
+    /* 自动化验证: QYEDIT_FONT_BIGGER=1 启动后自动增大字号两次 */
+    if (getenv("QYEDIT_FONT_BIGGER")) {
+        const char *fs = getenv("QYEDIT_FONT_SIZE");
+        g_font_size = fs && atoi(fs) > 0 ? atoi(fs) : 14;
+        g_timeout_add(500, auto_font_bigger, NULL);
+    }
     gtk_main();
     return 0;
 }

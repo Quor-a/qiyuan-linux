@@ -47,6 +47,8 @@ static const pair tbl[] = {
     { "保存失败", "Save failed" },
     { "暂不支持保存该格式", "Saving this format is not supported" },
     { "缩放 %d%%", "Zoom %d%%" },
+    { "字号 +", "Font +" },
+    { "字号 -", "Font -" },
     { "另存为", "Save As" },
     { "退出", "Quit" },
     { "新建", "New" },
