@@ -1120,3 +1120,17 @@ ngs-about-v2.png`。
   显示 tcp_diag/inet_diag/qrtr/tls/cfg80211 等模块
 
 构建产物：`qydesktop 0.1.0-94`。
+
+### 系统设置：自定义桌面分辨率（v0.1.0-96，2026-10 实测）
+
+用户反馈要自定义桌面分辨率，显示页新增交互设置：
+- 「桌面分辨率」下拉框（1024x768 ~ 3840x2160 共 8 档）+「应用」按钮
+- 应用后改写 /etc/xdg/weston/weston.ini 的 `[output] mode=`，重启合成器生效
+- 自动化：`QY_SETTINGS_RES=1366x768` 启动后自动选中并应用
+- l10n：桌面分辨率/应用
+- 修复：分辨率数组缺 NULL 终止符导致 -O2 越界崩溃（-O0 不崩 -O2 崩，
+  已用调试输出定位到 append_text 越界，补 NULL 后稳定）
+- 实测：QY_SETTINGS_PAGE=1 + QY_SETTINGS_RES=1366x768，
+  截图确认下拉框+应用按钮渲染，weston.ini mode=1366x768 写入成功
+
+构建产物：`qydesktop 0.1.0-96`。

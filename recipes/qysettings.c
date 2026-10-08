@@ -129,6 +129,44 @@ static void launch_app(GtkButton *b, gpointer cmd) {
     g_spawn_command_line_async(buf, NULL);
 }
 
+/* 应用桌面分辨率: 改写 /etc/xdg/weston/weston.ini 的 mode= */
+static void on_res_apply(GtkWidget *w, gpointer ud) {
+    (void)w;
+    GtkWidget *combo = GTK_WIDGET(ud);
+    const char *sel = gtk_combo_box_text_get_active_text(GTK_COMBO_BOX_TEXT(combo));
+    if (!sel || !*sel) return;
+    const char *path = "/etc/xdg/weston/weston.ini";
+    gchar *content = NULL;
+    if (!g_file_get_contents(path, &content, NULL, NULL)) return;
+    GString *out = g_string_new(NULL);
+    char *line = content;
+    int replaced = 0;
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t len = nl ? (size_t)(nl - line) : strlen(line);
+        if (strncmp(line, "mode=", 5) == 0) {
+            g_string_append_printf(out, "mode=%s", sel);
+            if (nl) g_string_append_c(out, '\n');
+            replaced = 1;
+        } else {
+            g_string_append_len(out, line, len);
+            if (nl) g_string_append_c(out, '\n');
+        }
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(content);
+    if (!replaced)
+        g_string_append_printf(out, "\n[output]\nname=Virtual-1\nmode=%s\n", sel);
+    g_file_set_contents(path, out->str, out->len, NULL);
+    g_string_free(out, TRUE);
+}
+
+/* 自动化验证: QY_SETTINGS_RES=N 启动后自动应用分辨率 */
+static gboolean auto_res_apply(gpointer p) {
+    on_res_apply(NULL, p);
+    return G_SOURCE_REMOVE;
+}
+
 /* 日期时间标签每秒刷新 */
 static gboolean update_dt(gpointer p)
 {
@@ -216,8 +254,53 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_container_set_border_width(GTK_CONTAINER(v2), 14);
     gtk_box_pack_start(GTK_BOX(v2), row(TR("合成器"), "weston 14.0.2"), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v2), row(TR("后端"), "DRM (bochs-drm / pixman)"), FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(v2), row(TR("分辨率"), "1280x800"), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v2), row(TR("壁纸"), TR("程序化生成 · 自动轮换")), FALSE, FALSE, 0);
+    /* 桌面分辨率: 下拉选择并写入 weston.ini 的 mode= */
+    {
+        static const char *res_choices[] = {"1024x768", "1280x720", "1280x800",
+                                             "1366x768", "1600x900", "1920x1080",
+                                             "2560x1440", "3840x2160", NULL};
+        char cur_res[64] = "1280x800";
+        FILE *wf = fopen("/etc/xdg/weston/weston.ini", "r");
+        if (wf) {
+            char line[256];
+            while (fgets(line, sizeof line, wf)) {
+                if (strncmp(line, "mode=", 5) == 0) {
+                    char *nl = strchr(line, '\n');
+                    if (nl) *nl = 0;
+                    snprintf(cur_res, sizeof cur_res, "%s", line + 5);
+                }
+            }
+            fclose(wf);
+        }
+        GtkWidget *res_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *rl = gtk_label_new(TR("桌面分辨率"));
+        gtk_widget_set_size_request(rl, 150, -1);
+        gtk_widget_set_halign(rl, GTK_ALIGN_START);
+        GtkWidget *res_combo = gtk_combo_box_text_new();
+        int cur_idx = 0;
+        for (int i = 0; res_choices[i]; i++) {
+            gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(res_combo), res_choices[i]);
+            if (strcmp(res_choices[i], cur_res) == 0) cur_idx = i;
+        }
+        /* 环境变量 QY_SETTINGS_RES 强制选择（自动化验证） */
+        const char *env_res = g_getenv("QY_SETTINGS_RES");
+        if (env_res) {
+            for (int i = 0; res_choices[i]; i++)
+                if (strcmp(res_choices[i], env_res) == 0) { cur_idx = i; break; }
+        }
+        gtk_combo_box_set_active(GTK_COMBO_BOX(res_combo), cur_idx);
+        GtkWidget *b_res = gtk_button_new_with_label(TR("应用"));
+        qy_add_class(b_res, "qy-btn");
+        g_signal_connect(b_res, "clicked", G_CALLBACK(on_res_apply), res_combo);
+        gtk_box_pack_start(GTK_BOX(res_row), rl, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(res_row), res_combo, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(res_row), b_res, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(v2), res_row, FALSE, FALSE, 0);
+        /* 自动化验证: 启动后自动应用所选分辨率 */
+        if (env_res)
+            g_timeout_add(600, auto_res_apply, res_combo);
+    }
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), v2, gtk_label_new(TR("显示")));
 
     /* 字体 */
