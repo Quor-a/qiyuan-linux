@@ -281,6 +281,77 @@ static gboolean auto_perm_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 图形: 模式写 /etc/qygraphics.conf ---------- */
+#define GRAPHICS_CONF "/etc/qygraphics.conf"
+static GtkWidget *g_gfx_combo = NULL;
+
+static void on_graphics_apply(GtkWidget *w, gpointer ud) {
+    (void)w; (void)ud;
+    const char *mode = "default";
+    int act = gtk_combo_box_get_active(GTK_COMBO_BOX(g_gfx_combo));
+    if (act == 1) mode = "performance";
+    else if (act == 2) mode = "power_saver";
+    gchar *content = NULL;
+    gsize len = 0;
+    g_file_get_contents(GRAPHICS_CONF, &content, &len, NULL);
+    GString *out = g_string_new(NULL);
+    char *line = content;
+    int replaced = 0;
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+        if (strncmp(line, "mode=", 5) == 0) {
+            g_string_append_printf(out, "mode=%s", mode);
+            replaced = 1;
+        } else {
+            g_string_append_len(out, line, llen);
+        }
+        if (nl) g_string_append_c(out, '\n');
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(content);
+    if (!replaced)
+        g_string_append_printf(out, "mode=%s\n", mode);
+    g_file_set_contents(GRAPHICS_CONF, out->str, out->len, NULL);
+    g_string_free(out, TRUE);
+}
+
+/* 自动化验证: QY_SETTINGS_GRAPHICS=mode:performance 启动后写入 */
+static gboolean auto_graphics_apply(gpointer p) {
+    (void)p;
+    const char *env = g_getenv("QY_SETTINGS_GRAPHICS");
+    if (env && strstr(env, "mode:")) {
+        const char *mode = strstr(env, "mode:") + 5;
+        gchar *content = NULL;
+        gsize len = 0;
+        g_file_get_contents(GRAPHICS_CONF, &content, &len, NULL);
+        GString *out = g_string_new(NULL);
+        if (content) g_string_append(out, content);
+        g_free(content);
+        if (strstr(out->str, "mode=")) {
+            GString *tmp = g_string_new(NULL);
+            char *line = out->str;
+            while (line && *line) {
+                char *nl = strchr(line, '\n');
+                size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+                if (strncmp(line, "mode=", 5) == 0)
+                    g_string_append_printf(tmp, "mode=%s", mode);
+                else
+                    g_string_append_len(tmp, line, llen);
+                if (nl) g_string_append_c(tmp, '\n');
+                line = nl ? nl + 1 : NULL;
+            }
+            g_string_free(out, TRUE);
+            out = tmp;
+        } else {
+            g_string_append_printf(out, "mode=%s\n", mode);
+        }
+        g_file_set_contents(GRAPHICS_CONF, out->str, out->len, NULL);
+        g_string_free(out, TRUE);
+    }
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 触摸板: 开关+灵敏度 ---------- */
 #define TOUCHPAD_CONF "/etc/qytouchpad.conf"
 static int g_tp_loading = 0;
@@ -2085,6 +2156,35 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vtp, gtk_label_new(TR("触摸板")));
         if (env_tp)
             g_timeout_add(1400, auto_touchpad_apply, NULL);
+    }
+
+    /* 图形页: 显卡信息 + 模式（写 /etc/qygraphics.conf） */
+    {
+        GtkWidget *vg = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vg), 14);
+        gtk_box_pack_start(GTK_BOX(vg), row(TR("显卡"), TR("未检测到独立显卡")), FALSE, FALSE, 0);
+        GtkWidget *gfx_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *gfx_l = gtk_label_new(TR("图形模式"));
+        gtk_widget_set_size_request(gfx_l, 150, -1);
+        gtk_widget_set_halign(gfx_l, GTK_ALIGN_START);
+        g_gfx_combo = gtk_combo_box_text_new();
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(g_gfx_combo), TR("默认"));
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(g_gfx_combo), TR("高性能"));
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(g_gfx_combo), TR("省电"));
+        gtk_combo_box_set_active(GTK_COMBO_BOX(g_gfx_combo), 0);
+        const char *env_gfx = g_getenv("QY_SETTINGS_GRAPHICS");
+        if (env_gfx && strstr(env_gfx, "mode:performance"))
+            gtk_combo_box_set_active(GTK_COMBO_BOX(g_gfx_combo), 1);
+        GtkWidget *gfx_btn = gtk_button_new_with_label(TR("应用"));
+        qy_add_class(gfx_btn, "qy-btn");
+        g_signal_connect(gfx_btn, "clicked", G_CALLBACK(on_graphics_apply), NULL);
+        gtk_box_pack_start(GTK_BOX(gfx_row), gfx_l, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(gfx_row), g_gfx_combo, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(gfx_row), gfx_btn, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vg), gfx_row, FALSE, FALSE, 0);
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vg, gtk_label_new(TR("图形")));
+        if (env_gfx)
+            g_timeout_add(1450, auto_graphics_apply, NULL);
     }
 
     gtk_widget_show_all(win);

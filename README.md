@@ -1357,3 +1357,17 @@ ngs-about-v2.png`。
   开关+滑块+按钮渲染正常，qytouchpad.conf 写入 touchpad=off
 
 构建产物：`qydesktop 0.1.0-114`。
+
+### 系统设置：图形页（v0.1.0-115，2026-10 实测）
+
+按设置中心「系统→图形」需求，新增图形设置页（触摸板页之后）：
+- 「显卡」检测状态显示
+- 「图形模式」下拉：默认 / 高性能 / 省电 + 应用按钮
+- 应用后写 /etc/qygraphics.conf（mode=default/performance/power_saver）
+- 自动化：`QY_SETTINGS_GRAPHICS=mode:performance` 启动后自动写入
+- l10n：图形/显卡/未检测到独立显卡/图形模式/默认/高性能/省电
+- 实测：`QY_SETTINGS_PAGE=26` 直达图形页
+  （QYSETTINGS_DEBUG: set page=26 total=27），
+  显卡行+下拉+按钮渲染正常，qygraphics.conf 写入 mode=performance
+
+构建产物：`qydesktop 0.1.0-115`。
