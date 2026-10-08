@@ -275,6 +275,7 @@ static const pair tbl[] = {
     { "壁纸", "Wallpaper" },
     { "程序化生成 · 自动轮换", "Procedural · auto-rotate" },
     { "适应窗口", "Fit Window" },
+    { "旋转", "Rotate" },
     { "请先选择一个文件", "Select a file first" },
     { "暂不支持打开该类型", "Opening this type is not supported" },
 };

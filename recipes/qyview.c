@@ -104,6 +104,24 @@ static void on_fit(GtkButton *b, gpointer ud) {
     gtk_widget_queue_draw(GTK_WIDGET(ud));
 }
 
+/* 顺时针旋转 90°（QYVIEW_ROTATE=1 可在启动时自动旋转一次，便于自动化验证） */
+static void on_rotate(GtkButton *b, gpointer ud) {
+    (void)b;
+    if (!pix) return;
+    GdkPixbuf *r = gdk_pixbuf_rotate_simple(pix, GDK_PIXBUF_ROTATE_CLOCKWISE);
+    if (r) {
+        g_object_unref(pix);
+        pix = r;
+        zoom = 1.0; pan_x = pan_y = 0;
+        gtk_widget_queue_draw(GTK_WIDGET(ud));
+    }
+}
+
+static gboolean rotate_once(gpointer ud) {
+    on_rotate(NULL, ud);
+    return G_SOURCE_REMOVE;
+}
+
 static gboolean on_draw(GtkWidget *da, cairo_t *cr, gpointer ud) {
     GtkAllocation a; gtk_widget_get_allocation(da, &a);
     cairo_set_source_rgb(cr, 0.1, 0.1, 0.12);
@@ -199,13 +217,17 @@ static void activate(GtkApplication *app, gpointer ud) {
     add_class(b_next, "qy-view-nav-btn");
     GtkWidget *b_fit = gtk_button_new_with_label(TR("适应窗口"));
     add_class(b_fit, "qy-view-nav-btn");
+    GtkWidget *b_rot = gtk_button_new_with_label(TR("旋转"));
+    add_class(b_rot, "qy-view-nav-btn");
     gtk_box_pack_start(GTK_BOX(nav), b_prev, FALSE, FALSE, 0);
     gtk_box_set_center_widget(GTK_BOX(nav), page_label);
     gtk_box_pack_end(GTK_BOX(nav), b_next, FALSE, FALSE, 0);
     gtk_box_pack_end(GTK_BOX(nav), b_fit, FALSE, FALSE, 0);
+    gtk_box_pack_end(GTK_BOX(nav), b_rot, FALSE, FALSE, 0);
     g_signal_connect(b_prev, "clicked", G_CALLBACK(on_prev), da);
     g_signal_connect(b_next, "clicked", G_CALLBACK(on_next), da);
     g_signal_connect(b_fit, "clicked", G_CALLBACK(on_fit), da);
+    g_signal_connect(b_rot, "clicked", G_CALLBACK(on_rotate), da);
     gtk_box_pack_start(GTK_BOX(vbox), nav, FALSE, FALSE, 0);
 
     gtk_widget_show_all(win);
@@ -218,6 +240,10 @@ static void activate(GtkApplication *app, gpointer ud) {
             cur_dir = g_path_get_dirname(args[0]);
             load_by_index(da, dir_idx);   /* 刷新页码 */
         }
+    }
+    /* 自动化验证: QYVIEW_ROTATE=1 启动后自动顺时针旋转一次 */
+    if (getenv("QYVIEW_ROTATE")) {
+        g_timeout_add(300, rotate_once, da);
     }
     gtk_widget_grab_focus(da);
 }
