@@ -1476,3 +1476,17 @@ ngs-about-v2.png`。
   4 行开关渲染正常，qyautostart.conf 写入 qymon=off
 
 构建产物：`qydesktop 0.1.0-123`。
+
+### 系统设置：WiFi 页（v0.0.0-124，2026-10 实测）
+
+按「WiFi」需求，新增无线网络设置页（启动项页之后）：
+- 「WiFi」说明 + 「无线网卡」检测（iw dev 探测 wlan0）
+- 「可用网络」扫描（iw dev scan 列 SSID；无卡时提示）
+- 「启用 WiFi」GtkSwitch，切换即写 /etc/qywifi.conf（wifi=on/off）
+- 自动化：`QY_SETTINGS_WIFI=off` 启动后自动关闭
+- l10n：WiFi/无线网络连接/无线网卡/未检测到无线网卡/可用网络/无可用网络/启用 WiFi
+- 实测：`QY_SETTINGS_PAGE=35` 直达 WiFi 页
+  （QYSETTINGS_DEBUG: set page=35 total=36），
+  网卡+网络+开关渲染正常，qywifi.conf 写入 wifi=off
+
+构建产物：`qydesktop 0.1.0-124`。

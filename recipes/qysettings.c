@@ -281,6 +281,50 @@ static gboolean auto_perm_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- WiFi: 开关写 /etc/qywifi.conf ---------- */
+#define WIFI_CONF "/etc/qywifi.conf"
+static int g_wifi_loading = 0;
+
+static void wifi_write(int on) {
+    gchar *content = NULL;
+    gsize len = 0;
+    g_file_get_contents(WIFI_CONF, &content, &len, NULL);
+    GString *out = g_string_new(NULL);
+    char *line = content;
+    int replaced = 0;
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+        if (strncmp(line, "wifi=", 5) == 0) {
+            g_string_append_printf(out, "wifi=%s", on ? "on" : "off");
+            replaced = 1;
+        } else {
+            g_string_append_len(out, line, llen);
+        }
+        if (nl) g_string_append_c(out, '\n');
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(content);
+    if (!replaced)
+        g_string_append_printf(out, "wifi=%s\n", on ? "on" : "off");
+    g_file_set_contents(WIFI_CONF, out->str, out->len, NULL);
+    g_string_free(out, TRUE);
+}
+
+static void on_wifi_toggled(GtkWidget *sw, gpointer ud) {
+    if (g_wifi_loading) return;
+    (void)ud;
+    wifi_write(gtk_switch_get_active(GTK_SWITCH(sw)));
+}
+
+/* 自动化验证: QY_SETTINGS_WIFI=off 启动后关闭 */
+static gboolean auto_wifi_apply(gpointer p) {
+    (void)p;
+    const char *env = g_getenv("QY_SETTINGS_WIFI");
+    if (env) wifi_write(strcmp(env, "off") == 0 ? 0 : 1);
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 启动项: 自启应用开关 ---------- */
 #define AUTOSTART_CONF "/etc/qyautostart.conf"
 
@@ -2950,6 +2994,106 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vst, gtk_label_new(TR("启动项")));
         if (g_getenv("QY_SETTINGS_AUTOSTART"))
             g_timeout_add(1850, auto_autostart_apply, NULL);
+    }
+
+    /* WiFi 页: 开关 + 无线网卡检测（写 /etc/qywifi.conf） */
+    {
+        GtkWidget *vwf = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vwf), 14);
+        gtk_box_pack_start(GTK_BOX(vwf), row(TR("WiFi"), TR("无线网络连接")), FALSE, FALSE, 0);
+        /* 检测无线网卡 */
+        char wlan[64] = "";
+        FILE *iwf = popen("iw dev 2>/dev/null | awk \"/Interface/ {print $2}\" | head -1", "r");
+        if (iwf) {
+            char buf[64];
+            if (fgets(buf, sizeof buf, iwf)) {
+                char *nl = strchr(buf, '\n');
+                if (nl) *nl = 0;
+                if (*buf) g_strlcpy(wlan, buf, sizeof wlan);
+            }
+            pclose(iwf);
+        }
+        gchar *wlan_disp;
+        if (wlan[0])
+            wlan_disp = g_strdup(wlan);
+        else
+            wlan_disp = g_strdup(TR("未检测到无线网卡"));
+        gtk_box_pack_start(GTK_BOX(vwf), row(TR("无线网卡"), wlan_disp), FALSE, FALSE, 0);
+        g_free(wlan_disp);
+        /* 可用网络 */
+        GtkWidget *net_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *net_l = gtk_label_new(TR("可用网络"));
+        gtk_widget_set_size_request(net_l, 150, -1);
+        gtk_widget_set_halign(net_l, GTK_ALIGN_START);
+        gchar *nets = NULL;
+        if (wlan[0]) {
+            gchar *cmd = g_strdup_printf("iw dev %s scan 2>/dev/null | grep SSID | head -5", wlan);
+            FILE *sf = popen(cmd, "r");
+            g_free(cmd);
+            if (sf) {
+                GString *list = g_string_new(NULL);
+                char buf[128];
+                while (fgets(buf, sizeof buf, sf)) {
+                    char *p = strchr(buf, ':');
+                    if (p) {
+                        p += 2;
+                        char *nl = strchr(p, '\n');
+                        if (nl) *nl = 0;
+                        g_string_append_printf(list, "%s\n", p);
+                    }
+                }
+                pclose(sf);
+                if (list->len > 0)
+                    nets = g_strchomp(g_strdup(list->str));
+                else
+                    nets = g_strdup(TR("无可用网络"));
+                g_string_free(list, TRUE);
+            } else {
+                nets = g_strdup(TR("无可用网络"));
+            }
+        } else {
+            nets = g_strdup(TR("无可用网络"));
+        }
+        GtkWidget *net_val = gtk_label_new(nets);
+        g_free(nets);
+        gtk_widget_set_halign(net_val, GTK_ALIGN_START);
+        gtk_box_pack_start(GTK_BOX(net_row), net_l, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(net_row), net_val, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vwf), net_row, FALSE, FALSE, 0);
+        /* WiFi 开关 */
+        GtkWidget *wf_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *wf_l = gtk_label_new(TR("启用 WiFi"));
+        gtk_widget_set_size_request(wf_l, 180, -1);
+        gtk_widget_set_halign(wf_l, GTK_ALIGN_START);
+        GtkWidget *wf_sw = gtk_switch_new();
+        g_wifi_loading = 1;
+        gchar *content = NULL;
+        gsize len = 0;
+        int cur_on = 0;
+        if (g_file_get_contents(WIFI_CONF, &content, &len, NULL)) {
+            char *line = content;
+            while (line && *line) {
+                if (strncmp(line, "wifi=", 5) == 0) {
+                    cur_on = strncmp(line + 5, "off", 3) != 0;
+                    break;
+                }
+                char *nl = strchr(line, '\n');
+                line = nl ? nl + 1 : NULL;
+            }
+            g_free(content);
+        }
+        const char *env_wf = g_getenv("QY_SETTINGS_WIFI");
+        if (env_wf)
+            cur_on = strcmp(env_wf, "off") != 0;
+        gtk_switch_set_active(GTK_SWITCH(wf_sw), cur_on);
+        g_signal_connect(wf_sw, "state-set", G_CALLBACK(on_wifi_toggled), NULL);
+        gtk_box_pack_start(GTK_BOX(wf_row), wf_l, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(wf_row), wf_sw, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vwf), wf_row, FALSE, FALSE, 0);
+        g_wifi_loading = 0;
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vwf, gtk_label_new(TR("WiFi")));
+        if (env_wf)
+            g_timeout_add(1900, auto_wifi_apply, NULL);
     }
 
     gtk_widget_show_all(win);
