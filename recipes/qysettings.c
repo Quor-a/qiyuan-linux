@@ -210,6 +210,76 @@ static gboolean auto_idle_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 隐私: 应用权限开关 ---------- */
+#define PERM_CONF "/etc/qyperm.conf"
+static int g_perm_loading = 0;
+
+static const char *perm_read(const char *key, const char *def) {
+    static char val[16];
+    snprintf(val, sizeof val, "%s", def);
+    FILE *f = fopen(PERM_CONF, "r");
+    if (f) {
+        char line[128];
+        while (fgets(line, sizeof line, f)) {
+            char *nl = strchr(line, '\n');
+            if (nl) *nl = 0;
+            char *eq = strchr(line, '=');
+            if (eq && strncmp(line, key, strlen(key)) == 0 &&
+                eq - line == (long)strlen(key)) {
+                snprintf(val, sizeof val, "%s", eq + 1);
+            }
+        }
+        fclose(f);
+    }
+    return val;
+}
+
+static void perm_write(const char *key, int on) {
+    gchar *content = NULL;
+    gsize len = 0;
+    g_file_get_contents(PERM_CONF, &content, &len, NULL); /* 不存在则 content=NULL */
+    GString *out = g_string_new(NULL);
+    char *line = content;
+    int replaced = 0;
+    size_t klen = strlen(key);
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+        if (strncmp(line, key, klen) == 0 && line[klen] == '=') {
+            g_string_append_printf(out, "%s=%s", key, on ? "on" : "off");
+            replaced = 1;
+        } else {
+            g_string_append_len(out, line, llen);
+        }
+        if (nl) g_string_append_c(out, '\n');
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(content);
+    if (!replaced)
+        g_string_append_printf(out, "%s=%s\n", key, on ? "on" : "off");
+    g_file_set_contents(PERM_CONF, out->str, out->len, NULL);
+    g_string_free(out, TRUE);
+}
+
+static void on_perm_toggled(GtkWidget *sw, gpointer ud) {
+    if (g_perm_loading) return;
+    const char *key = (const char *)ud;
+    perm_write(key, gtk_switch_get_active(GTK_SWITCH(sw)));
+}
+
+/* 自动化验证: QY_SETTINGS_PERM=camera:off 启动后关闭对应开关 */
+static gboolean auto_perm_apply(gpointer p) {
+    (void)p;
+    const char *env = g_getenv("QY_SETTINGS_PERM");
+    if (env) {
+        char key[64] = "", mode[16] = "";
+        if (sscanf(env, "%63[^:]:%15s", key, mode) == 2) {
+            perm_write(key, strcmp(mode, "off") != 0);
+        }
+    }
+    return G_SOURCE_REMOVE;
+}
+
 /* 日期时间标签每秒刷新 */
 static gboolean update_dt(gpointer p)
 {
@@ -707,6 +777,50 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_box_pack_start(GTK_BOX(vnet), row(TR("默认网关"), gw), FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vnet), row(TR("DNS 服务器"), dns), FALSE, FALSE, 0);
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vnet, gtk_label_new(TR("网络")));
+    }
+
+    /* 隐私页: 应用权限开关（写 /etc/qyperm.conf） */
+    {
+        static const char *perm_keys[] = {
+            "location", "camera", "microphone",
+            "notifications", "background", "filesystem"
+        };
+        static const char *perm_labels[] = {
+            "位置", "摄像头", "麦克风",
+            "通知", "后台应用", "文件系统访问"
+        };
+        GtkWidget *vpr = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vpr), 14);
+        gtk_box_pack_start(GTK_BOX(vpr), row(TR("允许应用访问"), "（写 /etc/qyperm.conf）"), FALSE, FALSE, 0);
+        g_perm_loading = 1;
+        for (int i = 0; i < 6; i++) {
+            GtkWidget *r = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+            GtkWidget *l = gtk_label_new(TR(perm_labels[i]));
+            gtk_widget_set_size_request(l, 180, -1);
+            gtk_widget_set_halign(l, GTK_ALIGN_START);
+            GtkWidget *sw = gtk_switch_new();
+            const char *cur = perm_read(perm_keys[i], "on");
+            gtk_switch_set_active(GTK_SWITCH(sw), strcmp(cur, "off") != 0);
+            g_signal_connect(sw, "state-set", G_CALLBACK(on_perm_toggled),
+                             (gpointer)perm_keys[i]);
+            /* 自动化: QY_SETTINGS_PERM=camera:off 强制关闭对应开关 */
+            const char *env = g_getenv("QY_SETTINGS_PERM");
+            if (env) {
+                char key[64] = "", mode[16] = "";
+                if (sscanf(env, "%63[^:]:%15s", key, mode) == 2 &&
+                    strcmp(key, perm_keys[i]) == 0) {
+                    gtk_switch_set_active(GTK_SWITCH(sw), strcmp(mode, "off") != 0);
+                }
+            }
+            gtk_box_pack_start(GTK_BOX(r), l, FALSE, FALSE, 0);
+            gtk_box_pack_start(GTK_BOX(r), sw, FALSE, FALSE, 0);
+            gtk_box_pack_start(GTK_BOX(vpr), r, FALSE, FALSE, 0);
+        }
+        g_perm_loading = 0;
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vpr, gtk_label_new(TR("隐私")));
+        /* 自动化验证: 启动后把配置写入文件 */
+        if (g_getenv("QY_SETTINGS_PERM"))
+            g_timeout_add(800, auto_perm_apply, NULL);
     }
 
     gtk_widget_show_all(win);

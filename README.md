@@ -1172,3 +1172,16 @@ ngs-about-v2.png`。
   显示 eth0 / 10.4.14.206 / 52:54:00:c5:aa:e6 / 网关 10.4.0.1
 
 构建产物：`qydesktop 0.1.0-99`。
+
+### 系统设置：隐私页（v0.1.0-101，2026-10 实测）
+
+按设置中心「隐私」分类需求，新增应用权限开关页（网络页之后）：
+- 6 项权限开关：位置 / 摄像头 / 麦克风 / 通知 / 后台应用 / 文件系统访问
+- 每项 GtkSwitch，切换即写 /etc/qyperm.conf（key=on/off）
+- 自动化：`QY_SETTINGS_PERM=camera:off` 启动后自动写入
+- l10n：隐私/允许应用访问/摄像头/麦克风/通知/后台应用/文件系统访问
+- 实测：`QY_SETTINGS_PAGE=12` 直达隐私页
+  （QYSETTINGS_DEBUG: set page=12 total=13），
+  6 行开关渲染正常，/etc/qyperm.conf 写入 camera=off
+
+构建产物：`qydesktop 0.1.0-101`。
