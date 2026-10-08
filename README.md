@@ -1847,3 +1847,14 @@ ngs-about-v2.png`。
 - 配合已有 ☆ 收藏按钮（去重写入 `/etc/qybookmarks.conf`），形成"收藏→管理→打开"完整闭环
 
 构建产物：`qydesktop 0.1.0-176`。
+
+### 电源管理：电池状态监控 + 低电量通知（v0.1.0-177，2026-10 实测）
+
+针对排查报告"电源管理/体验细节"：
+- **qynotifd 新增电池监控**：读取 `/sys/class/power_supply/BAT0|c/apacity` 与 `status`
+- **低电量通知**：放电状态且电量 ≤20% 时通知"电量不足：N%"，电量恢复 >20% 后重置，可再次预警
+- **无电池硬件时明确提示**：日志 `QYNOTIFDBG: battery absent`（不打扰用户，仅调试输出）
+- **自动化**：`QYNOTIF_BATTERY=1` 启动 1 秒后立即检查一次，之后每 60 秒持续监控
+- 实测：测试环境无电池 → `QYNOTIFDBG: battery absent`（持续检测正常）
+
+构建产物：`qydesktop 0.1.0-177`。

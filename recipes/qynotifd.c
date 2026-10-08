@@ -23,6 +23,50 @@ static void send_notif(const char *title, const char *msg) {
     g_free(content);
 }
 
+/* ---------- 电源/电池监控 ---------- */
+static int battery_low_notified = 0;
+
+static gboolean battery_check_cb(gpointer p) {
+    (void)p;
+    static const char *bats[] = { "/sys/class/power_supply/BAT0",
+                                  "/sys/class/power_supply/BAT1" };
+    int found = 0;
+    for (size_t i = 0; i < G_N_ELEMENTS(bats); i++) {
+        if (!g_file_test(bats[i], G_FILE_TEST_IS_DIR)) continue;
+        found = 1;
+        gchar *cap_path = g_strdup_printf("%s/capacity", bats[i]);
+        gchar *status_path = g_strdup_printf("%s/status", bats[i]);
+        gchar *cap = NULL, *status = NULL;
+        g_file_get_contents(cap_path, &cap, NULL, NULL);
+        g_file_get_contents(status_path, &status, NULL, NULL);
+        int level = cap ? atoi(g_strstrip(cap)) : -1;
+        const char *st = status ? g_strstrip(status) : "";
+        int charging = (g_ascii_strcasecmp(st, "Charging") == 0) ||
+                       (g_ascii_strcasecmp(st, "Full") == 0);
+        g_printerr("QYNOTIFDBG: battery=%d status=%s\n",
+                   level, st[0] ? st : "unknown");
+        /* 低电量通知（放电且 <=20%；恢复 >20% 后重置） */
+        if (level >= 0 && !charging) {
+            if (level <= 20) {
+                if (!battery_low_notified) {
+                    gchar *m = g_strdup_printf("电量不足：%d%%", level);
+                    send_notif("电源", m);
+                    g_free(m);
+                    battery_low_notified = 1;
+                }
+            } else {
+                battery_low_notified = 0;
+            }
+        }
+        g_free(cap); g_free(status);
+        g_free(cap_path); g_free(status_path);
+        break;
+    }
+    if (!found)
+        g_printerr("QYNOTIFDBG: battery absent\n");
+    return G_SOURCE_CONTINUE;
+}
+
 /* 读取简单键值 conf（如 qynotif.conf 的 qymon=off） */
 static gboolean conf_flag(const char *path, const char *key) {
     gchar *c = NULL;
@@ -288,6 +332,11 @@ int main(int argc, char **argv) {
 
     g_timeout_add(500, load_initial_conf, NULL);
     g_timeout_add(5000, lock_poll_cb, NULL);
+    /* 电池监控：QYNOTIF_BATTERY=1 时 1 秒后立即检查一次，否则每 60s */
+    if (g_getenv("QYNOTIF_BATTERY"))
+        g_timeout_add(1000, battery_check_cb, NULL);
+    else
+        g_timeout_add_seconds(60, battery_check_cb, NULL);
     g_printerr("qynotifd: started\n");
     g_main_loop_run(loop);
     g_object_unref(mon);
