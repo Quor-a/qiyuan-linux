@@ -1788,3 +1788,14 @@ ngs-about-v2.png`。
 - 后续应用（qyfiles/qynet/qymon 等）可复用同一助手
 
 构建产物：`qydesktop 0.1.0-170`。
+
+### Git 工具 qygit（v0.1.0-171，2026-10 实测）
+
+针对排查报告"Git 工具缺失"：
+- **内置 git 2.43**（随 qydesktop 包安装：git 二进制 + git-core 子命令 + libpcre2/libz 库 + 模板，`/usr/bin/git --version` 可用）
+- **新增 qygit Git 工具**：仓库路径 + 状态/分支/最近提交显示、刷新、提交（`git add -A && git commit -m`）、推送
+- **自动化**：`QYGIT_REPO=/root/testrepo` 启动自动显示仓库状态 → 日志 `QYGITDBG: repo=/root/testrepo status=2`（工作区 2 项改动）
+- 可拖动标题栏（复用 qy_make_titlebar）；中英双语 l10n
+- 说明：测试环境为 git 创建 `/dev/urandom` 设备节点；真机 devtmpfs 自带
+
+构建产物：`qydesktop 0.1.0-171`。
