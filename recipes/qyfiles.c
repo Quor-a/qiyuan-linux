@@ -32,6 +32,7 @@ static void add_class(GtkWidget *w, const char *cls) {
 
 /* 工具栏按钮（按 普通目录 / 回收站 切换可见性） */
 static GtkWidget *b_mk = NULL, *b_del = NULL, *b_ren = NULL;
+static GtkWidget *b_open = NULL;
 static GtkWidget *b_res = NULL, *b_pur = NULL, *b_emp = NULL;
 
 static void set_mode_buttons(void) {
@@ -40,6 +41,7 @@ static void set_mode_buttons(void) {
     gtk_widget_set_visible(b_mk, !trash);
     gtk_widget_set_visible(b_del, !trash);
     gtk_widget_set_visible(b_ren, !trash);
+    gtk_widget_set_visible(b_open, !trash);
     gtk_widget_set_visible(b_res, trash);
     gtk_widget_set_visible(b_pur, trash);
     gtk_widget_set_visible(b_emp, trash);
@@ -379,15 +381,59 @@ static void chdir_trash(void) {
     g_strlcpy(cwd, files, sizeof cwd);
 }
 
+/* 打开选中项：目录→进入；图片→qyview；文本→qyedit；其它→状态栏提示 */
+static void open_path(const char *name) {
+    if (in_trash) return;
+    gchar *full = g_build_filename(cwd, name, NULL);
+    if (g_file_test(full, G_FILE_TEST_IS_DIR)) { chdir_to(full); g_free(full); return; }
+    const char *ext = strrchr(name, '.');
+    gboolean is_img = FALSE, is_txt = FALSE;
+    if (ext) {
+        if (!g_ascii_strcasecmp(ext, ".png") || !g_ascii_strcasecmp(ext, ".jpg") ||
+            !g_ascii_strcasecmp(ext, ".jpeg") || !g_ascii_strcasecmp(ext, ".bmp") ||
+            !g_ascii_strcasecmp(ext, ".gif") || !g_ascii_strcasecmp(ext, ".webp"))
+            is_img = TRUE;
+        else if (!g_ascii_strcasecmp(ext, ".txt") || !g_ascii_strcasecmp(ext, ".c") ||
+                 !g_ascii_strcasecmp(ext, ".h") || !g_ascii_strcasecmp(ext, ".md") ||
+                 !g_ascii_strcasecmp(ext, ".sh") || !g_ascii_strcasecmp(ext, ".py") ||
+                 !g_ascii_strcasecmp(ext, ".ini") || !g_ascii_strcasecmp(ext, ".conf") ||
+                 !g_ascii_strcasecmp(ext, ".desktop") || !g_ascii_strcasecmp(ext, ".log"))
+            is_txt = TRUE;
+    }
+    if (is_img || is_txt) {
+        gchar *cmd = g_strdup_printf("%s '%s' &", is_img ? "qyview" : "qyedit", full);
+        g_spawn_command_line_async(cmd, NULL);
+        g_free(cmd);
+    } else {
+        char msg[512];
+        g_snprintf(msg, sizeof msg, "%s — %s", name, TR("暂不支持打开该类型"));
+        gtk_label_set_text(GTK_LABEL(status), msg);
+    }
+    g_free(full);
+}
+
+static void do_open_sel(GtkButton *b, gpointer ud) {
+    GtkTreeSelection *sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(view));
+    GtkTreeModel *m;
+    GtkTreeIter it;
+    if (!gtk_tree_selection_get_selected(sel, &m, &it)) {
+        gtk_label_set_text(GTK_LABEL(status), TR("请先选择一个文件"));
+        return;
+    }
+    gchar *name;
+    gtk_tree_model_get(m, &it, 1, &name, -1);
+    open_path(name);
+    g_free(name);
+}
+
 static void on_activated(GtkTreeView *tv, GtkTreePath *path, GtkTreeViewColumn *col, gpointer ud) {
     GtkTreeModel *m = gtk_tree_view_get_model(tv);
     GtkTreeIter it;
     gchar *name;
     gtk_tree_model_get_iter(m, &it, path);
     gtk_tree_model_get(m, &it, 1, &name, -1);
-    gchar *full = g_build_filename(cwd, name, NULL);
-    if (!in_trash && g_file_test(full, G_FILE_TEST_IS_DIR)) chdir_to(full);
-    g_free(name); g_free(full);
+    open_path(name);
+    g_free(name);
 }
 
 static void on_refresh(GtkButton *b, gpointer ud) {
@@ -410,7 +456,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_window_set_title(GTK_WINDOW(win), TR("启元文件管理器"));
     GdkGeometry geo = { .max_width = 1920, .max_height = 1080 };
     gtk_window_set_geometry_hints(GTK_WINDOW(win), NULL, &geo, GDK_HINT_MAX_SIZE);
-    gtk_window_set_default_size(GTK_WINDOW(win), 720, 480);
+    gtk_window_set_default_size(GTK_WINDOW(win), 920, 560);
 
     GtkWidget *hpane = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_container_add(GTK_CONTAINER(win), hpane);
@@ -459,6 +505,9 @@ static void activate(GtkApplication *app, gpointer ud) {
     b_ren = gtk_button_new_with_label(TR("重命名"));
     add_class(b_ren, "qy-btn");
     g_signal_connect(b_ren, "clicked", G_CALLBACK(do_rename), NULL);
+    b_open = gtk_button_new_with_label(TR("打开"));
+    add_class(b_open, "qy-btn");
+    g_signal_connect(b_open, "clicked", G_CALLBACK(do_open_sel), NULL);
     b_res = gtk_button_new_with_label(TR("还原"));
     add_class(b_res, "qy-btn qy-btn-danger");
     g_signal_connect(b_res, "clicked", G_CALLBACK(do_restore), NULL);
@@ -474,6 +523,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(hbox), b_mk, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_del, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_ren, FALSE, FALSE, 0);
+    gtk_box_pack_end(GTK_BOX(hbox), b_open, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_res, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_pur, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_emp, FALSE, FALSE, 0);
