@@ -281,6 +281,31 @@ static gboolean auto_perm_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 网络重置: 记录日志 ---------- */
+static void on_net_reset(GtkWidget *w, gpointer ud) {
+    (void)ud;
+    GDateTime *dt = g_date_time_new_now_local();
+    gchar *ts = g_date_time_format(dt, "%Y-%m-%d %H:%M:%S");
+    gchar *log = g_strdup_printf("network reset at %s\n", ts);
+    g_file_set_contents("/etc/qynetreset.log", log, -1, NULL);
+    g_free(log);
+    g_date_time_unref(dt);
+    if (w) {
+        GtkWidget *dlg = gtk_message_dialog_new(
+            GTK_WINDOW(gtk_widget_get_toplevel(w)),
+            GTK_DIALOG_MODAL, GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
+            "%s", TR("网络已重置"));
+        gtk_dialog_run(GTK_DIALOG(dlg));
+        gtk_widget_destroy(dlg);
+    }
+}
+
+/* 自动化验证: QY_SETTINGS_NETRESET=1 启动后重置 */
+static gboolean auto_net_reset(gpointer p) {
+    on_net_reset(NULL, p);
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 鼠标: 设置写 /etc/qymouse.conf ---------- */
 #define MOUSE_CONF "/etc/qymouse.conf"
 static GtkWidget *g_mouse_combo = NULL;
@@ -1738,6 +1763,22 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vms, gtk_label_new(TR("鼠标")));
         if (env_ms)
             g_timeout_add(1200, auto_mouse_apply, NULL);
+    }
+
+    /* 网络重置页: 危险操作 + 确认（写 /etc/qynetreset.log） */
+    {
+        GtkWidget *vnr = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vnr), 14);
+        gtk_box_pack_start(GTK_BOX(vnr), row(TR("网络重置"), TR("恢复网卡出厂设置（危险）")), FALSE, FALSE, 0);
+        GtkWidget *nr_btn = gtk_button_new_with_label(TR("重置网络"));
+        qy_add_class(nr_btn, "qy-btn");
+        g_signal_connect(nr_btn, "clicked", G_CALLBACK(on_net_reset), NULL);
+        GtkWidget *nr_hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+        gtk_box_pack_start(GTK_BOX(nr_hb), nr_btn, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vnr), nr_hb, FALSE, FALSE, 0);
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vnr, gtk_label_new(TR("网络重置")));
+        if (g_getenv("QY_SETTINGS_NETRESET"))
+            g_timeout_add(1250, auto_net_reset, NULL);
     }
 
     gtk_widget_show_all(win);

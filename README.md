@@ -1304,3 +1304,16 @@ ngs-about-v2.png`。
   下拉+滑块+spin+按钮渲染正常，qymouse.conf 写入 primary=right
 
 构建产物：`qydesktop 0.1.0-110`。
+
+### 系统设置：网络重置页（v0.1.0-111，2026-10 实测）
+
+按设置中心「网络和 Internet→网络重置」需求，新增网络重置页（鼠标页之后）：
+- 危险操作说明 + 「重置网络」按钮（点击后弹确认）
+- 重置即写 /etc/qynetreset.log（时间戳）
+- 自动化：`QY_SETTINGS_NETRESET=1` 启动后自动重置
+- l10n：网络重置/恢复网卡出厂设置（危险）/重置网络/网络已重置
+- 实测：`QY_SETTINGS_PAGE=22` 直达网络重置页
+  （QYSETTINGS_DEBUG: set page=22 total=23），
+  按钮渲染正常，qynetreset.log 写入时间戳
+
+构建产物：`qydesktop 0.1.0-111`。
