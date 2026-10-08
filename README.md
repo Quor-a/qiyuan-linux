@@ -1568,3 +1568,16 @@ ngs-about-v2.png`。
   采样 (100,100)=(49,98,200)、(1279,799)=(34,68,170)，壁纸真实生效
 
 构建产物：`qydesktop 0.1.0-133`。
+
+### 启元浏览器 qybrowser：libcurl 简易浏览器（v0.1.0-134，2026-10 实测）
+
+按「浏览器」需求，实现轻量网页查看器（chroot 无 WebKit 时用 libcurl）：
+- 地址栏输入 URL，libcurl 下载 → HTML 纯文本提取 → GtkTextView 渲染
+- 实体解码（&amp; &lt; &gt; &quot; &nbsp; &#NN;）、跳过 script/style
+- 状态栏显示 HTTP 状态码 + 字节数
+- 支持 中/英文 l10n、自动补 http://、自动化环境变量 QYBROWSER_URL
+- 应用启动器新增「浏览器」入口（🌐）
+- 实测：访问本机测试页（python http.server），
+  深色窗口 718x556 + 亮文本像素 6925（地址栏与正文渲染），下载+渲染成功
+
+构建产物：`qydesktop 0.1.0-134`。
