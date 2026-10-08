@@ -961,3 +961,13 @@ ngs-about-v2.png`。
 - l10n：`旋转 → Rotate`
 
 构建产物：`qydesktop 0.1.0-78`。
+
+### 文本编辑器：字号可调（v0.1.0-79，2026-10 实测）
+
+- 支持环境变量 `QYEDIT_FONT_SIZE` 设置正文字号（如 20 → monospace 20）
+- 实现：`pango_font_description_from_string("monospace N")` + override_font
+- 实测：默认正文字行高约 12px；`QYEDIT_FONT_SIZE=20` 时行高增至约 20px，
+  10 行英文测试文件渲染正常
+- 应用场景：后续可扩展为工具栏字号按钮/快捷键
+
+构建产物：`qydesktop 0.1.0-79`。

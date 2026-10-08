@@ -133,6 +133,18 @@ int main(int argc, char **argv) {
 
     text_view = gtk_text_view_new();
     gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(text_view), GTK_WRAP_WORD_CHAR);
+    /* 支持环境变量 QYEDIT_FONT_SIZE 调整正文字号（自动化验证用） */
+    {
+        const char *fs = getenv("QYEDIT_FONT_SIZE");
+        int sz = fs ? atoi(fs) : 0;
+        if (sz > 0) {
+            gchar *desc = g_strdup_printf("monospace %d", sz);
+            PangoFontDescription *fd = pango_font_description_from_string(desc);
+            gtk_widget_override_font(text_view, fd);
+            pango_font_description_free(fd);
+            g_free(desc);
+        }
+    }
     GtkWidget *scroll = gtk_scrolled_window_new(NULL, NULL);
     gtk_container_add(GTK_CONTAINER(scroll), text_view);
     gtk_box_pack_start(GTK_BOX(vbox), scroll, TRUE, TRUE, 0);
