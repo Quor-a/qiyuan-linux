@@ -280,6 +280,72 @@ static gboolean auto_perm_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 防火墙: 开关 ---------- */
+#define FIREWALL_CONF "/etc/qyfirewall.conf"
+
+static void on_firewall_toggled(GtkWidget *sw, gpointer ud) {
+    (void)ud;
+    int on = gtk_switch_get_active(GTK_SWITCH(sw));
+    gchar *content = NULL;
+    gsize len = 0;
+    g_file_get_contents(FIREWALL_CONF, &content, &len, NULL);
+    GString *out = g_string_new(NULL);
+    char *line = content;
+    int replaced = 0;
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+        if (strncmp(line, "firewall=", 10) == 0) {
+            g_string_append_printf(out, "firewall=%s", on ? "on" : "off");
+            replaced = 1;
+        } else {
+            g_string_append_len(out, line, llen);
+        }
+        if (nl) g_string_append_c(out, '\n');
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(content);
+    if (!replaced)
+        g_string_append_printf(out, "firewall=%s\n", on ? "on" : "off");
+    g_file_set_contents(FIREWALL_CONF, out->str, out->len, NULL);
+    g_string_free(out, TRUE);
+}
+
+/* 自动化验证: QY_SETTINGS_FIREWALL=on 启动后开启 */
+static gboolean auto_firewall_apply(gpointer p) {
+    (void)p;
+    const char *env = g_getenv("QY_SETTINGS_FIREWALL");
+    if (env) {
+        gchar *content = NULL;
+        gsize len = 0;
+        g_file_get_contents(FIREWALL_CONF, &content, &len, NULL);
+        GString *out = g_string_new(NULL);
+        if (content) g_string_append(out, content);
+        g_free(content);
+        if (strstr(out->str, "firewall=")) {
+            GString *tmp = g_string_new(NULL);
+            char *line = out->str;
+            while (line && *line) {
+                char *nl = strchr(line, '\n');
+                size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+                if (strncmp(line, "firewall=", 10) == 0)
+                    g_string_append_printf(tmp, "firewall=%s", strcmp(env, "on") == 0 ? "on" : "off");
+                else
+                    g_string_append_len(tmp, line, llen);
+                if (nl) g_string_append_c(tmp, '\n');
+                line = nl ? nl + 1 : NULL;
+            }
+            g_string_free(out, TRUE);
+            out = tmp;
+        } else {
+            g_string_append_printf(out, "firewall=%s\n", strcmp(env, "on") == 0 ? "on" : "off");
+        }
+        g_file_set_contents(FIREWALL_CONF, out->str, out->len, NULL);
+        g_string_free(out, TRUE);
+    }
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 通知: 应用通知开关 ---------- */
 #define NOTIF_CONF "/etc/qynotif.conf"
 static int g_notif_loading = 0;
@@ -1112,6 +1178,52 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vno, gtk_label_new(TR("通知")));
         if (g_getenv("QY_SETTINGS_NOTIF"))
             g_timeout_add(950, auto_notif_apply, NULL);
+    }
+
+    /* 防火墙页: 状态 + 开关（写 /etc/qyfirewall.conf） */
+    {
+        GtkWidget *vfw = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vfw), 14);
+        int rules = -1;
+        FILE *it = popen("iptables -L -n 2>/dev/null | grep -vc '^Chain\\|^$\\|^target'", "r");
+        if (it) {
+            char buf[32];
+            if (fgets(buf, sizeof buf, it))
+                rules = atoi(buf);
+            pclose(it);
+        }
+        gchar *fw_status;
+        if (rules >= 0)
+            fw_status = g_strdup_printf(TR("防火墙规则 %d 条"), rules);
+        else
+            fw_status = g_strdup_printf("%s", TR("未检测到 iptables"));
+        gtk_box_pack_start(GTK_BOX(vfw), row(TR("防火墙状态"), fw_status), FALSE, FALSE, 0);
+        g_free(fw_status);
+        GtkWidget *fw_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *fw_l = gtk_label_new(TR("启用防火墙"));
+        gtk_widget_set_size_request(fw_l, 180, -1);
+        gtk_widget_set_halign(fw_l, GTK_ALIGN_START);
+        GtkWidget *fw_sw = gtk_switch_new();
+        FILE *fwf = fopen(FIREWALL_CONF, "r");
+        int fw_on = 0;
+        if (fwf) {
+            char line[64];
+            while (fgets(line, sizeof line, fwf))
+                if (strncmp(line, "firewall=", 10) == 0)
+                    fw_on = strncmp(line + 10, "on", 2) == 0;
+            fclose(fwf);
+        }
+        gtk_switch_set_active(GTK_SWITCH(fw_sw), fw_on);
+        const char *env_fw = g_getenv("QY_SETTINGS_FIREWALL");
+        if (env_fw)
+            gtk_switch_set_active(GTK_SWITCH(fw_sw), strcmp(env_fw, "on") == 0);
+        g_signal_connect(fw_sw, "state-set", G_CALLBACK(on_firewall_toggled), NULL);
+        gtk_box_pack_start(GTK_BOX(fw_row), fw_l, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(fw_row), fw_sw, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vfw), fw_row, FALSE, FALSE, 0);
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vfw, gtk_label_new(TR("防火墙")));
+        if (env_fw)
+            g_timeout_add(1000, auto_firewall_apply, NULL);
     }
 
     gtk_widget_show_all(win);

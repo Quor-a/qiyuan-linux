@@ -1223,3 +1223,16 @@ ngs-about-v2.png`。
   6 行开关渲染正常，/etc/qynotif.conf 写入 qymon=off
 
 构建产物：`qydesktop 0.1.0-104`。
+
+### 系统设置：防火墙页（v0.1.0-105，2026-10 实测）
+
+按设置中心「网络和 Internet→防火墙」需求，新增防火墙页（通知页之后）：
+- 防火墙状态：iptables -L -n 实时统计规则条数（无 iptables 则提示）
+- 「启用防火墙」GtkSwitch，切换即写 /etc/qyfirewall.conf（firewall=on/off）
+- 自动化：`QY_SETTINGS_FIREWALL=on` 启动后自动开启
+- l10n：防火墙/防火墙状态/防火墙规则 %d 条/未检测到 iptables/启用防火墙
+- 实测：`QY_SETTINGS_PAGE=16` 直达防火墙页
+  （QYSETTINGS_DEBUG: set page=16 total=17），
+  状态+开关渲染正常，/etc/qyfirewall.conf 写入 firewall=on
+
+构建产物：`qydesktop 0.1.0-105`。
