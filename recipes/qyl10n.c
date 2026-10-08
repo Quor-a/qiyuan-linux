@@ -75,6 +75,10 @@ static const pair tbl[] = {
     { "主机名", "Hostname" },
     { "确认密码", "Confirm Password" },
     { "时区", "Timezone" },
+    { "日期时间", "Date & Time" },
+    { "NTP 时间同步", "NTP sync" },
+    { "可用（已安装服务）", "Available" },
+    { "未安装", "Not installed" },
     { "完成配置", "Finish Setup" },
     /* 监视 */
     { "CPU", "CPU" },

@@ -5,6 +5,7 @@
 #include <sys/utsname.h>
 #include <sys/sysinfo.h>
 #include <unistd.h>
+#include <time.h>
 
 /* ---------- 语言页回调 ---------- */
 /* 同步 weston 顶栏时钟格式（顶栏由 weston 补丁渲染，读 weston.ini 的
@@ -126,6 +127,20 @@ static void launch_app(GtkButton *b, gpointer cmd) {
     char buf[128];
     g_snprintf(buf, sizeof buf, "%s &", (const char *)cmd);
     g_spawn_command_line_async(buf, NULL);
+}
+
+/* 日期时间标签每秒刷新 */
+static gboolean update_dt(gpointer p)
+{
+    GtkWidget *l = (GtkWidget *)p;
+    if (!l) return G_SOURCE_REMOVE;
+    time_t t = time(NULL);
+    struct tm *tm = localtime(&t);
+    if (!tm) return G_SOURCE_CONTINUE;
+    char buf[64];
+    strftime(buf, sizeof buf, "%Y-%m-%d %H:%M:%S", tm);
+    gtk_label_set_text(GTK_LABEL(l), buf);
+    return G_SOURCE_CONTINUE;
 }
 
 static void activate(GtkApplication *app, gpointer ud) {
@@ -270,6 +285,47 @@ static void activate(GtkApplication *app, gpointer ud) {
     }
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), v6, gtk_label_new(TR("亮度")));
 
+    /* 日期时间（每秒刷新） */
+    GtkWidget *vdt = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
+    gtk_container_set_border_width(GTK_CONTAINER(vdt), 16);
+    GtkWidget *dt_label = gtk_label_new(NULL);
+    gtk_widget_set_halign(dt_label, GTK_ALIGN_START);
+    gtk_label_set_xalign(GTK_LABEL(dt_label), 0.0);
+    gtk_box_pack_start(GTK_BOX(vdt), dt_label, FALSE, FALSE, 0);
+    /* 时区: /etc/timezone 内容（缺失时回退 UTC） */
+    {
+        char tz[128] = "UTC";
+        FILE *tzf = fopen("/etc/timezone", "r");
+        if (tzf) {
+            if (fgets(tz, sizeof tz, tzf)) {
+                char *nl = strchr(tz, '\n');
+                if (nl) *nl = 0;
+            }
+            fclose(tzf);
+        }
+        gchar *tzl = g_strdup_printf("%s: %s", TR("时区"), tz);
+        GtkWidget *l = gtk_label_new(tzl);
+        gtk_widget_set_halign(l, GTK_ALIGN_START);
+        gtk_box_pack_start(GTK_BOX(vdt), l, FALSE, FALSE, 0);
+        g_free(tzl);
+    }
+    /* NTP 状态: 探测 chrony/ntpd/systemd-timesyncd 任一启用 */
+    {
+        gboolean ntp = FALSE;
+        const char *probes[] = { "/usr/sbin/chronyd", "/usr/sbin/ntpd",
+                                 "/usr/lib/systemd/systemd-timesyncd" };
+        for (unsigned i = 0; i < G_N_ELEMENTS(probes); i++) {
+            if (access(probes[i], X_OK) == 0) { ntp = TRUE; break; }
+        }
+        GtkWidget *l = gtk_label_new(TR("NTP 时间同步"));
+        gtk_widget_set_halign(l, GTK_ALIGN_START);
+        GtkWidget *s = gtk_label_new(ntp ? TR("可用（已安装服务）") : TR("未安装"));
+        gtk_widget_set_halign(s, GTK_ALIGN_START);
+        gtk_box_pack_start(GTK_BOX(vdt), l, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vdt), s, FALSE, FALSE, 0);
+    }
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), vdt, gtk_label_new(TR("日期时间")));
+
     /* 语言 */
     GtkWidget *vlang = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
     gtk_container_set_border_width(GTK_CONTAINER(vlang), 16);
@@ -307,6 +363,9 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), vlang, gtk_label_new(TR("语言")));
 
     gtk_widget_show_all(win);
+
+    /* 日期时间每秒刷新 */
+    g_timeout_add_seconds(1, update_dt, dt_label);
 
     /* 环境变量 QY_SETTINGS_PAGE=N 直达标签页（默认 0=关于） */
     const char *pg = g_getenv("QY_SETTINGS_PAGE");

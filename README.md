@@ -1051,3 +1051,16 @@ ngs-about-v2.png`。
 - 注意：测试环境需以 root 启动 Xvfb（否则 x11shm 失败、weston 起不来）
 
 构建产物：`qydesktop 0.1.0-88`。
+
+### 系统设置：日期时间页（v0.1.0-89，2026-10 实测）
+
+- 新增「日期时间」设置页（语言页之前，索引 6）：
+  - 大号当前日期时间（`%Y-%m-%d %H:%M:%S`，每秒刷新）
+  - 时区（读 /etc/timezone）
+  - NTP 状态（探测 chronyd/ntpd/systemd-timesyncd 是否安装）
+- l10n：`日期时间 → Date & Time`、`NTP 时间同步 → NTP sync` 等
+- 实测：`QY_SETTINGS_PAGE=6` 直达该页（`QYSETTINGS_DEBUG: set page=6 total=8`），
+  日期时间数字、时区、NTP 状态三行渲染正常
+- 页签总数 7→8（关于/显示/字体/服务/声音/亮度/日期时间/语言）
+
+构建产物：`qydesktop 0.1.0-89`。
