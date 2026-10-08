@@ -281,6 +281,65 @@ static gboolean auto_perm_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 窗口行为: 开关+动作写 /etc/qywinbehavior.conf ---------- */
+#define WIN_CONF "/etc/qywinbehavior.conf"
+static int g_win_loading = 0;
+static GtkWidget *g_win_combo = NULL;
+
+static void win_write(const char *key, const char *val) {
+    gchar *content = NULL;
+    gsize len = 0;
+    g_file_get_contents(WIN_CONF, &content, &len, NULL);
+    GString *out = g_string_new(NULL);
+    char *line = content;
+    int replaced = 0;
+    size_t klen = strlen(key);
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+        if (strncmp(line, key, klen) == 0 && line[klen] == '=') {
+            g_string_append_printf(out, "%s=%s", key, val);
+            replaced = 1;
+        } else {
+            g_string_append_len(out, line, llen);
+        }
+        if (nl) g_string_append_c(out, '\n');
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(content);
+    if (!replaced)
+        g_string_append_printf(out, "%s=%s\n", key, val);
+    g_file_set_contents(WIN_CONF, out->str, out->len, NULL);
+    g_string_free(out, TRUE);
+}
+
+static void on_win_toggled(GtkWidget *sw, gpointer ud) {
+    if (g_win_loading) return;
+    const char *key = (const char *)ud;
+    win_write(key, gtk_switch_get_active(GTK_SWITCH(sw)) ? "on" : "off");
+}
+
+static void on_win_action_apply(GtkWidget *w, gpointer ud) {
+    (void)w; (void)ud;
+    const char *actions[] = { "maximize", "shade" };
+    int act = gtk_combo_box_get_active(GTK_COMBO_BOX(g_win_combo));
+    if (act < 0) act = 0;
+    if (act > 1) act = 1;
+    win_write("dblclick", actions[act]);
+}
+
+/* 自动化验证: QY_SETTINGS_WIN=drag:off 启动后写入 */
+static gboolean auto_win_apply(gpointer p) {
+    (void)p;
+    const char *env = g_getenv("QY_SETTINGS_WIN");
+    if (env) {
+        char key[64] = "", mode[16] = "";
+        if (sscanf(env, "%63[^:]:%15s", key, mode) == 2)
+            win_write(key, strcmp(mode, "off") == 0 ? "off" : "on");
+    }
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- WiFi: 开关写 /etc/qywifi.conf ---------- */
 #define WIFI_CONF "/etc/qywifi.conf"
 static int g_wifi_loading = 0;
@@ -3094,6 +3153,72 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vwf, gtk_label_new(TR("WiFi")));
         if (env_wf)
             g_timeout_add(1900, auto_wifi_apply, NULL);
+    }
+
+    /* 窗口行为页: 拖动/贴靠/双击动作（写 /etc/qywinbehavior.conf） */
+    {
+        GtkWidget *vwb = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vwb), 14);
+        gtk_box_pack_start(GTK_BOX(vwb), row(TR("窗口行为"), TR("窗口拖动与贴靠设置")), FALSE, FALSE, 0);
+        g_win_loading = 1;
+        static const char *win_keys[] = { "drag", "snap" };
+        static const char *win_labels[] = { "自由拖动窗口", "边缘贴靠" };
+        for (int i = 0; i < 2; i++) {
+            GtkWidget *r = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+            GtkWidget *l = gtk_label_new(TR(win_labels[i]));
+            gtk_widget_set_size_request(l, 180, -1);
+            gtk_widget_set_halign(l, GTK_ALIGN_START);
+            GtkWidget *sw = gtk_switch_new();
+            gchar *content = NULL;
+            gsize len = 0;
+            int cur_on = 1;
+            if (g_file_get_contents(WIN_CONF, &content, &len, NULL)) {
+                char *line = content;
+                size_t klen = strlen(win_keys[i]);
+                while (line && *line) {
+                    if (strncmp(line, win_keys[i], klen) == 0 && line[klen] == '=') {
+                        cur_on = strncmp(line + klen + 1, "off", 3) != 0;
+                        break;
+                    }
+                    char *nl = strchr(line, '\n');
+                    line = nl ? nl + 1 : NULL;
+                }
+                g_free(content);
+            }
+            const char *env_wb = g_getenv("QY_SETTINGS_WIN");
+            if (env_wb) {
+                char key[64] = "", mode[16] = "";
+                if (sscanf(env_wb, "%63[^:]:%15s", key, mode) == 2 &&
+                    strcmp(key, win_keys[i]) == 0) {
+                    cur_on = strcmp(mode, "off") != 0;
+                }
+            }
+            gtk_switch_set_active(GTK_SWITCH(sw), cur_on);
+            g_signal_connect(sw, "state-set", G_CALLBACK(on_win_toggled),
+                             (gpointer)win_keys[i]);
+            gtk_box_pack_start(GTK_BOX(r), l, FALSE, FALSE, 0);
+            gtk_box_pack_start(GTK_BOX(r), sw, FALSE, FALSE, 0);
+            gtk_box_pack_start(GTK_BOX(vwb), r, FALSE, FALSE, 0);
+        }
+        g_win_loading = 0;
+        GtkWidget *dc_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *dc_l = gtk_label_new(TR("双击标题栏动作"));
+        gtk_widget_set_size_request(dc_l, 180, -1);
+        gtk_widget_set_halign(dc_l, GTK_ALIGN_START);
+        g_win_combo = gtk_combo_box_text_new();
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(g_win_combo), TR("最大化"));
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(g_win_combo), TR("卷起"));
+        gtk_combo_box_set_active(GTK_COMBO_BOX(g_win_combo), 0);
+        GtkWidget *dc_btn = gtk_button_new_with_label(TR("应用"));
+        qy_add_class(dc_btn, "qy-btn");
+        g_signal_connect(dc_btn, "clicked", G_CALLBACK(on_win_action_apply), NULL);
+        gtk_box_pack_start(GTK_BOX(dc_row), dc_l, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(dc_row), g_win_combo, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(dc_row), dc_btn, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vwb), dc_row, FALSE, FALSE, 0);
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vwb, gtk_label_new(TR("窗口行为")));
+        if (g_getenv("QY_SETTINGS_WIN"))
+            g_timeout_add(1950, auto_win_apply, NULL);
     }
 
     gtk_widget_show_all(win);

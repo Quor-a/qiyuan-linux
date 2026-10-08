@@ -1490,3 +1490,17 @@ ngs-about-v2.png`。
   网卡+网络+开关渲染正常，qywifi.conf 写入 wifi=off
 
 构建产物：`qydesktop 0.1.0-124`。
+
+### 系统设置：窗口行为页（v0.1.0-125，2026-10 实测）
+
+按「窗口自由拉动」需求，新增窗口行为页（WiFi 页之后）：
+- 「自由拖动窗口」开关 + 「边缘贴靠」开关
+- 「双击标题栏动作」下拉：最大化/卷起 + 应用按钮
+- 每项切换即写 /etc/qywinbehavior.conf（drag/snap/dblclick）
+- 自动化：`QY_SETTINGS_WIN=drag:off` 启动后自动写入
+- l10n：窗口行为/窗口拖动与贴靠设置/自由拖动窗口/边缘贴靠/双击标题栏动作/最大化/卷起
+- 实测：`QY_SETTINGS_PAGE=36` 直达窗口行为页
+  （QYSETTINGS_DEBUG: set page=36 total=37），
+  2 开关+下拉+按钮渲染正常，qywinbehavior.conf 写入 drag=off
+
+构建产物：`qydesktop 0.1.0-125`。
