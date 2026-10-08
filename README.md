@@ -1108,3 +1108,15 @@ ngs-about-v2.png`。
   eth0（UP，10.4.14.206）两行，数据与 ip 命令一致
 
 构建产物：`qydesktop 0.1.0-93`。
+
+### 系统设置：驱动页（v0.1.0-94，2026-10 实测）
+
+用户反馈桌面缺驱动管理入口，新增「驱动」设置页（语言页之后）：
+- 读取 /proc/modules 已加载内核模块：模块名 / 大小 / 被引用数
+- 只读等宽文本视图 + 滚动，直接反映系统驱动加载情况
+- l10n：驱动/已加载内核模块 %d 个/无已加载模块
+- 实测：`QY_SETTINGS_PAGE=8` 直达驱动页
+  （QYSETTINGS_DEBUG: set page=8 total=9），
+  显示 tcp_diag/inet_diag/qrtr/tls/cfg80211 等模块
+
+构建产物：`qydesktop 0.1.0-94`。

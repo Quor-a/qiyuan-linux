@@ -362,6 +362,39 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(vlang), gtk_label_new(TR("切换后重新启动生效 / Takes effect after reboot")), FALSE, FALSE, 0);
     gtk_notebook_append_page(GTK_NOTEBOOK(nb), vlang, gtk_label_new(TR("语言")));
 
+    /* 驱动页: 已加载内核模块 (/proc/modules) */
+    {
+        GtkWidget *vdrv = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        GtkWidget *drv_text = gtk_text_view_new();
+        gtk_text_view_set_editable(GTK_TEXT_VIEW(drv_text), FALSE);
+        gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(drv_text), GTK_WRAP_NONE);
+        GtkTextBuffer *db = gtk_text_view_get_buffer(GTK_TEXT_VIEW(drv_text));
+        GtkWidget *drv_sw = gtk_scrolled_window_new(NULL, NULL);
+        gtk_container_add(GTK_CONTAINER(drv_sw), drv_text);
+        gtk_box_pack_start(GTK_BOX(vdrv), drv_sw, TRUE, TRUE, 0);
+        FILE *mf = fopen("/proc/modules", "r");
+        GString *s = g_string_new(NULL);
+        char line[1024];
+        int nm = 0;
+        if (mf) {
+            while (fgets(line, sizeof line, mf)) {
+                char name[128] = ""; unsigned long sz = 0; int refs = 0;
+                if (sscanf(line, "%127s %lu %d", name, &sz, &refs) == 3) {
+                    g_string_append_printf(s, "%s  %lu KB  refs=%d\n",
+                                           name, sz / 1024, refs);
+                    nm++;
+                }
+            }
+            fclose(mf);
+        }
+        if (!nm) g_string_append(s, TR("无已加载模块"));
+        gchar *txt = g_strdup_printf(TR("已加载内核模块 %d 个：\n\n%s"), nm, s->str);
+        gtk_text_buffer_set_text(db, txt, -1);
+        g_free(txt);
+        g_string_free(s, TRUE);
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vdrv, gtk_label_new(TR("驱动")));
+    }
+
     gtk_widget_show_all(win);
 
     /* 日期时间每秒刷新 */

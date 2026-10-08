@@ -40,6 +40,9 @@ static const pair tbl[] = {
     { "简体中文", "Simplified Chinese" },
     { "当前语言", "Current language" },
     { "English", "English" },
+    { "驱动", "Drivers" },
+    { "已加载内核模块 %d 个：", "Loaded kernel modules: %d" },
+    { "无已加载模块", "No kernel modules loaded" },
     /* 编辑器/查看器 */
     { "打开", "Open" },
     { "保存", "Save" },
