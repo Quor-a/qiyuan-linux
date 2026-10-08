@@ -1331,3 +1331,16 @@ ngs-about-v2.png`。
   输出行+下拉+按钮渲染正常，qydisplay.conf 写入 layout=mirror
 
 构建产物：`qydesktop 0.1.0-112`。
+
+### 系统设置：蓝牙页（v0.1.0-113，2026-10 实测）
+
+按设置中心「设备→蓝牙和其他设备」需求，新增蓝牙页（多显示器页之后）：
+- 「蓝牙」GtkSwitch，切换即写 /etc/qybluetooth.conf（bluetooth=on/off）
+- 适配器检测：/sys/class/bluetooth 枚举 hciX；无则提示
+- 自动化：`QY_SETTINGS_BT=off` 启动后自动关闭
+- l10n：蓝牙/未检测到蓝牙适配器
+- 实测：`QY_SETTINGS_PAGE=24` 直达蓝牙页
+  （QYSETTINGS_DEBUG: set page=24 total=25），
+  开关+提示渲染正常，qybluetooth.conf 写入 bluetooth=off
+
+构建产物：`qydesktop 0.1.0-113`。

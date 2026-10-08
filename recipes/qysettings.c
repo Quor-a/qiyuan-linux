@@ -281,6 +281,50 @@ static gboolean auto_perm_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 蓝牙: 开关写 /etc/qybluetooth.conf ---------- */
+#define BT_CONF "/etc/qybluetooth.conf"
+static int g_bt_loading = 0;
+
+static void bt_write(int on) {
+    gchar *content = NULL;
+    gsize len = 0;
+    g_file_get_contents(BT_CONF, &content, &len, NULL);
+    GString *out = g_string_new(NULL);
+    char *line = content;
+    int replaced = 0;
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+        if (strncmp(line, "bluetooth=", 11) == 0) {
+            g_string_append_printf(out, "bluetooth=%s", on ? "on" : "off");
+            replaced = 1;
+        } else {
+            g_string_append_len(out, line, llen);
+        }
+        if (nl) g_string_append_c(out, '\n');
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(content);
+    if (!replaced)
+        g_string_append_printf(out, "bluetooth=%s\n", on ? "on" : "off");
+    g_file_set_contents(BT_CONF, out->str, out->len, NULL);
+    g_string_free(out, TRUE);
+}
+
+static void on_bt_toggled(GtkWidget *sw, gpointer ud) {
+    if (g_bt_loading) return;
+    (void)ud;
+    bt_write(gtk_switch_get_active(GTK_SWITCH(sw)));
+}
+
+/* 自动化验证: QY_SETTINGS_BT=off 启动后关闭 */
+static gboolean auto_bt_apply(gpointer p) {
+    (void)p;
+    const char *env = g_getenv("QY_SETTINGS_BT");
+    if (env) bt_write(strcmp(env, "off") == 0 ? 0 : 1);
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 多显示器: 布局写 /etc/qydisplay.conf ---------- */
 #define DISPLAY_CONF "/etc/qydisplay.conf"
 static GtkWidget *g_disp_combo = NULL;
@@ -1871,6 +1915,66 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vd, gtk_label_new(TR("多显示器")));
         if (g_getenv("QY_SETTINGS_DISPLAY"))
             g_timeout_add(1300, auto_display_apply, NULL);
+    }
+
+    /* 蓝牙页: 开关 + 适配器检测（写 /etc/qybluetooth.conf） */
+    {
+        GtkWidget *vbt = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vbt), 14);
+        GtkWidget *bt_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *bt_l = gtk_label_new(TR("蓝牙"));
+        gtk_widget_set_size_request(bt_l, 180, -1);
+        gtk_widget_set_halign(bt_l, GTK_ALIGN_START);
+        GtkWidget *bt_sw = gtk_switch_new();
+        g_bt_loading = 1;
+        gchar *content = NULL;
+        gsize len = 0;
+        int cur_on = 0;
+        if (g_file_get_contents(BT_CONF, &content, &len, NULL)) {
+            char *line = content;
+            while (line && *line) {
+                if (strncmp(line, "bluetooth=", 11) == 0) {
+                    cur_on = strncmp(line + 11, "off", 3) != 0;
+                    break;
+                }
+                char *nl = strchr(line, '\n');
+                line = nl ? nl + 1 : NULL;
+            }
+            g_free(content);
+        }
+        const char *env_bt = g_getenv("QY_SETTINGS_BT");
+        if (env_bt)
+            cur_on = strcmp(env_bt, "off") != 0;
+        gtk_switch_set_active(GTK_SWITCH(bt_sw), cur_on);
+        g_signal_connect(bt_sw, "state-set", G_CALLBACK(on_bt_toggled), NULL);
+        gtk_box_pack_start(GTK_BOX(bt_row), bt_l, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(bt_row), bt_sw, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vbt), bt_row, FALSE, FALSE, 0);
+        g_bt_loading = 0;
+        int n = 0;
+        DIR *btd = opendir("/sys/class/bluetooth");
+        if (btd) {
+            struct dirent *de;
+            while ((de = readdir(btd))) {
+                if (strncmp(de->d_name, "hci", 3) == 0) {
+                    gchar *txt = g_strdup_printf("🖥 %s", de->d_name);
+                    GtkWidget *bl = gtk_label_new(txt);
+                    gtk_widget_set_halign(bl, GTK_ALIGN_START);
+                    gtk_box_pack_start(GTK_BOX(vbt), bl, FALSE, FALSE, 0);
+                    g_free(txt);
+                    n++;
+                }
+            }
+            closedir(btd);
+        }
+        if (n == 0) {
+            GtkWidget *empty = gtk_label_new(TR("未检测到蓝牙适配器"));
+            gtk_widget_set_halign(empty, GTK_ALIGN_START);
+            gtk_box_pack_start(GTK_BOX(vbt), empty, FALSE, FALSE, 0);
+        }
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vbt, gtk_label_new(TR("蓝牙")));
+        if (env_bt)
+            g_timeout_add(1350, auto_bt_apply, NULL);
     }
 
     gtk_widget_show_all(win);

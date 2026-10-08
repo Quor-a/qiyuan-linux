@@ -293,6 +293,8 @@ static const pair tbl[] = {
     { "多显示器模式", "Multi-display mode" },
     { "扩展桌面", "Extend" },
     { "复制屏幕", "Mirror" },
+    { "蓝牙", "Bluetooth" },
+    { "未检测到蓝牙适配器", "No Bluetooth adapter detected" },
     { "设备管理", "Devices" },
     { "请先在列表中选择目标磁盘", "Select a target disk first" },
     { "输出音量 (Master)", "Master volume" },
