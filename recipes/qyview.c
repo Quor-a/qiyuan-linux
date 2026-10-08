@@ -6,6 +6,7 @@
 #include <gtk/gtk.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <string.h>
+#include <sys/stat.h>
 #include <glib/gstdio.h>
 #include "qytheme.h"
 #include "qyl10n.h"
@@ -24,6 +25,7 @@ static GtkWidget *page_label = NULL;   /* 底部页码标签 */
 static GtkWindow *g_win = NULL;        /* 主窗口: 标题显示当前文件名 */
 static gchar *current_path = NULL;     /* 当前图片完整路径（保存用） */
 static GtkWidget *save_status = NULL;  /* 底部保存结果提示 */
+static GtkWidget *image_info = NULL;   /* 底部图片尺寸/格式/大小信息 */
 
 static const char *IMG_EXT[] = {".png",".jpg",".jpeg",".bmp",".gif",".webp",".xpm", NULL};
 
@@ -68,6 +70,20 @@ static gboolean load_path(const char *path) {
     g_free(current_path);
     current_path = g_strdup(path);
     zoom = 1.0; pan_x = pan_y = 0;
+    /* 底部显示图片尺寸/格式/大小 */
+    if (image_info) {
+        int iw = gdk_pixbuf_get_width(pix);
+        int ih = gdk_pixbuf_get_height(pix);
+        const char *ext = strrchr(path, '.');
+        const char *fmt = ext ? ext + 1 : "?";
+        struct stat st;
+        long sz = 0;
+        if (stat(path, &st) == 0) sz = st.st_size;
+        gchar *info = g_strdup_printf("%d×%d %s · %ld KB",
+                                      iw, ih, fmt, sz / 1024);
+        gtk_label_set_text(GTK_LABEL(image_info), info);
+        g_free(info);
+    }
     return TRUE;
 }
 
@@ -258,10 +274,13 @@ static void activate(GtkApplication *app, gpointer ud) {
     add_class(b_save, "qy-view-nav-btn");
     save_status = gtk_label_new("");
     add_class(save_status, "qy-view-nav-label");
+    image_info = gtk_label_new("");
+    add_class(image_info, "qy-view-nav-label");
     gtk_box_pack_start(GTK_BOX(nav), b_prev, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(nav), b_save, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(nav), save_status, FALSE, FALSE, 0);
     gtk_box_set_center_widget(GTK_BOX(nav), page_label);
+    gtk_box_pack_end(GTK_BOX(nav), image_info, FALSE, FALSE, 0);
     gtk_box_pack_end(GTK_BOX(nav), b_next, FALSE, FALSE, 0);
     gtk_box_pack_end(GTK_BOX(nav), b_fit, FALSE, FALSE, 0);
     gtk_box_pack_end(GTK_BOX(nav), b_rot, FALSE, FALSE, 0);
