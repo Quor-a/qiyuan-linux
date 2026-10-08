@@ -1371,3 +1371,16 @@ ngs-about-v2.png`。
   显卡行+下拉+按钮渲染正常，qygraphics.conf 写入 mode=performance
 
 构建产物：`qydesktop 0.1.0-115`。
+
+### 系统设置：远程桌面页（v0.1.0-116，2026-10 实测）
+
+按设置中心「系统→远程桌面」需求，新增远程桌面页（图形页之后）：
+- 「远程桌面」说明 + 「端口」3389
+- 「启用远程桌面」GtkSwitch，切换即写 /etc/qyremotedesktop.conf
+- 自动化：`QY_SETTINGS_RDP=off` 启动后自动关闭
+- l10n：远程桌面/允许远程连接到这台电脑/端口/启用远程桌面
+- 实测：`QY_SETTINGS_PAGE=27` 直达远程桌面页
+  （QYSETTINGS_DEBUG: set page=27 total=28），
+  说明+端口+开关渲染正常，qyremotedesktop.conf 写入 rdp=off
+
+构建产物：`qydesktop 0.1.0-116`。

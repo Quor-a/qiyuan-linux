@@ -281,6 +281,50 @@ static gboolean auto_perm_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 远程桌面: 开关写 /etc/qyremotedesktop.conf ---------- */
+#define RDP_CONF "/etc/qyremotedesktop.conf"
+static int g_rdp_loading = 0;
+
+static void rdp_write(int on) {
+    gchar *content = NULL;
+    gsize len = 0;
+    g_file_get_contents(RDP_CONF, &content, &len, NULL);
+    GString *out = g_string_new(NULL);
+    char *line = content;
+    int replaced = 0;
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+        if (strncmp(line, "rdp=", 4) == 0) {
+            g_string_append_printf(out, "rdp=%s", on ? "on" : "off");
+            replaced = 1;
+        } else {
+            g_string_append_len(out, line, llen);
+        }
+        if (nl) g_string_append_c(out, '\n');
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(content);
+    if (!replaced)
+        g_string_append_printf(out, "rdp=%s\n", on ? "on" : "off");
+    g_file_set_contents(RDP_CONF, out->str, out->len, NULL);
+    g_string_free(out, TRUE);
+}
+
+static void on_rdp_toggled(GtkWidget *sw, gpointer ud) {
+    if (g_rdp_loading) return;
+    (void)ud;
+    rdp_write(gtk_switch_get_active(GTK_SWITCH(sw)));
+}
+
+/* 自动化验证: QY_SETTINGS_RDP=off 启动后关闭 */
+static gboolean auto_rdp_apply(gpointer p) {
+    (void)p;
+    const char *env = g_getenv("QY_SETTINGS_RDP");
+    if (env) rdp_write(strcmp(env, "off") == 0 ? 0 : 1);
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 图形: 模式写 /etc/qygraphics.conf ---------- */
 #define GRAPHICS_CONF "/etc/qygraphics.conf"
 static GtkWidget *g_gfx_combo = NULL;
@@ -2185,6 +2229,47 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vg, gtk_label_new(TR("图形")));
         if (env_gfx)
             g_timeout_add(1450, auto_graphics_apply, NULL);
+    }
+
+    /* 远程桌面页: 开关 + 端口（写 /etc/qyremotedesktop.conf） */
+    {
+        GtkWidget *vrd = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vrd), 14);
+        gtk_box_pack_start(GTK_BOX(vrd), row(TR("远程桌面"), TR("允许远程连接到这台电脑")), FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vrd), row(TR("端口"), "3389"), FALSE, FALSE, 0);
+        GtkWidget *rdp_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *rdp_l = gtk_label_new(TR("启用远程桌面"));
+        gtk_widget_set_size_request(rdp_l, 180, -1);
+        gtk_widget_set_halign(rdp_l, GTK_ALIGN_START);
+        GtkWidget *rdp_sw = gtk_switch_new();
+        g_rdp_loading = 1;
+        gchar *content = NULL;
+        gsize len = 0;
+        int cur_on = 0;
+        if (g_file_get_contents(RDP_CONF, &content, &len, NULL)) {
+            char *line = content;
+            while (line && *line) {
+                if (strncmp(line, "rdp=", 4) == 0) {
+                    cur_on = strncmp(line + 4, "off", 3) != 0;
+                    break;
+                }
+                char *nl = strchr(line, '\n');
+                line = nl ? nl + 1 : NULL;
+            }
+            g_free(content);
+        }
+        const char *env_rdp = g_getenv("QY_SETTINGS_RDP");
+        if (env_rdp)
+            cur_on = strcmp(env_rdp, "off") != 0;
+        gtk_switch_set_active(GTK_SWITCH(rdp_sw), cur_on);
+        g_signal_connect(rdp_sw, "state-set", G_CALLBACK(on_rdp_toggled), NULL);
+        gtk_box_pack_start(GTK_BOX(rdp_row), rdp_l, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(rdp_row), rdp_sw, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vrd), rdp_row, FALSE, FALSE, 0);
+        g_rdp_loading = 0;
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vrd, gtk_label_new(TR("远程桌面")));
+        if (env_rdp)
+            g_timeout_add(1500, auto_rdp_apply, NULL);
     }
 
     gtk_widget_show_all(win);
