@@ -280,6 +280,15 @@ static gboolean auto_perm_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 应用页: 启动已安装应用 ---------- */
+static void on_app_launch(GtkWidget *w, gpointer ud) {
+    (void)w;
+    const char *cmd = (const char *)ud;
+    gchar *full = g_strdup_printf("/usr/bin/%s", cmd);
+    g_spawn_command_line_async(full, NULL);
+    g_free(full);
+}
+
 /* 日期时间标签每秒刷新 */
 static gboolean update_dt(gpointer p)
 {
@@ -821,6 +830,60 @@ static void activate(GtkApplication *app, gpointer ud) {
         /* 自动化验证: 启动后把配置写入文件 */
         if (g_getenv("QY_SETTINGS_PERM"))
             g_timeout_add(800, auto_perm_apply, NULL);
+    }
+
+    /* 应用页: 已安装应用列表（可启动） */
+    {
+        static const char *apps_installed[][2] = {
+            { "系统设置", "qysettings" }, { "系统监视", "qymon" },
+            { "系统安装", "qysetup" },    { "用户管理", "qyusers" },
+            { "网络管理", "qynet" },      { "文件管理器", "qyfiles" },
+            { "图片查看", "qyview" },     { "压缩管理", "qyarc" },
+            { "回收站", "qyfiles --trash" }, { "终端", "weston-terminal" },
+            { "文本编辑", "qyedit" },     { "软件中心", "qystore" },
+        };
+        GtkWidget *vap = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vap), 14);
+        GtkWidget *tip = gtk_label_new(TR("已安装应用（点击启动）"));
+        gtk_widget_set_halign(tip, GTK_ALIGN_START);
+        qy_add_class(tip, "qy-settings-curlang");
+        gtk_box_pack_start(GTK_BOX(vap), tip, FALSE, FALSE, 0);
+        GtkWidget *ap_scroll = gtk_scrolled_window_new(NULL, NULL);
+        gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(ap_scroll),
+                                       GTK_POLICY_NEVER, GTK_POLICY_AUTOMATIC);
+        GtkWidget *ap_list = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
+        for (int i = 0; i < 12; i++) {
+            GtkWidget *r = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+            GtkWidget *l = gtk_label_new(TR(apps_installed[i][0]));
+            gtk_widget_set_size_request(l, 180, -1);
+            gtk_widget_set_halign(l, GTK_ALIGN_START);
+            gchar *cmd0;
+            const char *cmdname = apps_installed[i][1];
+            if (strchr(cmdname, ' ')) {
+                char bin_path[128];
+                sscanf(cmdname, "%127s", bin_path);
+                cmd0 = g_strdup_printf("/usr/bin/%s", bin_path);
+            } else {
+                cmd0 = g_strdup_printf("/usr/bin/%s", cmdname);
+            }
+            gboolean exists = g_file_test(cmd0, G_FILE_TEST_EXISTS);
+            g_free(cmd0);
+            GtkWidget *cmdl = gtk_label_new(apps_installed[i][1]);
+            gtk_widget_set_halign(cmdl, GTK_ALIGN_START);
+            qy_add_class(cmdl, "qy-dim");
+            GtkWidget *b = gtk_button_new_with_label(TR("启动"));
+            gtk_widget_set_sensitive(b, exists);
+            if (exists)
+                g_signal_connect(b, "clicked", G_CALLBACK(on_app_launch),
+                                 (gpointer)apps_installed[i][1]);
+            gtk_box_pack_start(GTK_BOX(r), l, FALSE, FALSE, 0);
+            gtk_box_pack_start(GTK_BOX(r), cmdl, TRUE, TRUE, 0);
+            gtk_box_pack_start(GTK_BOX(r), b, FALSE, FALSE, 0);
+            gtk_box_pack_start(GTK_BOX(ap_list), r, FALSE, FALSE, 0);
+        }
+        gtk_container_add(GTK_CONTAINER(ap_scroll), ap_list);
+        gtk_box_pack_start(GTK_BOX(vap), ap_scroll, TRUE, TRUE, 0);
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vap, gtk_label_new(TR("应用程序")));
     }
 
     gtk_widget_show_all(win);

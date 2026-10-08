@@ -1185,3 +1185,16 @@ ngs-about-v2.png`。
   6 行开关渲染正常，/etc/qyperm.conf 写入 camera=off
 
 构建产物：`qydesktop 0.1.0-101`。
+
+### 系统设置：应用程序页（v0.1.0-102，2026-10 实测）
+
+按设置中心「应用→应用和功能」需求，新增已安装应用列表页（隐私页之后）：
+- 12 个桌面应用：名称 + 命令 + 「启动」按钮
+- 自动检测 /usr/bin/<命令> 是否存在，不存在的按钮置灰
+- 点击启动：g_spawn_command_line_async 直接拉起应用
+- l10n：应用程序/已安装应用（点击启动）
+- 实测：`QY_SETTINGS_PAGE=13` 直达应用页
+  （QYSETTINGS_DEBUG: set page=13 total=14），
+  应用名+命令+启动按钮渲染正常
+
+构建产物：`qydesktop 0.1.0-102`。

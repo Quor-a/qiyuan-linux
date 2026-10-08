@@ -326,6 +326,8 @@ static const pair tbl[] = {
     { "程序化生成 · 自动轮换", "Procedural · auto-rotate" },
     { "桌面分辨率", "Desktop resolution" },
     { "应用", "Apply" },
+    { "应用程序", "Applications" },
+    { "已安装应用（点击启动）", "Installed apps (click to launch)" },
     { "适应窗口", "Fit Window" },
     { "旋转", "Rotate" },
     { "请先选择一个文件", "Select a file first" },
