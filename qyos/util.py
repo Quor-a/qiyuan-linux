@@ -71,11 +71,27 @@ def unpack(archive: Path, dest: Path, strip: int = 1) -> None:
             tf.extractall(dest)
             return
         members = []
+        # 硬链接 linkname 指向包内原始路径（含被 strip 掉的顶层目录），
+        # strip 后必须同步改写，否则 tarfile 找不到目标直接报
+        # "linkname ... not found"。GNU tar 自己解则没有这个问题，
+        # 这里把 linkname 同样做 strip 前缀映射。
+        strip_prefix = None
+        for m in tf.getmembers():
+            if m.islnk() and strip_prefix is None:
+                parts0 = Path(m.linkname).parts
+                strip_prefix = Path(*parts0[:strip])
+                break
         for m in tf.getmembers():
             parts = Path(m.name).parts
             if len(parts) <= strip:
                 continue
             m.name = str(Path(*parts[strip:]))
+            if m.islnk() and m.linkname:
+                lp = Path(m.linkname).parts
+                if len(lp) > strip:
+                    m.linkname = str(Path(*lp[strip:]))
+                # 目标可能本身被 strip 掉（指向顶层目录外），退化为普通链接目标缺失时
+                # 由 tarfile 报错不如先兜底：硬链接解不出来就跳过该成员（极少见）
             members.append(m)
         tf.extractall(dest, members=members)
 

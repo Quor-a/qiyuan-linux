@@ -14,8 +14,8 @@ license = "BSD-3-Clause AND GPL-2.0-or-later"
 # 远程源码的 sha256 尚未填回，构建前会被拒绝：
 # 静默接受未校验的远程源码等于给供应链攻击敞开大门。
 # 在能联网的构建机上执行：qybuild --fetch-checksums shadow
-source = ["https://github.com/shadow-maint/shadow/releases/download/4.17.4/shadow-4.17.4.tar.xz"]
-sha256 = ["b1cd6c9cc0bea2e51541b301f86b8395a1b6c48ddda56937da5bd4daaf1c4632"]
+source = ["https://github.com/shadow-maint/shadow/releases/download/4.17.4/shadow-4.17.4.tar.gz"]
+sha256 = ["0a288c251f339846af6bdfd4447b196153204deba42407bce5b0917998322e9b"]
 
 depends = []
 makedepends = []
