@@ -280,6 +280,59 @@ static gboolean auto_perm_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 代理: 写入 /etc/environment ---------- */
+#define ENV_CONF "/etc/environment"
+
+static void proxy_write_env(const char *key, const char *value) {
+    gchar *content = NULL;
+    gsize len = 0;
+    g_file_get_contents(ENV_CONF, &content, &len, NULL);
+    GString *out = g_string_new(NULL);
+    char *line = content;
+    int replaced = 0;
+    size_t klen = strlen(key);
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+        if (strncmp(line, key, klen) == 0) {
+            g_string_append_printf(out, "%s=%s", key, value);
+            replaced = 1;
+        } else {
+            g_string_append_len(out, line, llen);
+        }
+        if (nl) g_string_append_c(out, '\n');
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(content);
+    if (!replaced)
+        g_string_append_printf(out, "%s=%s\n", key, value);
+    g_file_set_contents(ENV_CONF, out->str, out->len, NULL);
+    g_string_free(out, TRUE);
+}
+
+static void on_proxy_apply(GtkWidget *w, gpointer ud) {
+    (void)w;
+    const char *url = (const char *)ud;
+    if (!url || !*url) return;
+    proxy_write_env("http_proxy", url);
+    proxy_write_env("https_proxy", url);
+    proxy_write_env("HTTP_PROXY", url);
+    proxy_write_env("HTTPS_PROXY", url);
+}
+
+/* 自动化验证: QY_SETTINGS_PROXY=http://host:port 启动后写入 */
+static gboolean auto_proxy_apply(gpointer p) {
+    (void)p;
+    const char *env = g_getenv("QY_SETTINGS_PROXY");
+    if (env) {
+        proxy_write_env("http_proxy", env);
+        proxy_write_env("https_proxy", env);
+        proxy_write_env("HTTP_PROXY", env);
+        proxy_write_env("HTTPS_PROXY", env);
+    }
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 防火墙: 开关 ---------- */
 #define FIREWALL_CONF "/etc/qyfirewall.conf"
 
@@ -1224,6 +1277,30 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vfw, gtk_label_new(TR("防火墙")));
         if (env_fw)
             g_timeout_add(1000, auto_firewall_apply, NULL);
+    }
+
+    /* 代理页: HTTP/HTTPS 代理（写 /etc/environment） */
+    {
+        GtkWidget *vpx = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vpx), 14);
+        gtk_box_pack_start(GTK_BOX(vpx), row(TR("代理服务器"), TR("写入 /etc/environment，重启应用生效")), FALSE, FALSE, 0);
+        GtkWidget *px_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *px_l = gtk_label_new(TR("代理地址"));
+        gtk_widget_set_size_request(px_l, 150, -1);
+        gtk_widget_set_halign(px_l, GTK_ALIGN_START);
+        GtkWidget *px_entry = gtk_entry_new();
+        gtk_entry_set_placeholder_text(GTK_ENTRY(px_entry), "http://主机:端口");
+        gtk_widget_set_size_request(px_entry, 320, -1);
+        GtkWidget *px_btn = gtk_button_new_with_label(TR("应用"));
+        qy_add_class(px_btn, "qy-btn");
+        g_signal_connect(px_btn, "clicked", G_CALLBACK(on_proxy_apply), px_entry);
+        gtk_box_pack_start(GTK_BOX(px_row), px_l, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(px_row), px_entry, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(px_row), px_btn, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vpx), px_row, FALSE, FALSE, 0);
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vpx, gtk_label_new(TR("代理")));
+        if (g_getenv("QY_SETTINGS_PROXY"))
+            g_timeout_add(1050, auto_proxy_apply, NULL);
     }
 
     gtk_widget_show_all(win);

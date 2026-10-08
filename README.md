@@ -1236,3 +1236,16 @@ ngs-about-v2.png`。
   状态+开关渲染正常，/etc/qyfirewall.conf 写入 firewall=on
 
 构建产物：`qydesktop 0.1.0-105`。
+
+### 系统设置：代理页（v0.1.0-106，2026-10 实测）
+
+按设置中心「网络和 Internet→代理」需求，新增代理服务器页（防火墙页之后）：
+- 代理地址输入框（placeholder: http://主机:端口）+ 「应用」按钮
+- 应用后写 /etc/environment：http_proxy/https_proxy/HTTP_PROXY/HTTPS_PROXY
+- 自动化：`QY_SETTINGS_PROXY=http://10.4.0.1:3128` 启动后自动写入
+- l10n：代理/代理服务器/代理地址/写入 /etc/environment 说明
+- 实测：`QY_SETTINGS_PAGE=17` 直达代理页
+  （QYSETTINGS_DEBUG: set page=17 total=18），
+  entry+应用按钮渲染正常，/etc/environment 写入 4 个代理变量
+
+构建产物：`qydesktop 0.1.0-106`。
