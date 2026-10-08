@@ -501,8 +501,23 @@ static gboolean desk_button_press(GtkWidget *w, GdkEventButton *ev, gpointer ud)
         gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
         gtk_widget_show_all(menu);
         gtk_menu_popup_at_pointer(GTK_MENU(menu), (const GdkEvent *)ev);
+        g_printerr("QYDESKTOPDBG: desktop right-click menu\n");
     }
     return FALSE;
+}
+
+/* 自动化：QYDESKTOP_RIGHTCLICK=1 启动后模拟桌面右键弹出菜单 */
+static gboolean auto_desktop_rightclick(gpointer p) {
+    (void)p;
+    GdkEventButton ev;
+    memset(&ev, 0, sizeof ev);
+    ev.type = GDK_BUTTON_PRESS;
+    ev.button = 3;
+    ev.x = 220; ev.y = 220;
+    ev.x_root = 220; ev.y_root = 220;
+    ev.time = gtk_get_current_event_time();
+    desk_button_press(NULL, &ev, NULL);
+    return G_SOURCE_REMOVE;
 }
 
 /* ---------- 电源对话框 ---------- */
@@ -858,6 +873,9 @@ int main(int argc, char **argv) {
     const char *res_env = g_getenv("QYDESKTOP_RES");
     if (res_env && res_env[0])
         g_timeout_add(600, auto_res_apply, g_strdup(res_env));
+    /* 自动化: QYDESKTOP_RIGHTCLICK=1 启动后模拟桌面右键 */
+    if (g_getenv("QYDESKTOP_RIGHTCLICK"))
+        g_timeout_add(1000, auto_desktop_rightclick, NULL);
     gtk_main();
     return 0;
 }
