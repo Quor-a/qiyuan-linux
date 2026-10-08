@@ -1729,3 +1729,13 @@ ngs-about-v2.png`。
 - 实测：`idle-time=5` → 日志 `armed → triggered` → 锁屏界面（98.8% 深色 + 大时钟），解锁后 `rearm`
 
 构建产物：`qydesktop 0.1.0-163`。
+
+### 网络管理器实际连接（v0.1.0-164，2026-10 实测）
+
+针对排查报告"网络管理器只显示不连接"：
+- **qynet 新增"连接"按钮**：对目标网卡执行 `ip link set dev <if> up` + `udhcpc -i <if>`（BusyBox DHCP 客户端，真机无 IP 时自动获取）
+- **已有 IP 直接识别为已连接**：状态栏显示 `已连接 eth0（10.4.14.206/16）`
+- **自动化**：`QYNET_CONNECT=eth0` 启动后自动触发连接动作 → 日志 `QYNETDBG: connect eth0 already up (...)`，界面实时显示接口/状态/IP/MAC
+- 测试环境 eth0 已有 DHCP 地址，DHCP 请求路径在真机（无 IP）时生效
+
+构建产物：`qydesktop 0.1.0-164`。

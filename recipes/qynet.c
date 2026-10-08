@@ -1,6 +1,8 @@
 /* qynet - 启元网络管理器 (GTK3)
  * 显示网络接口列表: 接口名 / 状态 / IPv4 / MAC
  * 数据源: ip -o link show + ip -o -4 addr show（netlink，不依赖 /sys）
+ * 连接: 无 IP 时 ip link up + udhcpc；已有 IP 显示已连接
+ * 自动化: QYNET_CONNECT=eth0 启动后自动执行连接动作
  * 架构: 单文件 GTK3，与 qyfiles 同款编译方式
  */
 #include "qyl10n.h"
@@ -13,6 +15,7 @@ enum { C_IF, C_STATE, C_IP, C_MAC, N_COLS };
 
 static GtkListStore *store = NULL;
 static GtkWidget *count_label = NULL;
+static GtkWidget *status_label = NULL;
 
 /* 读取指定接口的 IPv4 地址（多个用空格分隔） */
 static void read_ip(char *buf, size_t n, const char *ifname) {
@@ -33,6 +36,27 @@ static void read_ip(char *buf, size_t n, const char *ifname) {
         }
     }
     pclose(f);
+}
+
+/* 获取当前选中的接口名（没有选中时取第一个非 lo 接口） */
+static const char *selected_ifname(void) {
+    static char buf[64] = "";
+    buf[0] = 0;
+    /* 简化：直接读第一个非 lo 接口 */
+    FILE *f = popen("ip -o link show 2>/dev/null | grep -v ': lo:' | head -1", "r");
+    if (f) {
+        char line[256];
+        if (fgets(line, sizeof line, f)) {
+            char *colon = strchr(line, ':');
+            if (colon) {
+                char tmp[64];
+                if (sscanf(line, "%*d: %63[^:]:", tmp) == 1)
+                    snprintf(buf, sizeof buf, "%s", tmp);
+            }
+        }
+        pclose(f);
+    }
+    return buf;
 }
 
 /* 刷新接口列表 */
@@ -89,6 +113,44 @@ static void refresh_list(void) {
     }
 }
 
+/* 连接以太网：已有 IP 视为已连接；无 IP 则 up + udhcpc */
+static void do_connect(GtkWidget *w, gpointer ud) {
+    (void)w;
+    const char *ifname = ud ? (const char *)ud : selected_ifname();
+    if (!ifname || !ifname[0]) return;
+    char ip[256] = "-";
+    read_ip(ip, sizeof ip, ifname);
+    if (ip[0] && strcmp(ip, "-") != 0 && strcmp(ip, "") != 0) {
+        g_printerr("QYNETDBG: connect %s already up (%s)\n", ifname, ip);
+        if (status_label) {
+            gchar *s = g_strdup_printf(TR("已连接 %s（%s）"), ifname, ip);
+            gtk_label_set_text(GTK_LABEL(status_label), s);
+            g_free(s);
+        }
+        return;
+    }
+    g_printerr("QYNETDBG: connect %s (dhcp)\n", ifname);
+    if (status_label)
+        gtk_label_set_text(GTK_LABEL(status_label), TR("正在连接..."));
+    char cmd[256];
+    snprintf(cmd, sizeof cmd,
+             "ip link set dev %s up 2>/dev/null; udhcpc -i %s >/dev/null 2>&1 &",
+             ifname, ifname);
+    g_spawn_command_line_async(cmd, NULL);
+    g_timeout_add(3000, (GSourceFunc)refresh_list, NULL);
+    if (status_label) {
+        gchar *s = g_strdup_printf(TR("%s 连接请求已发送"), ifname);
+        gtk_label_set_text(GTK_LABEL(status_label), s);
+        g_free(s);
+    }
+}
+
+/* 自动化: QYNET_CONNECT=eth0 */
+static gboolean auto_connect(gpointer p) {
+    do_connect(NULL, p);
+    return G_SOURCE_REMOVE;
+}
+
 int main(int argc, char **argv) {
     gtk_init(&argc, &argv);
     qy_load_theme();
@@ -118,18 +180,30 @@ int main(int argc, char **argv) {
     gtk_container_add(GTK_CONTAINER(sw), tv);
     gtk_box_pack_start(GTK_BOX(vbox), sw, TRUE, TRUE, 0);
 
-    /* 底部: 刷新按钮 + 状态栏 */
+    /* 底部: 连接/刷新按钮 + 状态 */
     GtkWidget *hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+    GtkWidget *b_conn = gtk_button_new_with_label(TR("连接"));
+    qy_add_class(b_conn, "qy-btn");
+    g_signal_connect(b_conn, "clicked", G_CALLBACK(do_connect), NULL);
     GtkWidget *b_refresh = gtk_button_new_with_label(TR("刷新"));
     qy_add_class(b_refresh, "qy-btn");
     g_signal_connect(b_refresh, "clicked", G_CALLBACK(refresh_list), NULL);
     count_label = gtk_label_new("");
+    status_label = gtk_label_new("");
+    gtk_box_pack_start(GTK_BOX(hb), b_conn, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hb), b_refresh, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hb), count_label, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), hb, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox), status_label, FALSE, FALSE, 0);
 
     gtk_widget_show_all(win);
     refresh_list();
+
+    /* 自动化: QYNET_CONNECT=eth0 自动连接 */
+    const char *qc = g_getenv("QYNET_CONNECT");
+    if (qc && qc[0])
+        g_timeout_add(600, auto_connect, g_strdup(qc));
+
     gtk_main();
     return 0;
 }
