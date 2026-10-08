@@ -22,6 +22,8 @@ static double zoom = 1.0;
 static double pan_x = 0, pan_y = 0;
 static GtkWidget *page_label = NULL;   /* 底部页码标签 */
 static GtkWindow *g_win = NULL;        /* 主窗口: 标题显示当前文件名 */
+static gchar *current_path = NULL;     /* 当前图片完整路径（保存用） */
+static GtkWidget *save_status = NULL;  /* 底部保存结果提示 */
 
 static const char *IMG_EXT[] = {".png",".jpg",".jpeg",".bmp",".gif",".webp",".xpm", NULL};
 
@@ -63,6 +65,8 @@ static gboolean load_path(const char *path) {
     }
     if (pix) g_object_unref(pix);
     pix = p;
+    g_free(current_path);
+    current_path = g_strdup(path);
     zoom = 1.0; pan_x = pan_y = 0;
     return TRUE;
 }
@@ -119,6 +123,37 @@ static void on_rotate(GtkButton *b, gpointer ud) {
 
 static gboolean rotate_once(gpointer ud) {
     on_rotate(NULL, ud);
+    return G_SOURCE_REMOVE;
+}
+
+/* 保存当前图片（格式由扩展名推断），结果提示到底部 */
+static void on_save(GtkButton *b, gpointer ud) {
+    (void)b; (void)ud;
+    if (!pix || !current_path) return;
+    const char *ext = strrchr(current_path, '.');
+    const char *type = NULL;
+    if (ext) {
+        if (!g_ascii_strcasecmp(ext, ".jpg") || !g_ascii_strcasecmp(ext, ".jpeg")) type = "jpeg";
+        else if (!g_ascii_strcasecmp(ext, ".png")) type = "png";
+        else if (!g_ascii_strcasecmp(ext, ".bmp")) type = "bmp";
+        else if (!g_ascii_strcasecmp(ext, ".tiff") || !g_ascii_strcasecmp(ext, ".tif")) type = "tiff";
+        else if (!g_ascii_strcasecmp(ext, ".webp")) type = "webp";
+    }
+    if (!type) {
+        if (save_status) gtk_label_set_text(GTK_LABEL(save_status), TR("暂不支持保存该格式"));
+        return;
+    }
+    GError *err = NULL;
+    if (gdk_pixbuf_save(pix, current_path, type, &err, NULL)) {
+        if (save_status) gtk_label_set_text(GTK_LABEL(save_status), TR("已保存"));
+    } else {
+        if (save_status) gtk_label_set_text(GTK_LABEL(save_status), TR("保存失败"));
+        if (err) { g_printerr("qyview save: %s\n", err->message); g_error_free(err); }
+    }
+}
+
+static gboolean save_once(gpointer ud) {
+    on_save(NULL, ud);
     return G_SOURCE_REMOVE;
 }
 
@@ -219,7 +254,13 @@ static void activate(GtkApplication *app, gpointer ud) {
     add_class(b_fit, "qy-view-nav-btn");
     GtkWidget *b_rot = gtk_button_new_with_label(TR("旋转"));
     add_class(b_rot, "qy-view-nav-btn");
+    GtkWidget *b_save = gtk_button_new_with_label(TR("保存"));
+    add_class(b_save, "qy-view-nav-btn");
+    save_status = gtk_label_new("");
+    add_class(save_status, "qy-view-nav-label");
     gtk_box_pack_start(GTK_BOX(nav), b_prev, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(nav), b_save, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(nav), save_status, FALSE, FALSE, 0);
     gtk_box_set_center_widget(GTK_BOX(nav), page_label);
     gtk_box_pack_end(GTK_BOX(nav), b_next, FALSE, FALSE, 0);
     gtk_box_pack_end(GTK_BOX(nav), b_fit, FALSE, FALSE, 0);
@@ -228,6 +269,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     g_signal_connect(b_next, "clicked", G_CALLBACK(on_next), da);
     g_signal_connect(b_fit, "clicked", G_CALLBACK(on_fit), da);
     g_signal_connect(b_rot, "clicked", G_CALLBACK(on_rotate), da);
+    g_signal_connect(b_save, "clicked", G_CALLBACK(on_save), da);
     gtk_box_pack_start(GTK_BOX(vbox), nav, FALSE, FALSE, 0);
 
     gtk_widget_show_all(win);
@@ -244,6 +286,10 @@ static void activate(GtkApplication *app, gpointer ud) {
     /* 自动化验证: QYVIEW_ROTATE=1 启动后自动顺时针旋转一次 */
     if (getenv("QYVIEW_ROTATE")) {
         g_timeout_add(300, rotate_once, da);
+    }
+    /* 自动化验证: QYVIEW_SAVE=1 启动后自动保存当前图片 */
+    if (getenv("QYVIEW_SAVE")) {
+        g_timeout_add(900, save_once, da);
     }
     gtk_widget_grab_focus(da);
 }

@@ -43,6 +43,9 @@ static const pair tbl[] = {
     /* 编辑器/查看器 */
     { "打开", "Open" },
     { "保存", "Save" },
+    { "已保存", "Saved" },
+    { "保存失败", "Save failed" },
+    { "暂不支持保存该格式", "Saving this format is not supported" },
     { "另存为", "Save As" },
     { "退出", "Quit" },
     { "新建", "New" },
