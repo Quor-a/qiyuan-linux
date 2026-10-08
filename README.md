@@ -1666,3 +1666,14 @@ ngs-about-v2.png`。
 - 同步修复 qyclip 列表行显示
 
 构建产物：`qydesktop 0.1.0-151`。
+
+### 音乐播放器 qymedia（v0.1.0-152，2026-10 实测）
+
+按「音视频播放」需求，新增启元音乐播放器：
+- 打开 WAV 音频（aplay ALSA 后台播放），播放/暂停/继续/停止
+- 自动化 QYMEDIA_AUTO=WAV路径 自动加载播放
+- 实测：QYMEDIA_AUTO=/tmp/test.wav 播放器 UI 正常，
+  qy-btn 按钮紫色渲染（2444 像素，accent=purple），aplay 无声卡时优雅报错
+- 启动器新增音乐播放器（娱乐类）
+
+构建产物：`qydesktop 0.1.0-152`。

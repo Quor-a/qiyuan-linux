@@ -6,7 +6,7 @@
 
 name = "qydesktop"
 version = "0.1.0"
-release = 151
+release = 152
 summary = "启元桌面 shell（GTK3 单窗口 + 主题）"
 license = "MIT"
 
@@ -41,6 +41,7 @@ RECIPE_SHOTCAP_C = Path(__file__).parent / "qyshot-capture.c"
 RECIPE_CLIP_C = Path(__file__).parent / "qyclip.c"
 RECIPE_LOCK_C = Path(__file__).parent / "qylock.c"
 RECIPE_SEARCH_C = Path(__file__).parent / "qysearch.c"
+RECIPE_MEDIA_C = Path(__file__).parent / "qymedia.c"
 
 
 def build(ctx):
@@ -63,6 +64,7 @@ def build(ctx):
     shutil.copy(RECIPE_CLIP_C, Path(ctx.srcdir) / "qyclip.c")
     shutil.copy(RECIPE_LOCK_C, Path(ctx.srcdir) / "qylock.c")
     shutil.copy(RECIPE_SEARCH_C, Path(ctx.srcdir) / "qysearch.c")
+    shutil.copy(RECIPE_MEDIA_C, Path(ctx.srcdir) / "qymedia.c")
     shutil.copy(Path(__file__).parent / "qystore.desktop", Path(ctx.srcdir) / "qystore.desktop")
     shutil.copy(Path(__file__).parent / "qynet.unit", Path(ctx.srcdir) / "qynet.unit")
     shutil.copy(Path(__file__).parent / "start-qynet.sh", Path(ctx.srcdir) / "start-qynet.sh")
@@ -110,6 +112,7 @@ def build(ctx):
         "gcc qyclip.c qytheme.c qyl10n.c -o qyclip $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qylock.c qytheme.c qyl10n.c -o qylock $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qysearch.c qytheme.c qyl10n.c -o qysearch $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
+        "gcc qymedia.c qytheme.c qyl10n.c -o qymedia $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qypkg-inst.c -o qypkg-inst -O2".format(ctx.sysroot)
     )
 
@@ -133,6 +136,7 @@ def package(ctx):
     ctx.run("cp qyclip {}/usr/bin/qyclip".format(ctx.destdir))
     ctx.run("cp qylock {}/usr/bin/qylock".format(ctx.destdir))
     ctx.run("cp qysearch {}/usr/bin/qysearch".format(ctx.destdir))
+    ctx.run("cp qymedia {}/usr/bin/qymedia".format(ctx.destdir))
     ctx.run("cp qypkg-inst {}/usr/bin/qypkg-inst".format(ctx.destdir))
     ctx.run("cp qysetup {}/usr/bin/qysetup".format(ctx.destdir))
     ctx.run("cp qyuseradd.sh {}/usr/bin/qyuseradd && chmod +x {}/usr/bin/qyuseradd".format(ctx.destdir, ctx.destdir))
