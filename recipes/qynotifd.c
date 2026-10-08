@@ -181,6 +181,20 @@ static void handle_conf(const char *basename) {
         send_notif("防火墙", on ? "防火墙已启用" : "防火墙已关闭");
         return;
     }
+    if (g_str_has_prefix(basename, "qyssh")) {
+        gboolean on = conf_flag(path, "sshd");
+        if (on) {
+            g_mkdir_with_parents("/run/sshd", 0755);
+            g_spawn_command_line_async("/usr/sbin/sshd", NULL);
+            send_notif("SSH", "SSH 服务已开启");
+            g_printerr("qynotifd: sshd on\n");
+        } else {
+            g_spawn_command_line_async("pkill -x sshd", NULL);
+            send_notif("SSH", "SSH 服务已关闭");
+            g_printerr("qynotifd: sshd off\n");
+        }
+        return;
+    }
     if (g_str_has_prefix(basename, "qyprinter")) {
         send_notif("打印机", "打印机设置已保存");
         return;

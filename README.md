@@ -1858,3 +1858,14 @@ ngs-about-v2.png`。
 - 实测：测试环境无电池 → `QYNOTIFDBG: battery absent`（持续检测正常）
 
 构建产物：`qydesktop 0.1.0-177`。
+
+### SSH 远程访问：设置开关 → 守护进程启动/停止 sshd（v0.1.0-178，2026-10 实测）
+
+针对排查报告"系统能力/远程访问"：
+- **qysettings 防火墙页新增"启用 SSH 服务"开关**：切换写入 `/etc/qyssh.conf`（`sshd=on/off`）
+- **qynotifd 消费 qyssh.conf**：`sshd=on` → 创建 `/run/sshd` 并启动 `/usr/sbin/sshd`；`sshd=off` → `pkill -x sshd`
+- **通知闭环**：写入 `sshd=on` → 日志 `qynotifd: sshd on`，通知栏显示"SSH 服务已开启"，`ps` 可见 sshd 进程；写入 `sshd=off` → `qynotifd: sshd off`，sshd 进程退出，通知"SSH 服务已关闭"
+- **自动化**：`QY_SETTINGS_SSHD=on/off` 启动 qysettings 即写入开关值
+- 实测：开启 → sshd 进程存在；关闭 → sshd 进程消失；latest.msg 同步更新
+
+构建产物：`qydesktop 0.1.0-178`。

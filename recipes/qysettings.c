@@ -1429,6 +1429,72 @@ static gboolean auto_firewall_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- SSH 服务: 开关（写 /etc/qyssh.conf，qynotifd 启动/停止 sshd） ---------- */
+#define SSH_CONF "/etc/qyssh.conf"
+
+static void on_sshd_toggled(GtkWidget *sw, gpointer ud) {
+    (void)ud;
+    int on = gtk_switch_get_active(GTK_SWITCH(sw));
+    gchar *content = NULL;
+    gsize len = 0;
+    g_file_get_contents(SSH_CONF, &content, &len, NULL);
+    GString *out = g_string_new(NULL);
+    char *line = content;
+    int replaced = 0;
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+        if (strncmp(line, "sshd=", 5) == 0) {
+            g_string_append_printf(out, "sshd=%s", on ? "on" : "off");
+            replaced = 1;
+        } else {
+            g_string_append_len(out, line, llen);
+        }
+        if (nl) g_string_append_c(out, '\n');
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(content);
+    if (!replaced)
+        g_string_append_printf(out, "sshd=%s\n", on ? "on" : "off");
+    g_file_set_contents(SSH_CONF, out->str, out->len, NULL);
+    g_string_free(out, TRUE);
+}
+
+/* 自动化验证: QY_SETTINGS_SSHD=on 启动后开启 */
+static gboolean auto_sshd_apply(gpointer p) {
+    (void)p;
+    const char *env = g_getenv("QY_SETTINGS_SSHD");
+    if (env) {
+        gchar *content = NULL;
+        gsize len = 0;
+        g_file_get_contents(SSH_CONF, &content, &len, NULL);
+        GString *out = g_string_new(NULL);
+        if (content) g_string_append(out, content);
+        g_free(content);
+        if (strstr(out->str, "sshd=")) {
+            GString *tmp = g_string_new(NULL);
+            char *line = out->str;
+            while (line && *line) {
+                char *nl = strchr(line, '\n');
+                size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+                if (strncmp(line, "sshd=", 5) == 0)
+                    g_string_append_printf(tmp, "sshd=%s", strcmp(env, "on") == 0 ? "on" : "off");
+                else
+                    g_string_append_len(tmp, line, llen);
+                if (nl) g_string_append_c(tmp, '\n');
+                line = nl ? nl + 1 : NULL;
+            }
+            g_string_free(out, TRUE);
+            out = tmp;
+        } else {
+            g_string_append_printf(out, "sshd=%s\n", strcmp(env, "on") == 0 ? "on" : "off");
+        }
+        g_file_set_contents(SSH_CONF, out->str, out->len, NULL);
+        g_string_free(out, TRUE);
+    }
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 通知: 应用通知开关 ---------- */
 #define NOTIF_CONF "/etc/qynotif.conf"
 static int g_notif_loading = 0;
@@ -2304,9 +2370,36 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_box_pack_start(GTK_BOX(fw_row), fw_l, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(fw_row), fw_sw, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vfw), fw_row, FALSE, FALSE, 0);
+
+        /* SSH 服务开关（qynotifd 消费 qyssh.conf） */
+        GtkWidget *ssh_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *ssh_l = gtk_label_new(TR("启用 SSH 服务"));
+        gtk_widget_set_size_request(ssh_l, 180, -1);
+        gtk_widget_set_halign(ssh_l, GTK_ALIGN_START);
+        GtkWidget *ssh_sw = gtk_switch_new();
+        FILE *sshf = fopen(SSH_CONF, "r");
+        int ssh_on = 0;
+        if (sshf) {
+            char line[64];
+            while (fgets(line, sizeof line, sshf))
+                if (strncmp(line, "sshd=", 5) == 0)
+                    ssh_on = strncmp(line + 5, "on", 2) == 0;
+            fclose(sshf);
+        }
+        gtk_switch_set_active(GTK_SWITCH(ssh_sw), ssh_on);
+        const char *env_ssh = g_getenv("QY_SETTINGS_SSHD");
+        if (env_ssh)
+            gtk_switch_set_active(GTK_SWITCH(ssh_sw), strcmp(env_ssh, "on") == 0);
+        g_signal_connect(ssh_sw, "state-set", G_CALLBACK(on_sshd_toggled), NULL);
+        gtk_box_pack_start(GTK_BOX(ssh_row), ssh_l, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(ssh_row), ssh_sw, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vfw), ssh_row, FALSE, FALSE, 0);
+
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vfw, gtk_label_new(TR("防火墙")));
         if (env_fw)
             g_timeout_add(1000, auto_firewall_apply, NULL);
+        if (env_ssh)
+            g_timeout_add(1000, auto_sshd_apply, NULL);
     }
 
     /* 代理页: HTTP/HTTPS 代理（写 /etc/environment） */
