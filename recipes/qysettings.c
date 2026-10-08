@@ -281,6 +281,60 @@ static gboolean auto_perm_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 自动播放: 配置 ---------- */
+#define AUTOPLAY_CONF "/etc/qyautoplay.conf"
+static int g_autoplay_loading = 0;
+
+static void autoplay_write(const char *key, const char *val) {
+    gchar *content = NULL;
+    gsize len = 0;
+    g_file_get_contents(AUTOPLAY_CONF, &content, &len, NULL);
+    GString *out = g_string_new(NULL);
+    char *line = content;
+    int replaced = 0;
+    size_t klen = strlen(key);
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+        if (strncmp(line, key, klen) == 0 && line[klen] == '=') {
+            g_string_append_printf(out, "%s=%s", key, val);
+            replaced = 1;
+        } else {
+            g_string_append_len(out, line, llen);
+        }
+        if (nl) g_string_append_c(out, '\n');
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(content);
+    if (!replaced)
+        g_string_append_printf(out, "%s=%s\n", key, val);
+    g_file_set_contents(AUTOPLAY_CONF, out->str, out->len, NULL);
+    g_string_free(out, TRUE);
+}
+
+static void on_autoplay_toggled(GtkWidget *sw, gpointer ud) {
+    if (g_autoplay_loading) return;
+    (void)ud;
+    autoplay_write("autoplay", gtk_switch_get_active(GTK_SWITCH(sw)) ? "on" : "off");
+}
+
+static void on_autoplay_action(GtkWidget *w, gpointer ud) {
+    (void)w;
+    const char *val = (const char *)ud;
+    autoplay_write("action", val);
+}
+
+/* 自动化验证: QY_SETTINGS_AUTOPLAY=off 启动后关闭 */
+static gboolean auto_autoplay_apply(gpointer p) {
+    (void)p;
+    const char *env = g_getenv("QY_SETTINGS_AUTOPLAY");
+    if (env) {
+        autoplay_write("autoplay", strcmp(env, "off") == 0 ? "off" : "on");
+        autoplay_write("action", strcmp(env, "none") == 0 ? "none" : "open");
+    }
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 多任务: 开关 ---------- */
 #define MULTI_CONF "/etc/qymultitask.conf"
 static int g_multi_loading = 0;
@@ -1486,6 +1540,91 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vmt, gtk_label_new(TR("多任务")));
         if (g_getenv("QY_SETTINGS_MULTI"))
             g_timeout_add(1100, auto_multi_apply, NULL);
+    }
+
+    /* 自动播放页: U 盘/光盘插入行为（写 /etc/qyautoplay.conf） */
+    {
+        static const char *ap_actions[] = { "open", "ask", "none" };
+        static const char *ap_labels[] = { "打开文件管理器", "每次询问", "不操作" };
+        GtkWidget *vap2 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vap2), 14);
+        GtkWidget *tip = gtk_label_new(TR("自动播放"));
+        gtk_widget_set_halign(tip, GTK_ALIGN_START);
+        qy_add_class(tip, "qy-settings-curlang");
+        gtk_box_pack_start(GTK_BOX(vap2), tip, FALSE, FALSE, 0);
+        /* 自动播放开关 */
+        GtkWidget *ap_row1 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *ap_l1 = gtk_label_new(TR("插入可移动设备时自动播放"));
+        gtk_widget_set_size_request(ap_l1, 240, -1);
+        gtk_widget_set_halign(ap_l1, GTK_ALIGN_START);
+        GtkWidget *ap_sw = gtk_switch_new();
+        g_autoplay_loading = 1;
+        gchar *content = NULL;
+        gsize len = 0;
+        int cur_on = 1;
+        if (g_file_get_contents(AUTOPLAY_CONF, &content, &len, NULL)) {
+            char *line = content;
+            while (line && *line) {
+                if (strncmp(line, "autoplay=", 10) == 0) {
+                    cur_on = strncmp(line + 10, "off", 3) != 0;
+                    break;
+                }
+                char *nl = strchr(line, '\n');
+                line = nl ? nl + 1 : NULL;
+            }
+            g_free(content);
+        }
+        gtk_switch_set_active(GTK_SWITCH(ap_sw), cur_on);
+        const char *env_ap = g_getenv("QY_SETTINGS_AUTOPLAY");
+        if (env_ap)
+            gtk_switch_set_active(GTK_SWITCH(ap_sw), strcmp(env_ap, "off") != 0);
+        g_signal_connect(ap_sw, "state-set", G_CALLBACK(on_autoplay_toggled), NULL);
+        gtk_box_pack_start(GTK_BOX(ap_row1), ap_l1, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(ap_row1), ap_sw, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vap2), ap_row1, FALSE, FALSE, 0);
+        /* 动作选择 */
+        GtkWidget *ap_row2 = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *ap_l2 = gtk_label_new(TR("插入 U 盘时"));
+        gtk_widget_set_size_request(ap_l2, 150, -1);
+        gtk_widget_set_halign(ap_l2, GTK_ALIGN_START);
+        GtkWidget *ap_combo = gtk_combo_box_text_new();
+        int cur_act = 0;
+        for (int i = 0; i < 3; i++)
+            gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(ap_combo),
+                                           TR(ap_labels[i]));
+        if (1) {
+            gchar *c2 = NULL;
+            gsize l2 = 0;
+            if (g_file_get_contents(AUTOPLAY_CONF, &c2, &l2, NULL)) {
+                char *line = c2;
+                while (line && *line) {
+                    if (strncmp(line, "action=", 7) == 0) {
+                        char *p = line + 7;
+                        char *nl = strchr(p, '\n');
+                        if (nl) *nl = 0;
+                        for (int i = 0; i < 3; i++)
+                            if (strcmp(p, ap_actions[i]) == 0) cur_act = i;
+                        break;
+                    }
+                    char *nl = strchr(line, '\n');
+                    line = nl ? nl + 1 : NULL;
+                }
+                g_free(c2);
+            }
+        }
+        gtk_combo_box_set_active(GTK_COMBO_BOX(ap_combo), cur_act);
+        GtkWidget *ap_btn = gtk_button_new_with_label(TR("应用"));
+        qy_add_class(ap_btn, "qy-btn");
+        g_signal_connect(ap_btn, "clicked", G_CALLBACK(on_autoplay_action),
+                         (gpointer)ap_actions[cur_act]);
+        gtk_box_pack_start(GTK_BOX(ap_row2), ap_l2, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(ap_row2), ap_combo, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(ap_row2), ap_btn, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vap2), ap_row2, FALSE, FALSE, 0);
+        g_autoplay_loading = 0;
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vap2, gtk_label_new(TR("自动播放")));
+        if (env_ap)
+            g_timeout_add(1150, auto_autoplay_apply, NULL);
     }
 
     gtk_widget_show_all(win);

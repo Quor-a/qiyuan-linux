@@ -1275,3 +1275,17 @@ ngs-about-v2.png`。
   3 行开关渲染正常，/etc/qymultitask.conf 写入 snap=off
 
 构建产物：`qydesktop 0.1.0-108`。
+
+### 系统设置：自动播放页（v0.1.0-109，2026-10 实测）
+
+按设置中心「设备→自动播放」需求，新增自动播放页（多任务页之后）：
+- 「插入可移动设备时自动播放」GtkSwitch
+- 「插入 U 盘时」动作下拉：打开文件管理器 / 每次询问 / 不操作 + 应用按钮
+- 写 /etc/qyautoplay.conf：autoplay=on/off, action=open/ask/none
+- 自动化：`QY_SETTINGS_AUTOPLAY=off` 启动后自动写入
+- l10n：自动播放/插入可移动设备时自动播放/插入 U 盘时/打开文件管理器/每次询问/不操作
+- 实测：`QY_SETTINGS_PAGE=20` 直达自动播放页
+  （QYSETTINGS_DEBUG: set page=20 total=21），
+  开关+下拉+按钮渲染正常，qyautoplay.conf 写入 autoplay=off
+
+构建产物：`qydesktop 0.1.0-109`。
