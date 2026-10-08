@@ -469,6 +469,12 @@ static const pair tbl[] = {
     { "个软件包", "packages" },
     { "已安装", "installed" },
     { "依赖", "Depends" },
+    /* 驱动管理器 (qydriver) */
+    { "启元驱动管理器", "Qiyuan Driver Manager" },
+    { "已加载模块 %d 个", "Loaded modules: %d" },
+    { "模块", "Module" },
+    { "使用数", "Used count" },
+    { "USB: 未检测到设备（无硬件或未插拔）", "USB: no devices detected (no hardware or unplugged)" },
     /* 桌面 v2.0 */
     { "文件", "Files" },
     { "软件中心", "App Center" },

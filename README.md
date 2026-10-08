@@ -1758,3 +1758,13 @@ ngs-about-v2.png`。
 - 与 qysettings"启动项"页闭环：开关写 qyautostart.conf → qynotifd 消费并实际启动应用
 
 构建产物：`qydesktop 0.1.0-166`。
+
+### 驱动管理器 qydriver（v0.1.0-168，2026-10 实测）
+
+针对排查报告"驱动与 USB 设备管理缺失"：
+- **新增 qydriver 驱动管理器**：列出已加载内核模块（`/proc/modules`：模块名/大小/使用数/依赖）+ USB 设备列表（`/sys/bus/usb/devices` 的 product/idVendor/idProduct）
+- **刷新按钮**实时重读；USB 无设备时明确显示"未检测到设备"
+- **实测**：`QYDRIVERDBG: modules=54`（chroot 内可见宿主已加载模块）
+- 中英双语 l10n 已补（驱动管理器/已加载模块/模块/使用数/USB 提示）
+
+构建产物：`qydesktop 0.1.0-168`。

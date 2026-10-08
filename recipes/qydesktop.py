@@ -6,7 +6,7 @@
 
 name = "qydesktop"
 version = "0.1.0"
-release = 166
+release = 168
 summary = "启元桌面 shell（GTK3 单窗口 + 主题）"
 license = "MIT"
 
@@ -46,6 +46,7 @@ RECIPE_SWX11_C = Path(__file__).parent / "qysw-x11.c"
 RECIPE_SWITCH_C = Path(__file__).parent / "qyswitcher.c"
 RECIPE_NOTIFY_C = Path(__file__).parent / "qynotify.c"
 RECIPE_NOTIFD_C = Path(__file__).parent / "qynotifd.c"
+RECIPE_DRIVER_C = Path(__file__).parent / "qydriver.c"
 
 
 def build(ctx):
@@ -73,6 +74,7 @@ def build(ctx):
     shutil.copy(RECIPE_SWITCH_C, Path(ctx.srcdir) / "qyswitcher.c")
     shutil.copy(RECIPE_NOTIFY_C, Path(ctx.srcdir) / "qynotify.c")
     shutil.copy(RECIPE_NOTIFD_C, Path(ctx.srcdir) / "qynotifd.c")
+    shutil.copy(RECIPE_DRIVER_C, Path(ctx.srcdir) / "qydriver.c")
     shutil.copy(Path(__file__).parent / "qystore.desktop", Path(ctx.srcdir) / "qystore.desktop")
     shutil.copy(Path(__file__).parent / "qynet.unit", Path(ctx.srcdir) / "qynet.unit")
     shutil.copy(Path(__file__).parent / "start-qynet.sh", Path(ctx.srcdir) / "start-qynet.sh")
@@ -125,6 +127,7 @@ def build(ctx):
         "gcc qyswitcher.c qytheme.c qyl10n.c -o qyswitcher $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qynotify.c -o qynotify $(pkg-config --cflags --libs glib-2.0 gio-2.0) -O2 && "
         "gcc qynotifd.c -o qynotifd $(pkg-config --cflags --libs glib-2.0 gio-2.0) -O2 && "
+        "gcc qydriver.c qytheme.c qyl10n.c -o qydriver $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
         "gcc qypkg-inst.c -o qypkg-inst -O2".format(ctx.sysroot)
     )
 
@@ -153,6 +156,7 @@ def package(ctx):
     ctx.run("cp qyswitcher {}/usr/bin/qyswitcher".format(ctx.destdir))
     ctx.run("cp qynotify {}/usr/bin/qynotify".format(ctx.destdir))
     ctx.run("cp qynotifd {}/usr/bin/qynotifd".format(ctx.destdir))
+    ctx.run("cp qydriver {}/usr/bin/qydriver".format(ctx.destdir))
     ctx.run("cp qypkg-inst {}/usr/bin/qypkg-inst".format(ctx.destdir))
     ctx.run("cp qysetup {}/usr/bin/qysetup".format(ctx.destdir))
     ctx.run("cp qyuseradd.sh {}/usr/bin/qyuseradd && chmod +x {}/usr/bin/qyuseradd".format(ctx.destdir, ctx.destdir))
