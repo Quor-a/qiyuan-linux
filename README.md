@@ -1543,3 +1543,17 @@ ngs-about-v2.png`。
   紫色像素覆盖 x1141-1241（图例）与 y80-319（曲线带）
 
 构建产物：`qydesktop 0.1.0-128`。
+
+### 主题色：全局强调色切换（v0.1.0-132，2026-10 实测）
+
+按「UI / 美术问题」需求，新增主题色设置页（设置中心第 39 页「主题色」）：
+- 强调色：橙色（默认）/ 紫色 / 蓝色 / 绿色
+- 应用后写 /etc/qytheme.conf `accent=xxx`，并立即重新加载主题
+- qytheme.c 现在读取 accent 并注入覆盖 CSS：
+  主按钮 .qy-btn 背景、标题 .qy-mon-title、进度条、监视器 CPU 大数字
+- 修复：accent 指针悬垂（g_file_get_contents 缓冲区释放）导致覆盖不生效
+- 实测：QY_SETTINGS_ACCENT=purple 自动写入 /etc/qytheme.conf，
+  「应用」按钮背景变为 #77216F（窗口内 2014 个紫色像素，
+  按钮矩形 x273-330 y273 宽 58px），主题色切换真实生效
+
+构建产物：`qydesktop 0.1.0-132`。

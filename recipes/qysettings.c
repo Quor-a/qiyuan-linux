@@ -281,6 +281,57 @@ static gboolean auto_perm_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 主题色: 写 /etc/qytheme.conf ---------- */
+#define THEME_CONF "/etc/qytheme.conf"
+static GtkWidget *g_accent_combo = NULL;
+
+static void accent_write(const char *val) {
+    gchar *content = NULL;
+    gsize len = 0;
+    g_file_get_contents(THEME_CONF, &content, &len, NULL);
+    GString *out = g_string_new(NULL);
+    char *line = content;
+    int replaced = 0;
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+        if (strncmp(line, "accent=", 8) == 0) {
+            g_string_append_printf(out, "accent=%s", val);
+            replaced = 1;
+        } else {
+            g_string_append_len(out, line, llen);
+        }
+        if (nl) g_string_append_c(out, '\n');
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(content);
+    if (!replaced)
+        g_string_append_printf(out, "accent=%s\n", val);
+    g_file_set_contents(THEME_CONF, out->str, out->len, NULL);
+    g_string_free(out, TRUE);
+}
+
+static void on_accent_apply(GtkWidget *w, gpointer ud) {
+    (void)w; (void)ud;
+    const char *accents[] = { "orange", "purple", "blue", "green" };
+    int act = gtk_combo_box_get_active(GTK_COMBO_BOX(g_accent_combo));
+    if (act < 0) act = 0;
+    if (act > 3) act = 3;
+    accent_write(accents[act]);
+    qy_load_theme();  /* 立即应用强调色 */
+}
+
+/* 自动化验证: QY_SETTINGS_ACCENT=purple 启动后写入 */
+static gboolean auto_accent_apply(gpointer p) {
+    (void)p;
+    const char *env = g_getenv("QY_SETTINGS_ACCENT");
+    if (env) {
+        accent_write(env);
+        qy_load_theme();
+    }
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 壁纸: 写 /etc/qywallpaper.conf ---------- */
 #define WALLPAPER_CONF "/etc/qywallpaper.conf"
 static GtkWidget *g_wallpaper_combo = NULL;
@@ -3344,6 +3395,64 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vwl, gtk_label_new(TR("壁纸")));
         if (env_wl)
             g_timeout_add(2000, auto_wallpaper_apply, NULL);
+    }
+
+    /* 主题色页: 强调色选择（写 /etc/qytheme.conf） */
+    {
+        GtkWidget *vth = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vth), 14);
+        gtk_box_pack_start(GTK_BOX(vth), row(TR("主题色"), TR("设置界面强调色")), FALSE, FALSE, 0);
+        /* 当前主题色 */
+        gchar *cur_accent = g_strdup("orange");
+        gchar *content = NULL;
+        gsize len = 0;
+        if (g_file_get_contents(THEME_CONF, &content, &len, NULL)) {
+            char *line = content;
+            while (line && *line) {
+                if (strncmp(line, "accent=", 8) == 0) {
+                    char *p = line + 8;
+                    char *nl = strchr(p, '\n');
+                    if (nl) *nl = 0;
+                    if (*p) { g_free(cur_accent); cur_accent = g_strdup(p); }
+                    break;
+                }
+                char *nl = strchr(line, '\n');
+                line = nl ? nl + 1 : NULL;
+            }
+            g_free(content);
+        }
+        gtk_box_pack_start(GTK_BOX(vth), row(TR("当前主题色"), cur_accent), FALSE, FALSE, 0);
+        g_free(cur_accent);
+        /* 强调色下拉 */
+        GtkWidget *ac_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *ac_l = gtk_label_new(TR("强调色"));
+        gtk_widget_set_size_request(ac_l, 150, -1);
+        gtk_widget_set_halign(ac_l, GTK_ALIGN_START);
+        g_accent_combo = gtk_combo_box_text_new();
+        const char *accents[] = { "orange", "purple", "blue", "green" };
+        const char *accent_labels[] = { "橙色", "紫色", "蓝色", "绿色" };
+        int cur_ac_idx = 0;
+        for (int i = 0; i < 4; i++) {
+            gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(g_accent_combo), TR(accent_labels[i]));
+            if (strcmp(accents[i], cur_accent) == 0) cur_ac_idx = i;
+        }
+        gtk_combo_box_set_active(GTK_COMBO_BOX(g_accent_combo), cur_ac_idx);
+        const char *env_ac = g_getenv("QY_SETTINGS_ACCENT");
+        if (env_ac) {
+            for (int i = 0; i < 4; i++)
+                if (strcmp(accents[i], env_ac) == 0)
+                    gtk_combo_box_set_active(GTK_COMBO_BOX(g_accent_combo), i);
+        }
+        GtkWidget *ac_btn = gtk_button_new_with_label(TR("应用"));
+        qy_add_class(ac_btn, "qy-btn");
+        g_signal_connect(ac_btn, "clicked", G_CALLBACK(on_accent_apply), NULL);
+        gtk_box_pack_start(GTK_BOX(ac_row), ac_l, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(ac_row), g_accent_combo, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(ac_row), ac_btn, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vth), ac_row, FALSE, FALSE, 0);
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vth, gtk_label_new(TR("主题色")));
+        if (env_ac)
+            g_timeout_add(2050, auto_accent_apply, NULL);
     }
 
     gtk_widget_show_all(win);

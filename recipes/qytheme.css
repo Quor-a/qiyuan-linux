@@ -137,6 +137,18 @@ entry {
     color: #ffffff;
 }
 
+/* ---------- 通用强调按钮 qy-btn ---------- */
+.qy-btn {
+    background-image: none;
+    background-color: #e95420;
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    padding: 6px 16px;
+}
+.qy-btn:hover {
+    background-color: #ff6b3d;
+}
 /* ---------- 对话框 ---------- */
 .qy-dialog {
     background-color: #161b26;
