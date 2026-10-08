@@ -1397,3 +1397,16 @@ ngs-about-v2.png`。
   说明+下拉+按钮渲染正常，qyproject.conf 写入 mode=extend
 
 构建产物：`qydesktop 0.1.0-117`。
+
+### 系统设置：HD Color 页（v0.1.0-118，2026-10 实测）
+
+按设置中心「系统→显示→HD Color」需求，新增 HD Color 页（投影页之后）：
+- 「HDR 视频」GtkSwitch，切换即写 /etc/qyhdr.conf
+- 「颜色配置文件」下拉：sRGB / Display P3 / 鲜艳 + 应用按钮
+- 自动化：`QY_SETTINGS_HDR=off` 启动后自动关闭
+- l10n：高动态范围颜色与显示配置文件/HDR 视频/颜色配置文件/鲜艳
+- 实测：`QY_SETTINGS_PAGE=29` 直达 HD Color 页
+  （QYSETTINGS_DEBUG: set page=29 total=30），
+  HDR 开关+配置下拉+按钮渲染正常，qyhdr.conf 写入 hdr=off
+
+构建产物：`qydesktop 0.1.0-118`。

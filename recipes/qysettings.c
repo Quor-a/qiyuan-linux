@@ -281,6 +281,61 @@ static gboolean auto_perm_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- HD Color: HDR + 颜色配置 ---------- */
+#define HDR_CONF "/etc/qyhdr.conf"
+static int g_hdr_loading = 0;
+static GtkWidget *g_hdr_combo = NULL;
+
+static void hdr_write(const char *key, const char *val) {
+    gchar *content = NULL;
+    gsize len = 0;
+    g_file_get_contents(HDR_CONF, &content, &len, NULL);
+    GString *out = g_string_new(NULL);
+    char *line = content;
+    int replaced = 0;
+    size_t klen = strlen(key);
+    while (line && *line) {
+        char *nl = strchr(line, '\n');
+        size_t llen = nl ? (size_t)(nl - line) : strlen(line);
+        if (strncmp(line, key, klen) == 0 && line[klen] == '=') {
+            g_string_append_printf(out, "%s=%s", key, val);
+            replaced = 1;
+        } else {
+            g_string_append_len(out, line, llen);
+        }
+        if (nl) g_string_append_c(out, '\n');
+        line = nl ? nl + 1 : NULL;
+    }
+    g_free(content);
+    if (!replaced)
+        g_string_append_printf(out, "%s=%s\n", key, val);
+    g_file_set_contents(HDR_CONF, out->str, out->len, NULL);
+    g_string_free(out, TRUE);
+}
+
+static void on_hdr_toggled(GtkWidget *sw, gpointer ud) {
+    if (g_hdr_loading) return;
+    (void)ud;
+    hdr_write("hdr", gtk_switch_get_active(GTK_SWITCH(sw)) ? "on" : "off");
+}
+
+static void on_hdr_profile_apply(GtkWidget *w, gpointer ud) {
+    (void)w; (void)ud;
+    const char *profiles[] = { "srgb", "p3", "vivid" };
+    int act = gtk_combo_box_get_active(GTK_COMBO_BOX(g_hdr_combo));
+    if (act < 0) act = 0;
+    if (act > 2) act = 2;
+    hdr_write("profile", profiles[act]);
+}
+
+/* 自动化验证: QY_SETTINGS_HDR=off 启动后关闭 */
+static gboolean auto_hdr_apply(gpointer p) {
+    (void)p;
+    const char *env = g_getenv("QY_SETTINGS_HDR");
+    if (env) hdr_write("hdr", strcmp(env, "off") == 0 ? "off" : "on");
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 投影: 模式写 /etc/qyproject.conf ---------- */
 #define PROJECT_CONF "/etc/qyproject.conf"
 static GtkWidget *g_proj_combo = NULL;
@@ -2373,6 +2428,62 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_notebook_append_page(GTK_NOTEBOOK(nb), vpj, gtk_label_new(TR("投影")));
         if (env_pj)
             g_timeout_add(1550, auto_project_apply, NULL);
+    }
+
+    /* HD Color 页: HDR 开关 + 颜色配置文件（写 /etc/qyhdr.conf） */
+    {
+        GtkWidget *vhd = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        gtk_container_set_border_width(GTK_CONTAINER(vhd), 14);
+        gtk_box_pack_start(GTK_BOX(vhd), row(TR("HD Color"), TR("高动态范围颜色与显示配置文件")), FALSE, FALSE, 0);
+        GtkWidget *hdr_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *hdr_l = gtk_label_new(TR("HDR 视频"));
+        gtk_widget_set_size_request(hdr_l, 180, -1);
+        gtk_widget_set_halign(hdr_l, GTK_ALIGN_START);
+        GtkWidget *hdr_sw = gtk_switch_new();
+        g_hdr_loading = 1;
+        gchar *content = NULL;
+        gsize len = 0;
+        int cur_on = 0;
+        if (g_file_get_contents(HDR_CONF, &content, &len, NULL)) {
+            char *line = content;
+            while (line && *line) {
+                if (strncmp(line, "hdr=", 4) == 0) {
+                    cur_on = strncmp(line + 4, "off", 3) != 0;
+                    break;
+                }
+                char *nl = strchr(line, '\n');
+                line = nl ? nl + 1 : NULL;
+            }
+            g_free(content);
+        }
+        const char *env_hdr = g_getenv("QY_SETTINGS_HDR");
+        if (env_hdr)
+            cur_on = strcmp(env_hdr, "off") != 0;
+        gtk_switch_set_active(GTK_SWITCH(hdr_sw), cur_on);
+        g_signal_connect(hdr_sw, "state-set", G_CALLBACK(on_hdr_toggled), NULL);
+        gtk_box_pack_start(GTK_BOX(hdr_row), hdr_l, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(hdr_row), hdr_sw, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vhd), hdr_row, FALSE, FALSE, 0);
+        g_hdr_loading = 0;
+        GtkWidget *pf_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+        GtkWidget *pf_l = gtk_label_new(TR("颜色配置文件"));
+        gtk_widget_set_size_request(pf_l, 180, -1);
+        gtk_widget_set_halign(pf_l, GTK_ALIGN_START);
+        g_hdr_combo = gtk_combo_box_text_new();
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(g_hdr_combo), "sRGB");
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(g_hdr_combo), "Display P3");
+        gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(g_hdr_combo), TR("鲜艳"));
+        gtk_combo_box_set_active(GTK_COMBO_BOX(g_hdr_combo), 0);
+        GtkWidget *pf_btn = gtk_button_new_with_label(TR("应用"));
+        qy_add_class(pf_btn, "qy-btn");
+        g_signal_connect(pf_btn, "clicked", G_CALLBACK(on_hdr_profile_apply), NULL);
+        gtk_box_pack_start(GTK_BOX(pf_row), pf_l, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(pf_row), g_hdr_combo, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(pf_row), pf_btn, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(vhd), pf_row, FALSE, FALSE, 0);
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vhd, gtk_label_new("HD Color"));
+        if (env_hdr)
+            g_timeout_add(1600, auto_hdr_apply, NULL);
     }
 
     gtk_widget_show_all(win);
