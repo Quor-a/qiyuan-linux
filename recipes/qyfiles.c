@@ -37,6 +37,7 @@ static void add_class(GtkWidget *w, const char *cls) {
 
 /* 工具栏按钮（按 普通目录 / 回收站 切换可见性） */
 static GtkWidget *b_mk = NULL, *b_del = NULL, *b_ren = NULL;
+static GtkWidget *b_nf = NULL;   /* 新建文件按钮 */
 static GtkWidget *b_open = NULL;
 static GtkWidget *b_cp = NULL, *b_prop = NULL;
 static GtkWidget *b_res = NULL, *b_pur = NULL, *b_emp = NULL;
@@ -45,6 +46,7 @@ static void set_mode_buttons(void) {
     if (!b_mk) return;
     gboolean trash = in_trash;
     gtk_widget_set_visible(b_mk, !trash);
+    gtk_widget_set_visible(b_nf, !trash);
     gtk_widget_set_visible(b_del, !trash);
     gtk_widget_set_visible(b_ren, !trash);
     gtk_widget_set_visible(b_open, !trash);
@@ -295,6 +297,43 @@ static void do_mkdir(void) {
     }
     gtk_widget_destroy(dlg);
     chdir_to(cwd);
+}
+
+/* 新建文本文件（默认 新建文件.txt，可改名） */
+static void do_newfile(void) {
+    GtkWidget *dlg = gtk_dialog_new_with_buttons("新建文件", GTK_WINDOW(gtk_widget_get_toplevel(view)),
+        GTK_DIALOG_MODAL, "_取消", GTK_RESPONSE_CANCEL, "_确定", GTK_RESPONSE_OK, NULL);
+    GtkWidget *entry = gtk_entry_new();
+    gtk_entry_set_text(GTK_ENTRY(entry), "新建文件.txt");
+    GtkWidget *box = gtk_dialog_get_content_area(GTK_DIALOG(dlg));
+    gtk_box_pack_start(GTK_BOX(box), entry, FALSE, FALSE, 6);
+    gtk_widget_show_all(dlg);
+    if (gtk_dialog_run(GTK_DIALOG(dlg)) == GTK_RESPONSE_OK) {
+        const char *nn = gtk_entry_get_text(GTK_ENTRY(entry));
+        if (nn[0]) {
+            gchar *full = g_build_filename(cwd, nn, NULL);
+            if (g_file_set_contents(full, "", 0, NULL) == TRUE)
+                gtk_label_set_text(GTK_LABEL(status), "文件已创建");
+            else
+                gtk_label_set_text(GTK_LABEL(status), "创建失败");
+            g_free(full);
+        }
+    }
+    gtk_widget_destroy(dlg);
+    chdir_to(cwd);
+}
+
+/* 自动化: QYFILES_NEWFILE=1 启动后直接创建未命名.txt（跳过对话框） */
+static gboolean auto_newfile(gpointer p) {
+    (void)p;
+    gchar *full = g_build_filename(cwd, "未命名.txt", NULL);
+    if (g_file_set_contents(full, "", 0, NULL))
+        g_printerr("QYFILESDBG: newfile created %s\n", full);
+    else
+        g_printerr("QYFILESDBG: newfile failed\n");
+    g_free(full);
+    chdir_to(cwd);
+    return G_SOURCE_REMOVE;
 }
 
 /* 复制选中文件为副本（"名字 副本.ext" / 已存在则 副本.2.ext） */
@@ -925,6 +964,9 @@ static void activate(GtkApplication *app, gpointer ud) {
     b_mk = gtk_button_new_with_label(TR("新建文件夹"));
     add_class(b_mk, "qy-btn");
     g_signal_connect(b_mk, "clicked", G_CALLBACK(do_mkdir), NULL);
+    b_nf = gtk_button_new_with_label(TR("新建文件"));
+    add_class(b_nf, "qy-btn");
+    g_signal_connect(b_nf, "clicked", G_CALLBACK(do_newfile), NULL);
     b_del = gtk_button_new_with_label(TR("删除"));
     add_class(b_del, "qy-btn");
     g_signal_connect(b_del, "clicked", G_CALLBACK(do_delete), NULL);
@@ -956,6 +998,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(hbox), b_home, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_up, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_mk, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), b_nf, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_del, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_ren, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_cp, FALSE, FALSE, 0);
@@ -1061,6 +1104,9 @@ static void activate(GtkApplication *app, gpointer ud) {
             g_timeout_add(300, (GSourceFunc)auto_search, NULL);
         }
     }
+    /* 自动化验证: QYFILES_NEWFILE=1 启动后新建未命名.txt */
+    if (g_getenv("QYFILES_NEWFILE"))
+        g_timeout_add(900, (GSourceFunc)auto_newfile, NULL);
 }
 
 int main(int argc, char **argv) {

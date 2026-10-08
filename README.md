@@ -1898,3 +1898,12 @@ ngs-about-v2.png`。
 - **自动化**：`QYDESKTOP_CALENDAR=1` 启动后自动弹出日历 → 日志 `QYDESKTOPDBG: calendar shown`，截图可见日历组件
 
 构建产物：`qydesktop 0.1.0-181`。
+
+### 文件管理器：新建文本文件（v0.1.0-182，2026-10 实测）
+
+针对排查报告"文件管理完整性"：
+- **qyfiles 工具栏新增"新建文件"按钮**：对话框输入文件名（默认"新建文件.txt"），一键创建空文本文件
+- 回收站模式下按钮自动隐藏，普通目录下可用
+- **自动化**：`QYFILES_NEWFILE=1` 启动后直接创建"未命名.txt" → 日志 `QYFILESDBG: newfile created /root/未命名.txt`，实测文件已生成（0 字节）
+
+构建产物：`qydesktop 0.1.0-182`。
