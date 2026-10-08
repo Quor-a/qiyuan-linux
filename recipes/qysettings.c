@@ -277,6 +277,26 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_label_set_markup(GTK_LABEL(llb), TR("<b>界面语言 / Interface Language</b>"));
     gtk_widget_set_halign(llb, GTK_ALIGN_START);
     gtk_box_pack_start(GTK_BOX(vlang), llb, FALSE, FALSE, 0);
+    /* 当前语言（/etc/qylang: zh/en，默认 zh） */
+    {
+        char lang[16] = "zh";
+        FILE *lf = fopen("/etc/qylang", "r");
+        if (lf) {
+            if (fgets(lang, sizeof lang, lf)) {
+                char *nl = strchr(lang, '\n');
+                if (nl) *nl = 0;
+            }
+            fclose(lf);
+        }
+        gchar *cur = g_strdup_printf("%s: %s", TR("当前语言"),
+                                     strncmp(lang, "en", 2) == 0
+                                         ? "English" : TR("简体中文"));
+        GtkWidget *cl = gtk_label_new(cur);
+        gtk_widget_set_halign(cl, GTK_ALIGN_START);
+        qy_add_class(cl, "qy-settings-curlang");
+        gtk_box_pack_start(GTK_BOX(vlang), cl, FALSE, FALSE, 0);
+        g_free(cur);
+    }
     GtkWidget *bzh = gtk_button_new_with_label(TR("简体中文"));
     GtkWidget *ben = gtk_button_new_with_label("English");
     g_signal_connect(bzh, "clicked", G_CALLBACK(on_lang_zh), NULL);
@@ -292,8 +312,11 @@ static void activate(GtkApplication *app, gpointer ud) {
     const char *pg = g_getenv("QY_SETTINGS_PAGE");
     if (pg) {
         int n = atoi(pg);
-        if (n >= 0 && n < gtk_notebook_get_n_pages(GTK_NOTEBOOK(nb)))
+        if (n >= 0 && n < gtk_notebook_get_n_pages(GTK_NOTEBOOK(nb))) {
             gtk_notebook_set_current_page(GTK_NOTEBOOK(nb), n);
+            g_print("QYSETTINGS_DEBUG: set page=%d total=%d\n", n,
+                     gtk_notebook_get_n_pages(GTK_NOTEBOOK(nb)));
+        }
     }
 }
 

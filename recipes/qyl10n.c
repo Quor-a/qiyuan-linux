@@ -38,6 +38,7 @@ static const pair tbl[] = {
     { "音量", "Volume" },
     { "亮度", "Brightness" },
     { "简体中文", "Simplified Chinese" },
+    { "当前语言", "Current language" },
     { "English", "English" },
     /* 编辑器/查看器 */
     { "打开", "Open" },
