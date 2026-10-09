@@ -442,6 +442,7 @@ static void menu_open_terminal(GtkMenuItem *mi, gpointer ud) { launch_cmd("westo
 static void menu_open_files(GtkMenuItem *mi, gpointer ud) { launch_cmd("qyfiles"); }
 static void menu_open_settings(GtkMenuItem *mi, gpointer ud) { launch_cmd("qysettings"); }
 static void menu_open_monitor(GtkMenuItem *mi, gpointer ud) { launch_cmd("qymon"); }
+static void menu_open_driver(GtkMenuItem *mi, gpointer ud) { launch_cmd("qydriver"); }
 static void menu_open_trash(GtkMenuItem *mi, gpointer ud) { launch_cmd("qyfiles --trash"); }
 static void menu_refresh_wallpaper(GtkMenuItem *mi, gpointer ud) {
     rotate_wallpaper();
@@ -537,6 +538,10 @@ static gboolean desk_button_press(GtkWidget *w, GdkEventButton *ev, gpointer ud)
         mi = gtk_menu_item_new_with_label(TR("系统监视"));
         add_class(mi, "qy-menu-item");
         g_signal_connect(mi, "activate", G_CALLBACK(menu_open_monitor), NULL);
+        gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
+        mi = gtk_menu_item_new_with_label(TR("驱动管理器"));
+        add_class(mi, "qy-menu-item");
+        g_signal_connect(mi, "activate", G_CALLBACK(menu_open_driver), NULL);
         gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
         mi = gtk_menu_item_new_with_label(TR("回收站"));
         add_class(mi, "qy-menu-item");
