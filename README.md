@@ -1981,3 +1981,12 @@ ngs-about-v2.png`。
 - 键盘 + 鼠标双输入方式，提升日常使用效率
 
 构建产物：`qydesktop 0.1.0-190`。
+
+### 欢迎向导：表单自动填充验证（v0.1.0-191，2026-10 实测）
+
+针对排查报告"系统能力/装机体验"：
+- **qywelcome 首启向导支持自动化验证**：`QYWELCOME_FILL=1` 启动后自动填写主机名/用户名/密码/时区
+- 实测日志 `QYWELCOMEDBG: filled host=qiyuan user=user tz=Asia/Shanghai`，截图中表单各字段已填充
+- 为装机向导的自测/截图提供稳定入口
+
+构建产物：`qydesktop 0.1.0-191`。

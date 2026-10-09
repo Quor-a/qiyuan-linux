@@ -76,6 +76,7 @@ static void sysinfo_rows(GtkWidget *v) {
     gtk_box_pack_start(GTK_BOX(v), box, FALSE, FALSE, 4);
 }
 
+static gboolean auto_fill(gpointer p);   /* 前向声明 */
 static void activate(GtkApplication *app, gpointer ud) {
     qy_load_theme();
     win = gtk_application_window_new(app);
@@ -133,6 +134,22 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(v), status_lb, FALSE, FALSE, 0);
     gtk_container_add(GTK_CONTAINER(win), v);
     gtk_widget_show_all(win);
+
+    /* 自动化验证: QYWELCOME_FILL=1 启动后自动填写表单 */
+    if (g_getenv("QYWELCOME_FILL"))
+        g_timeout_add(800, auto_fill, NULL);
+}
+
+/* 自动化验证: QYWELCOME_FILL=1 启动后自动填写表单 */
+static gboolean auto_fill(gpointer p) {
+    (void)p;
+    gtk_entry_set_text(GTK_ENTRY(hn_e), "qiyuan");
+    gtk_entry_set_text(GTK_ENTRY(un_e), "user");
+    gtk_entry_set_text(GTK_ENTRY(pw_e), "123456");
+    gtk_entry_set_text(GTK_ENTRY(pw2_e), "123456");
+    gtk_entry_set_text(GTK_ENTRY(tz_e), "Asia/Shanghai");
+    g_printerr("QYWELCOMEDBG: filled host=qiyuan user=user tz=Asia/Shanghai\n");
+    return G_SOURCE_REMOVE;
 }
 
 static void sysrun(const char *fmt, const char *a) {
