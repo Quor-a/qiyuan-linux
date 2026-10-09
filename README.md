@@ -2025,3 +2025,13 @@ ngs-about-v2.png`。
 - **自动化日志**：`QYSWITCHDBG: mode=wayland wayland=qy`，实测 qyswitcher 在 weston 下保持运行
 
 构建产物：`qydesktop 0.1.0-194`。
+
+### 音乐播放器多格式解码（v0.1.0-195，2026-10 实测）
+
+针对排查报告"qymedia 只播 WAV，mp3/flac 全不支持"：
+- **按扩展名选择解码器**：WAV→aplay；MP3/OGG→mpg123→mpv→ffplay；FLAC→mpv→ffplay（自动探测可用程序）
+- **无解码器友好提示**：找不到 mpg123/ffmpeg 时明确提示安装，不再静默失败
+- **去 GtkApplication 依赖**：改普通 gtk_init，无 dbus 会话也能运行（与 qylock/qyswitcher 同型修复）
+- **自动化日志**：`QYMEDIADBG: play /tmp/test.mp3 no decoder`（实测）与 `player=aplay`（WAV）
+
+构建产物：`qydesktop 0.1.0-195`。

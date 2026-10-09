@@ -40,7 +40,35 @@ static void play_file(const char *path) {
     g_snprintf(st, sizeof st, "%s: %s...", TR("正在播放"), path);
     gtk_label_set_text(GTK_LABEL(status_label), st);
 
-    gchar *cmd = g_strdup_printf("aplay -q %s", path);
+    /* 按扩展名选择解码器：WAV 用 aplay；MP3/OGG 用 mpg123/mpv/ffplay；FLAC 用 mpv/ffplay */
+    const char *ext = "";
+    const char *dot = strrchr(path, '.');
+    if (dot) ext = dot + 1;
+    const char *player = "aplay";
+    const char *extra = NULL;
+    if (g_ascii_strcasecmp(ext, "mp3") == 0 || g_ascii_strcasecmp(ext, "ogg") == 0 ||
+        g_ascii_strcasecmp(ext, "oga") == 0) {
+        if (g_find_program_in_path("mpg123")) player = "mpg123";
+        else if (g_find_program_in_path("mpv")) { player = "mpv"; extra = "--no-video"; }
+        else if (g_find_program_in_path("ffplay")) { player = "ffplay"; extra = "-nodisp -autoexit"; }
+        else player = NULL;
+    } else if (g_ascii_strcasecmp(ext, "flac") == 0) {
+        if (g_find_program_in_path("mpv")) { player = "mpv"; extra = "--no-video"; }
+        else if (g_find_program_in_path("ffplay")) { player = "ffplay"; extra = "-nodisp -autoexit"; }
+        else player = NULL;
+    }
+    if (!player) {
+        g_printerr("QYMEDIADBG: play %s no decoder\n", path);
+        g_snprintf(st, sizeof st, "%s: %s", TR("无法播放"), TR("未找到解码器（请安装 mpg123/ffmpeg）"));
+        gtk_label_set_text(GTK_LABEL(status_label), st);
+        return;
+    }
+    gchar *cmd;
+    if (extra)
+        cmd = g_strdup_printf("%s %s %s", player, extra, path);
+    else
+        cmd = g_strdup_printf("%s -q %s", player, path);
+    g_printerr("QYMEDIADBG: play %s player=%s\n", path, player);
     gchar **argv = NULL;
     g_shell_parse_argv(cmd, NULL, &argv, NULL);
     g_free(cmd);
@@ -109,10 +137,9 @@ static gboolean auto_play(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
-static void activate(GtkApplication *app, gpointer ud) {
-    (void)ud;
+static void build_ui(void) {
     qy_load_theme();
-    GtkWidget *win = gtk_application_window_new(app);
+    GtkWidget *win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(win), TR("启元音乐"));
     gtk_window_set_default_size(GTK_WINDOW(win), 480, 320);
 
@@ -162,10 +189,8 @@ static void activate(GtkApplication *app, gpointer ud) {
 }
 
 int main(int argc, char **argv) {
-    GtkApplication *app = gtk_application_new("com.qiyuan.media", G_APPLICATION_NON_UNIQUE);
-    g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
-    char *own_argv[2] = { argv[0], NULL };
-    int rc = g_application_run(G_APPLICATION(app), 1, own_argv);
-    g_object_unref(app);
-    return rc;
+    gtk_init(&argc, &argv);
+    build_ui();
+    gtk_main();
+    return 0;
 }
