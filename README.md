@@ -2280,3 +2280,14 @@ ngs-about-v2.png`。
 - **实测**：qyview 编译 rc=0
 
 构建产物：`qydesktop 0.1.0-220`。
+
+### UI 改版第 1 轮：深色玻璃拟态 + cairo 线稿托盘图标（v0.1.0-221，2026-10 实测）
+
+遵循 ui-design-guide（禁紫色系/禁 emoji 图标/色板收敛）完成首轮视觉升级：
+- **qytheme.css v3**：底色收敛为 #0d1117/面板 #1b2430/#141b24，entry 焦点橙边 + caret 橙，全控件 transition；.c-view 紫色 #8B5CF6 → 青碧 #14B8A6（根除紫色扩散）
+- **托盘图标 cairo 线稿**（替代 emoji）：qydesktop.c 新增 qy_rounded_rect + tray_draw_cb，🌐💾🔊📋📷🔒⏻ → 地球/磁盘/音量/剪贴板/相机/锁/电源 7 个 1.6px 圆头线稿
+- **qyappmenu 色表**：#8b5cf6→#14B8A6、#a78bfa→#333B49
+- 顶栏橙边线降噪 0.5→0.3；托盘按钮统一 28px/8px 圆角；notebook 选中改「面板底+橙色上边条」；滚动条 #3a4559 + 橙色 hover；新增 tooltip/switch/selection 深色样式
+- 实测：qydesktop/qyappmenu 编译 rc=0
+
+构建产物：`qydesktop 0.1.0-221`。

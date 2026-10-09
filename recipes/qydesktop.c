@@ -742,6 +742,99 @@ static void tray_launch(const char *cmd) {
 static void on_tray_clicked(GtkWidget *w, gpointer ud) {
     tray_launch((const char *)ud);
 }
+/* ---------- 托盘 cairo 线稿图标（替代 emoji，去 AI 感） ---------- */
+enum { TRAY_NET, TRAY_DRV, TRAY_VOL, TRAY_CLIP, TRAY_SHOT, TRAY_LOCK, TRAY_PWR };
+
+static void qy_rounded_rect(cairo_t *cr, double x, double y, double w, double h, double r) {
+    cairo_new_sub_path(cr);
+    cairo_arc(cr, x + w - r, y + r, r, -G_PI / 2, 0);
+    cairo_arc(cr, x + w - r, y + h - r, r, 0, G_PI / 2);
+    cairo_arc(cr, x + r, y + h - r, r, G_PI / 2, G_PI);
+    cairo_arc(cr, x + r, y + r, r, G_PI, 3 * G_PI / 2);
+    cairo_close_path(cr);
+}
+
+static gboolean tray_draw_cb(GtkWidget *w, cairo_t *cr, gpointer ud) {
+    int icon = GPOINTER_TO_INT(ud);
+    double cx = gtk_widget_get_allocated_width(w) / 2.0;
+    double cy = gtk_widget_get_allocated_height(w) / 2.0;
+    cairo_set_source_rgb(cr, 0.79, 0.80, 0.83);   /* #c9cdd4 与 .qy-status-btn 一致 */
+    cairo_set_line_width(cr, 1.6);
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+    cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);
+    switch (icon) {
+    case TRAY_NET: {
+        cairo_arc(cr, cx, cy, 7, 0, 2 * G_PI); cairo_stroke(cr);
+        cairo_move_to(cr, cx - 7, cy); cairo_line_to(cr, cx + 7, cy); cairo_stroke(cr);
+        cairo_save(cr);
+        cairo_scale(cr, 1, 0.6);
+        cairo_arc(cr, cx, cy / 0.6, 7, 0, 2 * G_PI);
+        cairo_restore(cr);
+        cairo_stroke(cr);
+        break;
+    }
+    case TRAY_DRV: {
+        qy_rounded_rect(cr, cx - 9, cy - 6, 18, 12, 2.5); cairo_stroke(cr);
+        cairo_rectangle(cr, cx - 3, cy - 3.5, 6, 4); cairo_stroke(cr);
+        cairo_move_to(cr, cx - 5, cy + 4.5); cairo_line_to(cr, cx + 5, cy + 4.5); cairo_stroke(cr);
+        break;
+    }
+    case TRAY_VOL: {
+        cairo_move_to(cr, cx - 6, cy - 2.5);
+        cairo_line_to(cr, cx - 2, cy - 2.5);
+        cairo_line_to(cr, cx + 3, cy - 6.5);
+        cairo_line_to(cr, cx + 3, cy + 6.5);
+        cairo_line_to(cr, cx - 2, cy + 2.5);
+        cairo_line_to(cr, cx - 6, cy + 2.5);
+        cairo_close_path(cr); cairo_stroke(cr);
+        cairo_arc(cr, cx + 5, cy, 3.5, -0.9, 0.9); cairo_stroke(cr);
+        cairo_arc(cr, cx + 6.8, cy, 6.2, -0.9, 0.9); cairo_stroke(cr);
+        break;
+    }
+    case TRAY_CLIP: {
+        qy_rounded_rect(cr, cx - 6, cy - 8, 12, 14, 2); cairo_stroke(cr);
+        qy_rounded_rect(cr, cx - 3, cy - 10, 6, 3, 1); cairo_stroke(cr);
+        cairo_move_to(cr, cx - 3, cy - 2); cairo_line_to(cr, cx + 3, cy - 2); cairo_stroke(cr);
+        cairo_move_to(cr, cx - 3, cy + 1.5); cairo_line_to(cr, cx + 3, cy + 1.5); cairo_stroke(cr);
+        break;
+    }
+    case TRAY_SHOT: {
+        qy_rounded_rect(cr, cx - 8, cy - 5, 16, 11, 2.5); cairo_stroke(cr);
+        qy_rounded_rect(cr, cx - 3.5, cy - 8, 7, 4, 1); cairo_stroke(cr);
+        cairo_arc(cr, cx, cy, 3, 0, 2 * G_PI); cairo_stroke(cr);
+        break;
+    }
+    case TRAY_LOCK: {
+        qy_rounded_rect(cr, cx - 6.5, cy - 2, 13, 10, 2); cairo_stroke(cr);
+        cairo_arc(cr, cx, cy - 2, 4, G_PI, 2 * G_PI); cairo_stroke(cr);
+        break;
+    }
+    case TRAY_PWR: {
+        cairo_arc(cr, cx, cy + 0.8, 5.2, G_PI * 0.2, G_PI * 1.8); cairo_stroke(cr);
+        cairo_move_to(cr, cx, cy - 7); cairo_line_to(cr, cx, cy - 1.5); cairo_stroke(cr);
+        break;
+    }
+    }
+    return FALSE;
+}
+
+static GtkWidget *make_tray_icon_btn_cb(int icon, const char *tip, GCallback cb, gpointer data) {
+    GtkWidget *b = gtk_button_new();
+    gtk_button_set_relief(GTK_BUTTON(b), GTK_RELIEF_NONE);
+    add_class(b, "qy-status-btn");
+    GtkWidget *da = gtk_drawing_area_new();
+    gtk_widget_set_size_request(da, 22, 22);
+    g_signal_connect(da, "draw", G_CALLBACK(tray_draw_cb), GINT_TO_POINTER(icon));
+    gtk_container_add(GTK_CONTAINER(b), da);
+    gtk_widget_set_tooltip_text(b, tip);
+    g_signal_connect(b, "clicked", cb, data);
+    return b;
+}
+
+static GtkWidget *make_tray_icon_btn(int icon, const char *tip, const char *cmd) {
+    return make_tray_icon_btn_cb(icon, tip, G_CALLBACK(on_tray_clicked), g_strdup(cmd));
+}
+
 static GtkWidget *make_tray_btn(const char *icon, const char *tip, const char *cmd) {
     GtkWidget *b = gtk_button_new_with_label(icon);
     gtk_button_set_relief(GTK_BUTTON(b), GTK_RELIEF_NONE);
@@ -897,24 +990,16 @@ static void build_bar(void) {
     gtk_container_add(GTK_CONTAINER(notif_eb), notif_label);
     gtk_box_pack_start(GTK_BOX(st), notif_eb, FALSE, FALSE, 0);
 
-    /* 系统托盘: 网络/声音/剪贴板/截图/锁屏 */
+    /* 系统托盘: 网络/声音/剪贴板/截图/锁屏（cairo 线稿图标） */
     GtkWidget *tray_hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
-    gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_btn("🌐", TR("网络"), "qynet"), FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_btn("💾", TR("驱动"), "qydriver"), FALSE, FALSE, 0);
-    GtkWidget *vol_btn = gtk_button_new_with_label("🔊");
-    gtk_button_set_relief(GTK_BUTTON(vol_btn), GTK_RELIEF_NONE);
-    add_class(vol_btn, "qy-status-btn");
-    gtk_widget_set_tooltip_text(vol_btn, TR("声音"));
-    g_signal_connect(vol_btn, "clicked", G_CALLBACK(on_vol_btn_clicked), NULL);
+    gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_icon_btn(TRAY_NET, TR("网络"), "qynet"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_icon_btn(TRAY_DRV, TR("驱动"), "qydriver"), FALSE, FALSE, 0);
+    GtkWidget *vol_btn = make_tray_icon_btn_cb(TRAY_VOL, TR("声音"), G_CALLBACK(on_vol_btn_clicked), NULL);
     gtk_box_pack_start(GTK_BOX(tray_hb), vol_btn, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_btn("📋", TR("剪贴板"), "qyclip"), FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_btn("📷", TR("截图"), "qyshot"), FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_btn("🔒", TR("锁屏"), "qylock"), FALSE, FALSE, 0);
-    power_btn = gtk_button_new_with_label("⏻");
-    gtk_button_set_relief(GTK_BUTTON(power_btn), GTK_RELIEF_NONE);
-    add_class(power_btn, "qy-status-btn");
-    gtk_widget_set_tooltip_text(power_btn, TR("电源"));
-    g_signal_connect(power_btn, "clicked", G_CALLBACK(on_power_btn_clicked), NULL);
+    gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_icon_btn(TRAY_CLIP, TR("剪贴板"), "qyclip"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_icon_btn(TRAY_SHOT, TR("截图"), "qyshot"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_icon_btn(TRAY_LOCK, TR("锁屏"), "qylock"), FALSE, FALSE, 0);
+    power_btn = make_tray_icon_btn_cb(TRAY_PWR, TR("电源"), G_CALLBACK(on_power_btn_clicked), NULL);
     gtk_box_pack_start(GTK_BOX(tray_hb), power_btn, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(st), tray_hb, FALSE, FALSE, 4);
     gtk_widget_set_margin_end(st, 8);

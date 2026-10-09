@@ -1,34 +1,40 @@
-/* qytheme.css — 启元桌面主题 v2.0
- * 深色底 + 品牌橙(#E95420)/紫(#77216F) 强调色
+/* qytheme.css — 启元桌面主题 v3.0
+ * 设计方向：暖夜深色玻璃拟态
+ * 底色 #0d1117 / 面板 #141b24 / 控件 #1b2430 / 强调橙 #E95420 / 青蓝 #0A7EA4
  * 供 qydesktop/qyappmenu 加载: /usr/share/themes/qiyuan/gtk-3.0/gtk.css
  */
 
 /* 加载本主题的应用进程内，所有窗口默认深色底 */
 window {
-    background-color: #10151f;
-    color: #f5f6f7;
+    background-color: #0d1117;
+    color: #e6e9ef;
 }
 entry {
-    background-color: #1c2331;
-    color: #f5f6f7;
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background-color: #1b2430;
+    color: #e6e9ef;
+    caret-color: #E95420;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 8px;
+    transition: border-color 150ms ease;
+}
+entry:focus {
+    border-color: rgba(233, 84, 32, 0.55);
 }
 
 /* ---------- 列表（剪贴板/文件列表等统一深色） ---------- */
 list {
-    background-color: #141a26;
-    color: #f5f6f7;
+    background-color: #141b24;
+    color: #e6e9ef;
 }
 list row {
     background-color: transparent;
-    color: #f5f6f7;
+    color: #e6e9ef;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 list row button {
     background-color: transparent;
-    color: #f5f6f7;
-    border-radius: 4px;
+    color: #e6e9ef;
+    border-radius: 6px;
     padding: 6px 10px;
 }
 list row button:hover {
@@ -51,8 +57,8 @@ list row button:hover {
 
 /* ---------- 顶栏 ---------- */
 .qy-bar {
-    background-color: rgba(11, 18, 32, 0.94);
-    border-bottom: 1px solid rgba(233, 84, 32, 0.5);
+    background-color: rgba(10, 15, 26, 0.92);
+    border-bottom: 1px solid rgba(233, 84, 32, 0.3);
 }
 .qy-bar-btn {
     background-image: none;
@@ -60,8 +66,9 @@ list row button:hover {
     border: none;
     border-radius: 6px;
     padding: 2px 10px;
-    color: #f5f6f7;
+    color: #e6e9ef;
     font-size: 13px;
+    transition: background-color 150ms ease, color 150ms ease;
 }
 .qy-bar-btn:hover {
     background-color: rgba(255, 255, 255, 0.12);
@@ -82,10 +89,12 @@ list row button:hover {
     background-image: none;
     background-color: transparent;
     border: none;
-    border-radius: 6px;
-    padding: 2px 8px;
+    border-radius: 8px;
+    padding: 4px 8px;
+    min-height: 28px;
     color: #c9cdd4;
     font-size: 14px;
+    transition: background-color 150ms ease, color 150ms ease;
 }
 .qy-status-btn:hover {
     background-color: rgba(255, 255, 255, 0.12);
@@ -95,8 +104,9 @@ list row button:hover {
 /* ---------- 左侧 Dock ---------- */
 .qy-dock {
     background-color: rgba(11, 18, 32, 0.85);
-    border-radius: 12px;
+    border-radius: 14px;
     border: 1px solid rgba(255, 255, 255, 0.07);
+    box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
 }
 .qy-dock-icon {
     background-image: none;
@@ -107,9 +117,10 @@ list row button:hover {
     font-size: 20px;
     min-width: 48px;
     min-height: 48px;
+    transition: box-shadow 150ms ease, transform 150ms ease;
 }
 .qy-dock-icon:hover {
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.55);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
 }
 .qy-dock-dot {
     color: #7cfc9a;
@@ -156,14 +167,15 @@ list row button:hover {
 
 /* ---------- 菜单 ---------- */
 .qy-menu {
-    background-color: #161b26;
-    border-radius: 8px;
+    background-color: #141b24;
+    border-radius: 10px;
     border: 1px solid rgba(255, 255, 255, 0.08);
-    color: #f5f6f7;
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+    color: #e6e9ef;
 }
 .qy-menu-item {
     padding: 6px 18px;
-    color: #f5f6f7;
+    color: #e6e9ef;
     font-size: 13px;
 }
 .qy-menu-item:hover {
@@ -179,25 +191,28 @@ list row button:hover {
     border-radius: 8px;
     color: #ffffff;
     padding: 6px 16px;
+    transition: background-color 150ms ease, box-shadow 150ms ease;
 }
 .qy-btn:hover {
     background-color: #ff6b3d;
+    box-shadow: 0 2px 10px rgba(233, 84, 32, 0.35);
 }
 /* ---------- 对话框 ---------- */
 .qy-dialog {
-    background-color: #161b26;
-    color: #f5f6f7;
+    background-color: #141b24;
+    color: #e6e9ef;
+    border-radius: 12px;
 }
 .qy-dialog .qy-btn {
     background-image: none;
-    background-color: #2a2e3a;
+    background-color: #263041;
     border: none;
     border-radius: 8px;
-    color: #f5f6f7;
+    color: #e6e9ef;
     padding: 6px 16px;
 }
 .qy-dialog .qy-btn:hover {
-    background-color: #3a3f4d;
+    background-color: #333e52;
 }
 .qy-dialog .qy-btn-danger {
     background-color: #e95420;
@@ -241,32 +256,33 @@ list row button:hover {
 
 /* ---------- 文件管理器 qyfiles ---------- */
 treeview {
-    background-color: #121826;
-    color: #f5f6f7;
+    background-color: #141b24;
+    color: #e6e9ef;
 }
 treeview:selected {
     background-color: #e95420;
     color: #ffffff;
 }
 treeview:hover {
-    background-color: #1c2331;
+    background-color: #263041;
 }
 .qy-files-side {
     background-image: none;
     background-color: transparent;
     border: none;
     border-radius: 8px;
-    color: #f5f6f7;
+    color: #e6e9ef;
     font-size: 13px;
     padding: 4px 10px;
     margin: 1px 0;
+    transition: background-color 150ms ease;
 }
 .qy-files-side:hover {
     background-color: rgba(255, 255, 255, 0.1);
 }
 .qy-files-toolbar {
-    background-color: #1a2130;
-    border-radius: 8px;
+    background-color: #1b2430;
+    border-radius: 10px;
     padding: 4px;
 }
 .qy-files-toolbar .qy-btn {
@@ -274,9 +290,10 @@ treeview:hover {
     background-color: transparent;
     border: none;
     border-radius: 6px;
-    color: #f5f6f7;
+    color: #e6e9ef;
     font-size: 12px;
     padding: 3px 10px;
+    transition: background-color 150ms ease;
 }
 .qy-files-toolbar .qy-btn:hover {
     background-color: rgba(255, 255, 255, 0.1);
@@ -297,14 +314,16 @@ treeview:hover {
 /* ---------- 全局控件（所有接入主题的应用统一深色） ---------- */
 button {
     background-image: none;
-    background-color: #1c2331;
-    color: #f5f6f7;
-    border: none;
-    border-radius: 6px;
+    background-color: #1b2430;
+    color: #e6e9ef;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
     padding: 4px 10px;
+    transition: background-color 150ms ease, border-color 150ms ease;
 }
 button:hover {
-    background-color: #283142;
+    background-color: #263041;
+    border-color: rgba(255, 255, 255, 0.12);
 }
 button:active {
     background-color: #e95420;
@@ -314,36 +333,43 @@ button:checked {
     color: #ffffff;
 }
 toolbar {
-    background-color: #1a2130;
+    background-color: #1b2430;
     border: none;
 }
 toolbar button {
     background-color: transparent;
+    border: none;
 }
 notebook {
-    background-color: #10151f;
+    background-color: #0d1117;
 }
 notebook header {
-    background-color: #10151f;
+    background-color: #0d1117;
     border: none;
 }
 notebook header tabs {
-    background-color: #10151f;
+    background-color: #0d1117;
 }
 notebook stack {
-    background-color: #10151f;
+    background-color: #0d1117;
 }
 notebook tab {
     background-image: none;
-    background-color: #1c2331;
+    background-color: #1b2430;
     color: #c9cdd4;
     border-radius: 8px 8px 0 0;
     padding: 4px 14px;
+    transition: background-color 150ms ease;
+}
+notebook tab:hover {
+    background-color: #263041;
 }
 notebook tab:checked {
     background-image: none;
-    background-color: #e95420;
+    background-color: #1b2430;
     color: #ffffff;
+    border-top: 2px solid #E95420;
+    border-radius: 8px 8px 0 0;
 }
 
 /* ---------- 任务栏窗口按钮 ---------- */
@@ -484,25 +510,26 @@ notebook tab:checked {
 
 /* ---------- 桌面图标: 图片查看 ---------- */
 .c-view {
-    background-color: #8B5CF6;
+    background-color: #14B8A6;
 }
 .c-view:hover {
-    background-color: #a78bfa;
+    background-color: #2DD4BF;
 }
 
 /* ---------- 文本编辑器状态栏 ---------- */
 .qy-editor-status {
     font-size: 12px;
-    color: #9CA3AF;
+    color: #9aa3b2;
     padding: 2px 8px;
-    background-color: #1c2331;
+    background-color: #1b2430;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 /* ---------- 软件中心详情卡片 ---------- */
 .qy-store-card {
-    background-color: #1c2331;
-    border-radius: 8px;
-    border: 1px solid #2a3441;
+    background-color: #1b2430;
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
 }
 
 /* ---------- 设置-关于页快捷启动按钮 ---------- */
@@ -519,15 +546,16 @@ notebook tab:checked {
 
 /* ---------- 编辑器工具栏按钮 ---------- */
 .qy-editor-btn {
-    background-color: #1c2331;
+    background-color: #1b2430;
     color: #d6d9de;
-    border: 1px solid #2a3441;
-    border-radius: 4px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    border-radius: 6px;
     padding: 2px 10px;
     font-size: 12px;
+    transition: background-color 150ms ease;
 }
 .qy-editor-btn:hover {
-    background-color: #2a3441;
+    background-color: #263041;
     color: #ffffff;
 }
 
@@ -539,4 +567,57 @@ textview text {
     background-color: #0f1622;
     color: #e6e6e6;
     caret-color: #E95420;
+}
+
+/* ---------- 滚动条（全局统一细滚动条） ---------- */
+scrollbar {
+    background-color: transparent;
+    border: none;
+}
+scrollbar slider {
+    background-color: #3a4559;
+    border-radius: 4px;
+    min-width: 6px;
+    min-height: 6px;
+    border: none;
+}
+scrollbar slider:hover {
+    background-color: rgba(233, 84, 32, 0.55);
+}
+scrollbar trough {
+    background-color: rgba(0, 0, 0, 0.25);
+    border: none;
+}
+
+/* ---------- 提示气泡 tooltip ---------- */
+tooltip {
+    background-color: #141b24;
+    color: #e6e9ef;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    padding: 4px 8px;
+}
+tooltip.background {
+    background-color: #141b24;
+}
+
+/* ---------- 选中文本（全局） ---------- */
+selection {
+    background-color: rgba(233, 84, 32, 0.75);
+    color: #ffffff;
+}
+
+/* ---------- 开关 switch（设置页） ---------- */
+switch {
+    background-color: #263041;
+    border-radius: 10px;
+}
+switch:checked {
+    background-color: #E95420;
+}
+switch slider {
+    background-color: #ffffff;
+    border-radius: 50%;
+    min-width: 18px;
+    min-height: 18px;
 }
