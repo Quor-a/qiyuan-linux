@@ -23,7 +23,7 @@ var O_JP:   i64 = 7160800;
 var O_JL:   i64 = 7291872;
 var O_LB:   i64 = 7324640;
 var O_SCAL: i64 = 7357408;
-var O_FILES: i64 = 12582912;
+var O_FILES: i64 = 16777216;   # 16 个源文件槽 × 1MB
 var O_STRS:  i64 = 22020096;
 # 结构体表：最多 32 个结构体，每个最多 32 个字段
 var O_STN:   i64 = 8388608;    # 结构体名（intern 偏移）
@@ -3274,7 +3274,7 @@ fn compile_file(path: i64) -> i64 {
     let s_in: i64 = INPATH;
 
     let k: i64 = gv(K_NFILE);
-    if k >= 8 { return die("too many imported files\n"); }
+    if k >= 16 { return die("too many imported files\n"); }
     sv(K_NFILE, k + 1);
     let base: i64 = O_FILES + k * 1048576;
 

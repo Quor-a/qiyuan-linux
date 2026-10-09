@@ -912,7 +912,7 @@ fn compile_file(path: i64) -> i64 {
     let s_in: i64 = INPATH;
 
     let k: i64 = gv(K_NFILE);
-    if k >= 8 { return die("too many imported files\n"); }
+    if k >= 16 { return die("too many imported files\n"); }
     sv(K_NFILE, k + 1);
     let base: i64 = O_FILES + k * 1048576;
 
