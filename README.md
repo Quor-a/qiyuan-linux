@@ -2098,3 +2098,14 @@ ngs-about-v2.png`。
 - **截图**：docs/screenshots/qydesktop-notif.png
 
 构建产物：`qydesktop 0.1.0-202`。
+
+### 系统监视器进程管理（v0.1.0-203，2026-10 实测）
+
+针对快捷键/进程管理审查"qymon 只有只读 TOP5，不能点、不能结束"：
+- **全量进程列表**：GtkTreeView 显示 PID/进程名/内存 KB（/proc/PID/comm + status VmRSS），默认按内存降序，列头可点击排序
+- **结束进程**：选中进程 → 「结束进程」按钮 → 二次确认 → `qysudo kill -9 PID`（走密码验证，避免普通用户误杀系统进程）
+- **刷新进程**：一键重新枚举（也可随 1s 定时器更新）
+- **自动化**：`QYMONDBG: procs=156`（实测）
+- **截图**：docs/screenshots/qymon-procs.png
+
+构建产物：`qydesktop 0.1.0-203`。

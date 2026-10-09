@@ -29,6 +29,54 @@ static GtkWidget *cpu_label = NULL, *mem_label = NULL, *info_label = NULL;
 static GtkWidget *title_label = NULL;
 static GtkWidget *disk_label = NULL;
 static GtkWidget *proc_label = NULL;   /* 内存占用 TOP 5 进程列表 */
+static GtkWidget *proc_info_label = NULL; /* 进程列表信息（数量/操作提示） */
+static GtkListStore *proc_store = NULL;   /* 全量进程列表 */
+static GtkWidget *proc_tv = NULL;         /* 进程列表视图 */
+
+enum { P_PID, P_NAME, P_MEM, N_PCOLS };
+
+/* 刷新全量进程列表（/proc/PID/comm + status VmRSS），默认按内存降序 */
+static void refresh_proc_list(void) {
+    if (!proc_store) return;
+    gtk_list_store_clear(proc_store);
+    GDir *dir = g_dir_open("/proc", 0, NULL);
+    if (!dir) return;
+    const char *ent;
+    int n = 0;
+    while ((ent = g_dir_read_name(dir)) != NULL) {
+        if (!g_ascii_isdigit(ent[0])) continue;
+        gchar *cp = g_strdup_printf("/proc/%s/comm", ent);
+        gchar *comm = NULL;
+        if (g_file_get_contents(cp, &comm, NULL, NULL) && comm) {
+            g_strstrip(comm);
+            gchar *sp = g_strdup_printf("/proc/%s/status", ent);
+            gchar *status = NULL;
+            long rss_kb = 0;
+            if (g_file_get_contents(sp, &status, NULL, NULL) && status) {
+                char *vm = strstr(status, "VmRSS:");
+                if (vm) rss_kb = atol(vm + 7);
+            }
+            g_free(sp);
+            g_free(status);
+            GtkTreeIter it;
+            gtk_list_store_append(proc_store, &it);
+            gtk_list_store_set(proc_store, &it,
+                               P_PID, atoi(ent),
+                               P_NAME, comm,
+                               P_MEM, rss_kb, -1);
+            n++;
+            g_free(comm);
+        }
+        g_free(cp);
+    }
+    g_dir_close(dir);
+    g_printerr("QYMONDBG: procs=%d\n", n);
+    if (proc_info_label) {
+        gchar *s = g_strdup_printf(TR("进程 %d 个 · 点击选择后结束"), n);
+        gtk_label_set_text(GTK_LABEL(proc_info_label), s);
+        g_free(s);
+    }
+}
 static GtkWidget *temp_label = NULL;   /* CPU 温度大数字 */
 static unsigned long net_rx_prev = 0, net_tx_prev = 0;   /* 网络速率 */
 static gint64 net_time_prev = 0;
@@ -342,11 +390,48 @@ static gboolean on_draw(GtkWidget *da, cairo_t *cr, gpointer ud) {
     return FALSE;
 }
 
+/* 结束选中的进程（走 qysudo 密码验证，避免普通用户误杀系统进程） */
+static void on_kill_clicked(GtkWidget *w, gpointer ud) {
+    (void)w; (void)ud;
+    if (!proc_tv || !proc_store) return;
+    GtkTreeSelection *sel = gtk_tree_view_get_selection(GTK_TREE_VIEW(proc_tv));
+    GtkTreeIter it;
+    if (!gtk_tree_selection_get_selected(sel, NULL, &it)) {
+        if (proc_info_label)
+            gtk_label_set_text(GTK_LABEL(proc_info_label), TR("请先选择要结束的进程"));
+        return;
+    }
+    int pid = 0; gchar *name = NULL;
+    gtk_tree_model_get(GTK_TREE_MODEL(proc_store), &it, P_PID, &pid, P_NAME, &name, -1);
+    GtkWidget *dlg = gtk_message_dialog_new(NULL, GTK_DIALOG_MODAL, GTK_MESSAGE_WARNING,
+        GTK_BUTTONS_YES_NO, "%s %d (%s)?", TR("确认结束进程"), pid, name ? name : "?");
+    int rc = gtk_dialog_run(GTK_DIALOG(dlg));
+    gtk_widget_destroy(dlg);
+    if (rc == GTK_RESPONSE_YES) {
+        gchar *cmd = g_strdup_printf("qysudo kill -9 %d", pid);
+        g_spawn_command_line_async(cmd, NULL);
+        g_printerr("QYMONDBG: kill pid=%d name=%s\n", pid, name ? name : "?");
+        g_free(cmd);
+        if (proc_info_label) {
+            gchar *s = g_strdup_printf(TR("已请求结束 %d (%s)"), pid, name ? name : "?");
+            gtk_label_set_text(GTK_LABEL(proc_info_label), s);
+            g_free(s);
+        }
+    }
+    g_free(name);
+}
+
+/* 刷新进程列表按钮 */
+static void on_proc_refresh(GtkWidget *w, gpointer ud) {
+    (void)w; (void)ud;
+    refresh_proc_list();
+}
+
 static void activate(GtkApplication *app, gpointer ud) {
     qy_load_theme();
     GtkWidget *win = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(win), TR("启元系统监视器"));
-    gtk_window_set_default_size(GTK_WINDOW(win), 560, 480);
+    gtk_window_set_default_size(GTK_WINDOW(win), 640, 600);
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
     gtk_widget_set_margin_start(vbox, 12);
@@ -381,23 +466,64 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(hrow), temp_label, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), hrow, FALSE, FALSE, 0);
 
-    /* 实时曲线区 */
+    /* 实时曲线区（固定高度，下方让位给进程列表） */
     GtkWidget *da = gtk_drawing_area_new();
-    gtk_widget_set_size_request(da, -1, 160);
+    gtk_widget_set_size_request(da, -1, 140);
     g_signal_connect(da, "draw", G_CALLBACK(on_draw), NULL);
-    gtk_box_pack_start(GTK_BOX(vbox), da, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox), da, FALSE, FALSE, 0);
 
-    /* 内存占用 TOP 5 进程列表 */
+    /* 内存占用 TOP 5 进程列表（快速视图） */
     proc_label = gtk_label_new(NULL);
     add_class(proc_label, "qy-mon-proc");
     gtk_label_set_xalign(GTK_LABEL(proc_label), 0.0);
     gtk_box_pack_start(GTK_BOX(vbox), proc_label, FALSE, FALSE, 0);
+
+    /* 全量进程列表（可排序、可选择） */
+    proc_store = gtk_list_store_new(N_PCOLS, G_TYPE_INT, G_TYPE_STRING, G_TYPE_LONG);
+    proc_tv = gtk_tree_view_new_with_model(GTK_TREE_MODEL(proc_store));
+    GtkCellRenderer *pr = gtk_cell_renderer_text_new();
+    GtkTreeViewColumn *col = gtk_tree_view_column_new_with_attributes("PID", pr, "text", P_PID, NULL);
+    gtk_tree_view_column_set_sort_column_id(col, P_PID);
+    gtk_tree_view_column_set_clickable(col, TRUE);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(proc_tv), col);
+    col = gtk_tree_view_column_new_with_attributes(TR("进程"), pr, "text", P_NAME, NULL);
+    gtk_tree_view_column_set_sort_column_id(col, P_NAME);
+    gtk_tree_view_column_set_clickable(col, TRUE);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(proc_tv), col);
+    col = gtk_tree_view_column_new_with_attributes(TR("内存 KB"), pr, "text", P_MEM, NULL);
+    gtk_tree_view_column_set_sort_column_id(col, P_MEM);
+    gtk_tree_view_column_set_clickable(col, TRUE);
+    gtk_tree_view_append_column(GTK_TREE_VIEW(proc_tv), col);
+    GtkWidget *psw = gtk_scrolled_window_new(NULL, NULL);
+    gtk_widget_set_size_request(psw, -1, 190);
+    gtk_container_add(GTK_CONTAINER(psw), proc_tv);
+    gtk_box_pack_start(GTK_BOX(vbox), psw, TRUE, TRUE, 0);
+
+    /* 进程操作按钮行 */
+    GtkWidget *pbar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+    GtkWidget *b_kill = gtk_button_new_with_label(TR("结束进程"));
+    qy_add_class(b_kill, "qy-btn");
+    g_signal_connect(b_kill, "clicked", G_CALLBACK(on_kill_clicked), NULL);
+    GtkWidget *b_pref = gtk_button_new_with_label(TR("刷新进程"));
+    qy_add_class(b_pref, "qy-btn");
+    g_signal_connect(b_pref, "clicked", G_CALLBACK(on_proc_refresh), NULL);
+    proc_info_label = gtk_label_new("");
+    add_class(proc_info_label, "qy-mon-info");
+    gtk_widget_set_halign(proc_info_label, GTK_ALIGN_START);
+    gtk_box_pack_start(GTK_BOX(pbar), b_kill, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(pbar), b_pref, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(pbar), proc_info_label, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox), pbar, FALSE, FALSE, 0);
 
     /* 底部信息栏: 运行时间 / 负载 / 进程 */
     info_label = gtk_label_new("");
     add_class(info_label, "qy-mon-info");
     gtk_widget_set_halign(info_label, GTK_ALIGN_START);
     gtk_box_pack_start(GTK_BOX(vbox), info_label, FALSE, FALSE, 0);
+
+    /* 默认按内存降序 */
+    gtk_tree_sortable_set_sort_column_id(GTK_TREE_SORTABLE(proc_store), P_MEM, GTK_SORT_DESCENDING);
+    refresh_proc_list();
 
     gtk_widget_show_all(win);
     g_timeout_add_seconds(1, tick, da);
