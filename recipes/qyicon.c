@@ -368,6 +368,13 @@ static void draw_power(cairo_t *cr, double x, double y, double s) {
     cairo_arc(cr, PX(12), PY(12.8), PX(5.2), G_PI * 0.2, G_PI * 1.8); cairo_stroke(cr);
     cairo_move_to(cr, PX(12), PY(5)); cairo_line_to(cr, PX(12), PY(10.5)); cairo_stroke(cr);
 }
+static void draw_grid(cairo_t *cr, double x, double y, double s) {
+    qy_rounded_rect(cr, PX(6), PY(6), PX(5.2), PY(5.2), PX(1.2));
+    qy_rounded_rect(cr, PX(12.8), PY(6), PX(5.2), PY(5.2), PX(1.2));
+    qy_rounded_rect(cr, PX(6), PY(12.8), PX(5.2), PY(5.2), PX(1.2));
+    qy_rounded_rect(cr, PX(12.8), PY(12.8), PX(5.2), PY(5.2), PX(1.2));
+    cairo_stroke(cr);
+}
 
 #undef SET_LINE
 
@@ -383,6 +390,7 @@ static void (* const drawers[QY_ICON_COUNT])(cairo_t *, double, double, double) 
     draw_trash, draw_copy, draw_cut, draw_clipboard, /* DELETE/PASTE 复用 */
     draw_close, draw_min, draw_max, draw_plus,
     draw_volume, draw_power,
+    draw_grid,
 };
 
 /* ---------- 统一分发器 ---------- */

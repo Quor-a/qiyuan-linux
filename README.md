@@ -2354,3 +2354,10 @@ ngs-about-v2.png`。
 - 运行：`qemu-system-x86_64 -m 3072 -cdrom qiyuan-linux-1.5.1.iso -boot d -accel tcg -vga none -device virtio-gpu-pci,xres=1280,yres=800 -monitor unix:/tmp/qymon.sock,server,nowait -serial file:/tmp/qy-serial.log`
 - 结果：ISO 引导 Linux 6.16.1 → live 自动拉起启元桌面（qywelcome/qyfiles/qymon 运行）；`screendump` 1280×800 真实桌面
 - 截图：`docs/screenshots/226-live-{desktop,qy-menu,qy-screen3}.png`；打包 `/home/agentuser/qiyuan-live-226-test.tar.gz`
+
+### UI 改版第 7 轮：GRID 图标 + 锁屏细节 + 通知未读点（v0.1.0-227，2026-10 实测）
+
+- **QY_ICON_GRID**：qyicon 41 图标；Dock 底部应用网格按钮由 SEARCH 占位替换为 GRID（2×2 圆角方块）
+- **锁屏细节**：`#qylock-clock` 96px/200/95% 白、`#qylock-date` 16px/60% 白、`#qylock-pass` 320×44 r10 半透明深底白字（placeholder 60% 白）；壁纸模糊留待代码层背景图层
+- **通知未读点**：GtkOverlay 铃铛右上角 6px 橙点（>9 显示数字徽标），点击已读隐藏；样式 .qy-notif-dot/.qy-notif-badge
+- 16 个应用编译 rc=0；构建产物 `qydesktop 0.1.0-227`

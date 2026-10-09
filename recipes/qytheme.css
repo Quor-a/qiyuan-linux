@@ -56,19 +56,40 @@ list row button:hover {
 }
 
 /* ---------- 锁屏 ---------- */
+/* 背景：壁纸模糊 24px + 亮度 0.85 需要代码层 GdkPixbuf 壁纸图层（qylock 当前
+ * 未内嵌壁纸层，保持深色底作为回退）。CSS filter 会把子控件一起模糊，
+ * 故不在 #qylock-win 上使用 filter: blur()。 */
 #qylock-win {
     background-color: #0b1220;
 }
 #qylock-clock {
     font-size: 96px;
-    font-weight: bold;
+    font-weight: 200;               /* thin */
     letter-spacing: 2px;
-    color: #e6e9ef;
+    color: rgba(255, 255, 255, 0.95);
 }
 #qylock-date {
-    font-size: 26px;
-    letter-spacing: 4px;
-    color: rgba(255, 255, 255, 0.65);
+    font-size: 16px;
+    letter-spacing: 2px;
+    color: rgba(255, 255, 255, 0.60);
+}
+#qylock-pass {
+    min-width: 320px;
+    min-height: 44px;
+    border-radius: 10px;
+    background-color: rgba(15, 20, 32, 0.55);
+    color: #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    caret-color: #E95420;
+    padding: 0 14px;
+    font-size: 15px;
+}
+#qylock-pass:focus {
+    border-color: rgba(233, 84, 32, 0.60);
+    background-color: rgba(15, 20, 32, 0.70);
+}
+#qylock-pass:placeholder {
+    color: rgba(255, 255, 255, 0.60);
 }
 
 /* ---------- 顶栏 ---------- */
@@ -107,6 +128,23 @@ list row button:hover {
 .qy-status-btn:hover {
     background-color: rgba(255, 255, 255, 0.10);
     color: #ffffff;
+}
+
+/* ---------- 通知未读徽标（顶栏铃铛右上角） ---------- */
+.qy-notif-dot {
+    min-width: 6px;
+    min-height: 6px;
+    border-radius: 3px;
+    background-color: #E95420;
+}
+.qy-notif-badge {
+    border-radius: 7px;
+    background-color: #E95420;
+    color: #ffffff;
+    font-size: 9px;
+    font-weight: bold;
+    padding: 0 4px;
+    min-height: 14px;
 }
 
 /* ---------- 左侧 Dock ---------- */

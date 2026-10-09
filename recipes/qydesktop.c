@@ -639,8 +639,50 @@ static gboolean desk_draw(GtkWidget *w, cairo_t *cr, gpointer ud) {
 
 /* ---------- 顶栏 ---------- */
 static GtkWidget *notif_label = NULL;
+static GtkWidget *notif_badge = NULL;   /* 未读徽标（圆点/数字），初始隐藏 */
 static gchar *last_notif_content = NULL;
 static GtkWidget *res_label = NULL;
+
+/* 未读计数 = /tmp/qynotif/history.log 行数（qynotifd 保留最近约 8KB） */
+static int notif_history_count(void) {
+    gchar *hist = NULL;
+    int n = 0;
+    if (g_file_get_contents("/tmp/qynotif/history.log", &hist, NULL, NULL) && hist) {
+        char *p = hist;
+        while (p && *p) {
+            char *nl = strchr(p, '\n');
+            if (nl) *nl = 0;
+            if (p[0]) n++;
+            p = nl ? nl + 1 : NULL;
+        }
+        g_free(hist);
+    }
+    return n;
+}
+
+/* 显示未读徽标：历史 >9 条显示数字徽标，否则显示 6px 橙色圆点 */
+static void notif_badge_show_unread(void) {
+    if (!notif_badge) return;
+    int n = notif_history_count();
+    GtkStyleContext *ctx = gtk_widget_get_style_context(notif_badge);
+    gtk_style_context_remove_class(ctx, "qy-notif-dot");
+    gtk_style_context_remove_class(ctx, "qy-notif-badge");
+    if (n > 9) {
+        gtk_style_context_add_class(ctx, "qy-notif-badge");
+        gchar *s = g_strdup_printf("%d", n);
+        gtk_label_set_text(GTK_LABEL(notif_badge), s);
+        g_free(s);
+    } else {
+        gtk_style_context_add_class(ctx, "qy-notif-dot");
+        gtk_label_set_text(GTK_LABEL(notif_badge), "");
+    }
+    gtk_widget_show(notif_badge);
+}
+
+/* 点击铃铛查看通知后隐藏未读徽标（已读） */
+static void notif_badge_hide(void) {
+    if (notif_badge) gtk_widget_hide(notif_badge);
+}
 
 /* 分辨率快捷切换：改写 weston.ini 的 mode=（start-weston.sh 消费） */
 static void apply_resolution(const char *mode) {
@@ -729,6 +771,7 @@ static gboolean on_notif_clicked(GtkWidget *w, GdkEventButton *ev, gpointer ud) 
     gtk_dialog_run(GTK_DIALOG(dlg));
     gtk_widget_destroy(dlg);
     g_free(hist);
+    notif_badge_hide();   /* 已读：点击查看后隐藏未读徽标 */
     return TRUE;
 }
 
@@ -748,6 +791,7 @@ static gboolean notif_tick(gpointer ud) {
             }
             g_free(last_notif_content);
             last_notif_content = g_strdup(content);
+            notif_badge_show_unread();   /* 新通知：显示未读徽标 */
         }
         g_free(content);
     } else {
@@ -982,12 +1026,23 @@ static void build_bar(void) {
     gtk_widget_add_events(notif_eb, GDK_BUTTON_PRESS_MASK);
     g_signal_connect(notif_eb, "button-press-event", G_CALLBACK(on_notif_clicked), NULL);
     gtk_widget_set_tooltip_text(notif_eb, TR("查看通知"));
-    /* 铃铛 cairo 线稿 + 通知标题 label（有通知时显示标题） */
+    /* 铃铛 cairo 线稿 + 通知标题 label（有通知时显示标题）
+     * 未读徽标：GtkOverlay 叠加在铃铛图标右上角（外缘 2px） */
     GtkWidget *notif_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
+    GtkWidget *bell_overlay = gtk_overlay_new();
     GtkWidget *bell_da = gtk_drawing_area_new();
     gtk_widget_set_size_request(bell_da, 16, 16);
     g_signal_connect(bell_da, "draw", G_CALLBACK(bell_draw_cb), NULL);
-    gtk_container_add(GTK_CONTAINER(notif_box), bell_da);
+    gtk_container_add(GTK_CONTAINER(bell_overlay), bell_da);
+    notif_badge = gtk_label_new(NULL);
+    gtk_widget_set_halign(notif_badge, GTK_ALIGN_END);
+    gtk_widget_set_valign(notif_badge, GTK_ALIGN_START);
+    gtk_widget_set_margin_end(notif_badge, 2);
+    gtk_widget_set_margin_top(notif_badge, 2);
+    gtk_overlay_add_overlay(GTK_OVERLAY(bell_overlay), notif_badge);
+    gtk_widget_set_no_show_all(notif_badge, TRUE);  /* 初始隐藏，出现未读再显示 */
+    gtk_widget_hide(notif_badge);
+    gtk_container_add(GTK_CONTAINER(notif_box), bell_overlay);
     notif_label = gtk_label_new(NULL);
     gtk_container_add(GTK_CONTAINER(notif_box), notif_label);
     gtk_container_add(GTK_CONTAINER(notif_eb), notif_box);
@@ -1028,7 +1083,7 @@ static void build_dock(void) {
     GtkWidget *sep = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_box_pack_start(GTK_BOX(vbox), sep, FALSE, FALSE, 4);
 
-    /* 底部应用网格：统一 cairo 图标（暂无网格枚举，先用 QY_ICON_SEARCH 占位） */
+    /* 底部应用网格：qyicon GRID 图标 */
     GtkWidget *grid_btn = gtk_button_new();
     gtk_button_set_relief(GTK_BUTTON(grid_btn), GTK_RELIEF_NONE);
     add_class(grid_btn, "qy-dock-icon");
@@ -1037,7 +1092,7 @@ static void build_dock(void) {
     gtk_widget_set_size_request(gd, 26, 26);
     gtk_widget_set_halign(gd, GTK_ALIGN_CENTER);
     gtk_widget_set_valign(gd, GTK_ALIGN_CENTER);
-    g_signal_connect(gd, "draw", G_CALLBACK(desktop_icon_draw_cb), GINT_TO_POINTER(QY_ICON_SEARCH));
+    g_signal_connect(gd, "draw", G_CALLBACK(desktop_icon_draw_cb), GINT_TO_POINTER(QY_ICON_GRID));
     gtk_container_add(GTK_CONTAINER(grid_btn), gd);
     gtk_widget_set_tooltip_text(grid_btn, TR("显示应用"));
     g_signal_connect(grid_btn, "clicked", G_CALLBACK(on_appmenu_clicked), NULL);

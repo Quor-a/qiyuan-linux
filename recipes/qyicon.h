@@ -50,6 +50,7 @@ typedef enum {
     QY_ICON_PLUS,      /* 加号 */
     QY_ICON_VOLUME,    /* 音量 */
     QY_ICON_POWER,     /* 电源 */
+    QY_ICON_GRID,      /* 应用网格 */
     QY_ICON_COUNT
 } QyIconId;
 

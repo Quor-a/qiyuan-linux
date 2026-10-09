@@ -108,9 +108,10 @@ static void build_ui(void) {
     /* 解锁行: 密码输入 + 解锁按钮 */
     GtkWidget *row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
     pass_entry = gtk_entry_new();
+    gtk_widget_set_name(pass_entry, "qylock-pass");
     gtk_entry_set_placeholder_text(GTK_ENTRY(pass_entry), TR("输入密码解锁"));
     gtk_entry_set_visibility(GTK_ENTRY(pass_entry), FALSE);
-    gtk_widget_set_size_request(pass_entry, 240, -1);
+    gtk_widget_set_size_request(pass_entry, 320, 44);
     GtkWidget *btn = gtk_button_new_with_label(TR("解锁"));
     qy_add_class(btn, "qy-btn");
     g_signal_connect(btn, "clicked", G_CALLBACK(on_unlock), NULL);
