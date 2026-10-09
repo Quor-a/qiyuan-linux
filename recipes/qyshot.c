@@ -216,10 +216,9 @@ static void activate(GtkApplication *app, gpointer ud) {
 
     /* 按钮行 */
     GtkWidget *bar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-    GtkWidget *b_cap = gtk_button_new_with_label(TR("全屏截图"));
-    qy_add_class(b_cap, "qy-btn");
-    GtkWidget *b_save = gtk_button_new_with_label(TR("保存"));
-    GtkWidget *b_copy = gtk_button_new_with_label(TR("复制到剪贴板"));
+    GtkWidget *b_cap = qy_icon_button(QY_ICON_SHOT, 18, TR("全屏截图"), NULL);
+    GtkWidget *b_save = qy_icon_button(QY_ICON_SAVE, 18, TR("保存"), NULL);
+    GtkWidget *b_copy = qy_icon_button(QY_ICON_COPY, 18, TR("复制到剪贴板"), NULL);
     g_signal_connect(b_cap, "clicked", G_CALLBACK(on_capture), NULL);
     g_signal_connect(b_save, "clicked", G_CALLBACK(on_save), NULL);
     g_signal_connect(b_copy, "clicked", G_CALLBACK(on_copy), NULL);

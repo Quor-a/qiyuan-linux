@@ -892,17 +892,27 @@ static void on_icon_activated(GtkIconView *iv, GtkTreePath *path, gpointer ud) {
     g_free(name);
 }
 
+/* 更新视图切换按钮的图标与提示（随当前视图状态切换: 图标视图/列表视图） */
+static void set_view_btn(GtkWidget *b, gboolean icon_mode) {
+    if (!b) return;
+    GtkWidget *img = gtk_bin_get_child(GTK_BIN(b));
+    if (img) gtk_widget_destroy(img);
+    gtk_container_add(GTK_CONTAINER(b),
+        gtk_image_new_from_pixbuf(qy_icon_pixbuf(icon_mode ? QY_ICON_LIST : QY_ICON_GRID, 18, NULL)));
+    gtk_widget_set_tooltip_text(b, icon_mode ? TR("列表视图") : TR("图标视图"));
+}
+
 /* 切换列表/图标视图 */
 static void on_toggle_view(GtkButton *b, gpointer ud) {
     (void)ud;
     const char *page = stack ? gtk_stack_get_visible_child_name(GTK_STACK(stack)) : "list";
     if (g_strcmp0(page, "list") == 0 || !page) {
         gtk_stack_set_visible_child_name(GTK_STACK(stack), "icon");
-        if (b) gtk_button_set_label(b, TR("列表视图"));
+        set_view_btn(GTK_WIDGET(b), TRUE);
         g_printerr("QYFILESDBG: view=icon\n");
     } else {
         gtk_stack_set_visible_child_name(GTK_STACK(stack), "list");
-        if (b) gtk_button_set_label(b, TR("图标视图"));
+        set_view_btn(GTK_WIDGET(b), FALSE);
         g_printerr("QYFILESDBG: view=list\n");
     }
 }
@@ -1002,17 +1012,20 @@ static void activate(GtkApplication *app, gpointer ud) {
     b_open = gtk_button_new_with_label(TR("打开"));
     add_class(b_open, "qy-btn");
     g_signal_connect(b_open, "clicked", G_CALLBACK(do_open_sel), NULL);
-    GtkWidget *b_view = gtk_button_new_with_label(TR("图标视图"));
+    GtkWidget *b_view = qy_icon_button(QY_ICON_GRID, 18, TR("图标视图"), NULL);
     add_class(b_view, "qy-btn");
     g_signal_connect(b_view, "clicked", G_CALLBACK(on_toggle_view), NULL);
     b_res = gtk_button_new_with_label(TR("还原"));
-    add_class(b_res, "qy-btn qy-btn-danger");
+    add_class(b_res, "qy-btn");
+    add_class(b_res, "qy-btn-danger");
     g_signal_connect(b_res, "clicked", G_CALLBACK(do_restore), NULL);
     b_pur = gtk_button_new_with_label(TR("彻底删除"));
-    add_class(b_pur, "qy-btn qy-btn-danger");
+    add_class(b_pur, "qy-btn");
+    add_class(b_pur, "qy-btn-danger");
     g_signal_connect(b_pur, "clicked", G_CALLBACK(do_purge), NULL);
     b_emp = gtk_button_new_with_label(TR("清空回收站"));
-    add_class(b_emp, "qy-btn qy-btn-danger");
+    add_class(b_emp, "qy-btn");
+    add_class(b_emp, "qy-btn-danger");
     g_signal_connect(b_emp, "clicked", G_CALLBACK(do_empty_trash), NULL);
     gtk_box_pack_start(GTK_BOX(hbox), b_ref, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_home, FALSE, FALSE, 0);

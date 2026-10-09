@@ -7,7 +7,7 @@
 #include <string.h>
 
 /* ---------- 通用圆角矩形 ---------- */
-void qy_rounded_rect(cairo_t *cr, double x, double y, double w, double h, double r) {
+static void qy_rounded_rect(cairo_t *cr, double x, double y, double w, double h, double r) {
     if (r > w / 2) r = w / 2;
     if (r > h / 2) r = h / 2;
     cairo_new_sub_path(cr);

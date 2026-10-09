@@ -2390,3 +2390,14 @@ ngs-about-v2.png`。
 - **浏览器**：删"地址"文本标签；刷新按钮确认已图标化
 - **统一按钮四档**：新增 `.qy-btn-danger`（半透明橙底/边框 → hover 加深 → active 实橙）与 `.qy-btn,.qy-btn-danger{min-height:28px}`
 - 审计字符归零；构建产物 `qydesktop 0.1.0-230`
+
+### UI 改版第 11 轮：搜索行图标+截图/视图图标+死代码清理（v0.1.0-231，2026-10 实测）
+
+- **qysearch**：结果行加 16px cairo 图标（12 应用映射 FILES/TERM/SETTINGS/BROWSER/SHOT/CLIPBOARD/LOCK/SETUP/EDIT/MONITOR/NETWORK/STORE；程序 TERM、文件 FILE）
+- **qyshot**：全屏截图/保存/复制到剪贴板改 QY_ICON_SHOT/SAVE/COPY 图标按钮
+- **qyview**：适应窗口/旋转/保存改 QY_ICON_FIT/ROTATE/SAVE
+- **qyfiles**：视图切换按钮图标化（GRID/LIST 18px 动态换图 + tooltip）；修复 b_res/b_pur/b_emp 空格类名（3 处）
+- **开始菜单**：首个分类标题加 `.qy-appmenu-cat-first`（橙色左边条）
+- **清理**：qyboot font_qi/font_A/font_6x8 死代码、qypkg-inst meta_off、qy_rounded_rect 改 static；qyboot 编译行补 qyicon.c
+- **Dock 悬停**：`.qy-dock-icon:hover` 背景提亮 + 阴影
+- 审计字符归零；构建产物 `qydesktop 0.1.0-231`

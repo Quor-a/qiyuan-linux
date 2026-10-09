@@ -96,7 +96,7 @@ static int install_one(const char *path) {
     if (fread(hdr, 1, HDR_SIZE, f) != HDR_SIZE || memcmp(hdr, QY_MAGIC, 8) != 0) {
         fprintf(stderr, "qypkg-inst: %s 不是 QYPKG 包\n", path); fclose(f); return 3;
     }
-    long meta_off = (long)rd64(hdr + 16),  meta_len = (long)rd64(hdr + 24);
+    long meta_len = (long)rd64(hdr + 24);
     long data_off = (long)rd64(hdr + 32),  data_len = (long)rd64(hdr + 40);
     char *js = malloc(meta_len + 1);
     if (!js || fread(js, 1, meta_len, f) != (size_t)meta_len) { fclose(f); return 3; }

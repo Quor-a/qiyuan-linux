@@ -303,11 +303,11 @@ static void activate(GtkApplication *app, gpointer ud) {
     qy_add_class(page_label, "qy-view-nav-label");
     GtkWidget *b_next = qy_icon_button(QY_ICON_FORWARD, 18, TR("下一张"), NULL);
     qy_add_class(b_next, "qy-view-nav-btn");
-    GtkWidget *b_fit = gtk_button_new_with_label(TR("适应窗口"));
+    GtkWidget *b_fit = qy_icon_button(QY_ICON_FIT, 18, TR("适应窗口"), NULL);
     qy_add_class(b_fit, "qy-view-nav-btn");
-    GtkWidget *b_rot = gtk_button_new_with_label(TR("旋转"));
+    GtkWidget *b_rot = qy_icon_button(QY_ICON_ROTATE, 18, TR("旋转"), NULL);
     qy_add_class(b_rot, "qy-view-nav-btn");
-    GtkWidget *b_save = gtk_button_new_with_label(TR("保存"));
+    GtkWidget *b_save = qy_icon_button(QY_ICON_SAVE, 18, TR("保存"), NULL);
     qy_add_class(b_save, "qy-view-nav-btn");
     save_status = gtk_label_new("");
     qy_add_class(save_status, "qy-view-nav-label");

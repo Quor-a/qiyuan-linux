@@ -251,6 +251,7 @@ static void rebuild(gboolean filtered) {
     g_list_free(ch);
 
     gboolean any = FALSE;
+    gboolean first_cat = TRUE;
     static const char *cats[] = { "系统", "文件", "工具" };
     for (int ci = 0; ci < 3; ci++) {
         int col = 0;
@@ -264,6 +265,10 @@ static void rebuild(gboolean filtered) {
                 gtk_label_set_markup(GTK_LABEL(catlb), g_strdup_printf("<b>%s</b>", TR(cats[ci])));
                 gtk_widget_set_halign(catlb, GTK_ALIGN_START);
                 add_class(catlb, "qy-appmenu-cat");
+                if (first_cat) {
+                    add_class(catlb, "qy-appmenu-cat-first");
+                    first_cat = FALSE;
+                }
                 gtk_box_pack_start(GTK_BOX(grid_box), catlb, FALSE, FALSE, 0);
                 cat_any = TRUE;
                 any = TRUE;

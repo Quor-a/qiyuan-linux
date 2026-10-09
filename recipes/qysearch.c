@@ -12,21 +12,22 @@
 typedef struct {
     const char *name;
     const char *cmd;
+    QyIconId    icon;
 } SearchApp;
 
 static const SearchApp apps[] = {
-    { "文件管理",  "qyfiles"    },
-    { "文本编辑",  "qyedit"    },
-    { "终端",      "qyterm"     },
-    { "设置中心",  "qysettings" },
-    { "系统监视",  "qymon"      },
-    { "网络管理",  "qynet"      },
-    { "应用商店",  "qystore"    },
-    { "浏览器",    "qybrowser"   },
-    { "截图工具",  "qyshot"     },
-    { "剪贴板",    "qyclip"     },
-    { "锁屏",      "qylock"     },
-    { "系统安装",  "qysetup"    },
+    { "文件管理",  "qyfiles",     QY_ICON_FILES     },
+    { "文本编辑",  "qyedit",      QY_ICON_EDIT      },
+    { "终端",      "qyterm",      QY_ICON_TERM      },
+    { "设置中心",  "qysettings",  QY_ICON_SETTINGS  },
+    { "系统监视",  "qymon",       QY_ICON_MONITOR   },
+    { "网络管理",  "qynet",       QY_ICON_NETWORK   },
+    { "应用商店",  "qystore",     QY_ICON_STORE     },
+    { "浏览器",    "qybrowser",   QY_ICON_BROWSER   },
+    { "截图工具",  "qyshot",      QY_ICON_SHOT      },
+    { "剪贴板",    "qyclip",      QY_ICON_CLIPBOARD },
+    { "锁屏",      "qylock",      QY_ICON_LOCK      },
+    { "系统安装",  "qysetup",     QY_ICON_SETUP     },
 };
 #define NAPPS ((int)(sizeof apps / sizeof apps[0]))
 
@@ -36,9 +37,21 @@ static GtkWidget *search_entry = NULL;
 
 static void on_result_clicked(GtkWidget *w, gpointer ud);
 
-static void add_result_row(const char *icon, const char *text, const char *cmd) {
-    GtkWidget *row = gtk_button_new_with_label(icon && icon[0] ? g_strdup_printf("%s  %s", icon, text)
-                                                             : g_strdup(text));
+static void add_result_row(QyIconId icon, const char *text, const char *cmd) {
+    GtkWidget *row = gtk_button_new();
+    GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+    gtk_widget_set_margin_start(hbox, 8);
+    gtk_widget_set_margin_end(hbox, 8);
+    gtk_widget_set_margin_top(hbox, 4);
+    gtk_widget_set_margin_bottom(hbox, 4);
+    GdkPixbuf *pb = qy_icon_pixbuf(icon, 16, NULL);
+    GtkWidget *img = gtk_image_new_from_pixbuf(pb);
+    if (pb) g_object_unref(pb);
+    GtkWidget *lbl = gtk_label_new(text);
+    gtk_label_set_xalign(GTK_LABEL(lbl), 0.0);
+    gtk_box_pack_start(GTK_BOX(hbox), img, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), lbl, TRUE, TRUE, 0);
+    gtk_container_add(GTK_CONTAINER(row), hbox);
     gtk_widget_set_halign(row, GTK_ALIGN_FILL);
     gtk_widget_set_tooltip_text(row, cmd);
     g_signal_connect(row, "clicked", G_CALLBACK(on_result_clicked), g_strdup(cmd));
@@ -71,7 +84,7 @@ static void do_search(const char *q) {
     for (int i = 0; i < NAPPS; i++) {
         const char *name = TR(apps[i].name);
         if (strcasestr(name, q) || strcasestr(apps[i].cmd, q)) {
-            add_result_row("", name, apps[i].cmd);
+            add_result_row(apps[i].icon, name, apps[i].cmd);
             n++;
         }
     }
@@ -84,7 +97,7 @@ static void do_search(const char *q) {
             while ((e = readdir(d)) != NULL && fn < 25) {
                 if (e->d_name[0] == '.') continue;
                 if (strcasestr(e->d_name, q)) {
-                    add_result_row("", e->d_name, e->d_name);
+                    add_result_row(QY_ICON_TERM, e->d_name, e->d_name);
                     n++; fn++;
                 }
             }
@@ -104,7 +117,7 @@ static void do_search(const char *q) {
                 if (e->d_name[0] == '.') continue;
                 if (strcasestr(e->d_name, q)) {
                     gchar *cmd = g_strdup_printf("qyfiles %s", dirs[di]);
-                    add_result_row("", e->d_name, cmd);
+                    add_result_row(QY_ICON_FILE, e->d_name, cmd);
                     g_free(cmd);
                     n++; fn++;
                 }

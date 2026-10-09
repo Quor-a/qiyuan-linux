@@ -52,11 +52,6 @@ static void rect(int x0, int y0, int x1, int y1, uint8_t r, uint8_t g, uint8_t b
             px(x, y, r, g, b);
 }
 
-/* 8x8 内嵌点阵字体: 画字符串 (仅动画需要的字符: 启元 + 版本 + 点) */
-static const uint8_t font_qi[8] = {0x42,0x42,0x7E,0x42,0x42,0x7E,0x42,0x00}; /* 占位 */
-static const uint8_t font_A[8] = {0x18,0x18,0x3C,0x24,0x42,0x7E,0x42,0x00};
-static const uint8_t font_6x8(uint8_t c) { (void)c; return 0; }
-
 /* 简化: 用几何图形画 "启" 的象形 — 外框 + 内横竖 */
 static void draw_logo(int cx, int cy, int s)
 {
