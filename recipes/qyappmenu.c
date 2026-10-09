@@ -306,10 +306,37 @@ static void on_close_clicked(GtkButton *b, gpointer ud) {
     gtk_widget_hide(menu_win);
 }
 
+/* 递归查找第一个可见按钮（grid_box 内是 行box→按钮 结构） */
+static GtkWidget *find_first_visible_button(GtkWidget *w) {
+    if (GTK_IS_BUTTON(w) && gtk_widget_get_visible(w)) return w;
+    if (GTK_IS_CONTAINER(w)) {
+        GList *ch = gtk_container_get_children(GTK_CONTAINER(w));
+        for (GList *l = ch; l; l = l->next) {
+            GtkWidget *found = find_first_visible_button(l->data);
+            if (found) { g_list_free(ch); return found; }
+        }
+        g_list_free(ch);
+    }
+    return NULL;
+}
+
 static gboolean on_menu_keypress(GtkWidget *w, GdkEventKey *ev, gpointer ud) {
     if (ev->keyval == GDK_KEY_Escape) {
         gtk_widget_hide(menu_win);
         return TRUE;
+    }
+    /* ↓ 聚焦第一个可见应用（网格按钮可继续用方向键在行内移动） */
+    if (ev->keyval == GDK_KEY_Down) {
+        GtkWidget *b = find_first_visible_button(grid_box);
+        if (b) { gtk_widget_grab_focus(b); return TRUE; }
+    }
+    /* 回车：搜索框有内容时打开第一个匹配应用 */
+    if (ev->keyval == GDK_KEY_Return || ev->keyval == GDK_KEY_KP_Enter) {
+        const char *q = search_entry ? gtk_entry_get_text(GTK_ENTRY(search_entry)) : NULL;
+        if (q && q[0]) {
+            GtkWidget *b = find_first_visible_button(grid_box);
+            if (b) { g_signal_emit_by_name(b, "clicked"); return TRUE; }
+        }
     }
     return FALSE;
 }

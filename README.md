@@ -2226,3 +2226,13 @@ ngs-about-v2.png`。
 - **截图**：docs/screenshots/qyfiles-pathbar.png
 
 构建产物：`qydesktop 0.1.0-214`。
+
+### 开始菜单键盘导航（v0.1.0-215，2026-10 实测）
+
+针对快捷键审计"qyappmenu 只有 Escape，不能键盘操作"：
+- **↓ 聚焦第一个可见应用**（网格按钮内可用方向键继续移动，GTK 容器递归查找）
+- **回车**（搜索框有内容时）直接打开第一个匹配应用
+- Escape 关闭保持不变
+- **实测**：qyappmenu 编译 rc=0
+
+构建产物：`qydesktop 0.1.0-215`。
