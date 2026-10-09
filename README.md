@@ -2158,3 +2158,13 @@ ngs-about-v2.png`。
 - **截图**：docs/screenshots/qybrowser-accel.png
 
 构建产物：`qydesktop 0.1.0-207`。
+
+### 系统设置快捷键（v0.1.0-208，2026-10 实测）
+
+针对快捷键审计"qysettings 40 个设置页只能翻"：
+- **GtkAccelGroup 绑定 10 个快捷键**：Ctrl+1~9 直达前 9 个分类页 · Ctrl+W 关闭设置
+- 加速键回调通过 g_cclosure_new 绑定（不创建多余 UI）
+- **实测**：`QYSETTINGSDKG: accel 10 keys`，qysettings 在 weston 下运行正常
+- **截图**：docs/screenshots/qysettings-accel.png
+
+构建产物：`qydesktop 0.1.0-208`。

@@ -2,6 +2,7 @@
 #include "qyl10n.h"
 #include "qytheme.h"
 #include <gtk/gtk.h>
+#include <gdk/gdkkeysyms.h>
 #include <glib/gstdio.h>
 #include <sys/utsname.h>
 #include <sys/sysinfo.h>
@@ -1704,6 +1705,21 @@ static gboolean update_dt(gpointer p)
     strftime(buf, sizeof buf, "%Y-%m-%d %H:%M:%S", tm);
     gtk_label_set_text(GTK_LABEL(l), buf);
     return G_SOURCE_CONTINUE;
+}
+
+/* Ctrl+1~9 直达分类页（accelerator 回调，nb 作为 user_data） */
+static void on_accel_page(GtkAccelGroup *ag, GObject *a, guint keyval,
+                          GdkModifierType mod, gpointer ud) {
+    (void)ag; (void)a; (void)mod;
+    if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9)
+        gtk_notebook_set_current_page(GTK_NOTEBOOK((GtkWidget *)ud), keyval - GDK_KEY_1);
+}
+
+/* Ctrl+W 关闭设置窗口 */
+static void on_accel_close(GtkAccelGroup *ag, GObject *a, guint keyval,
+                           GdkModifierType mod, gpointer ud) {
+    (void)ag; (void)a; (void)keyval; (void)mod;
+    gtk_widget_destroy(GTK_WIDGET(ud));
 }
 
 static void activate(GtkApplication *app, gpointer ud) {
@@ -3651,6 +3667,17 @@ static void activate(GtkApplication *app, gpointer ud) {
         if (env_ac)
             g_timeout_add(2050, auto_accent_apply, NULL);
     }
+
+    /* ---------- 设置页快捷键（GtkAccelGroup） ---------- */
+    GtkAccelGroup *accel = gtk_accel_group_new();
+    gtk_window_add_accel_group(GTK_WINDOW(win), accel);
+    for (int i = 1; i <= 9; i++) {
+        GClosure *cl = g_cclosure_new(G_CALLBACK(on_accel_page), nb, NULL);
+        gtk_accel_group_connect(accel, GDK_KEY_1 + (i - 1), GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, cl);
+    }
+    GClosure *clc = g_cclosure_new(G_CALLBACK(on_accel_close), win, NULL);
+    gtk_accel_group_connect(accel, GDK_KEY_w, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, clc);
+    g_printerr("QYSETTINGSDKG: accel 10 keys\n");
 
     gtk_widget_show_all(win);
 
