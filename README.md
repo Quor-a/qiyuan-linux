@@ -2168,3 +2168,13 @@ ngs-about-v2.png`。
 - **截图**：docs/screenshots/qysettings-accel.png
 
 构建产物：`qydesktop 0.1.0-208`。
+
+### 图片查看器键盘加速键（v0.1.0-209，2026-10 实测）
+
+针对快捷键审计"qyview 有方向键/0 键，缺其它键"：
+- **GtkAccelGroup 新增 5 个快捷键**：空格 下一张 · PgUp 上一张 · PgDn 下一张 · Ctrl+R 旋转 · Ctrl+S 另存
+- 原有 ←/→ 切图、0 复位保留
+- **实测**：`QYVIEWDBG: accel 5 keys`，qyview 在 weston 下运行正常
+- **截图**：docs/screenshots/qyview-accel.png
+
+构建产物：`qydesktop 0.1.0-209`。

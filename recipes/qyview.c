@@ -4,6 +4,7 @@
  * 架构: 单文件 GTK3, 与 qyfiles 同款编译方式
  */
 #include <gtk/gtk.h>
+#include <gdk/gdkkeysyms.h>
 #include <gdk-pixbuf/gdk-pixbuf.h>
 #include <string.h>
 #include <sys/stat.h>
@@ -307,6 +308,16 @@ static void activate(GtkApplication *app, gpointer ud) {
     g_signal_connect(b_rot, "clicked", G_CALLBACK(on_rotate), da);
     g_signal_connect(b_save, "clicked", G_CALLBACK(on_save), da);
     gtk_box_pack_start(GTK_BOX(vbox), nav, FALSE, FALSE, 0);
+
+    /* ---------- 图片查看器快捷键 ---------- */
+    GtkAccelGroup *accel = gtk_accel_group_new();
+    gtk_window_add_accel_group(GTK_WINDOW(win), accel);
+    gtk_widget_add_accelerator(b_next, "clicked", accel, GDK_KEY_space, 0, GTK_ACCEL_VISIBLE);      /* 空格 下一张 */
+    gtk_widget_add_accelerator(b_prev, "clicked", accel, GDK_KEY_Page_Up, 0, GTK_ACCEL_VISIBLE);     /* PgUp 上一张 */
+    gtk_widget_add_accelerator(b_next, "clicked", accel, GDK_KEY_Page_Down, 0, GTK_ACCEL_VISIBLE);   /* PgDn 下一张 */
+    gtk_widget_add_accelerator(b_rot, "clicked", accel, GDK_KEY_r, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE); /* Ctrl+R 旋转 */
+    gtk_widget_add_accelerator(b_save, "clicked", accel, GDK_KEY_s, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE); /* Ctrl+S 另存 */
+    g_printerr("QYVIEWDBG: accel 5 keys\n");
 
     gtk_widget_show_all(win);
 
