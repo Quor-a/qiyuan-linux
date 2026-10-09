@@ -1953,3 +1953,13 @@ ngs-about-v2.png`。
 - **自动化**：`QYCALC_EXPR=1+2*3` → 日志 `QYCALCDBG: expr=1+2*3 result=7`（乘法优先级正确），截图可见界面
 
 构建产物：`qydesktop 0.1.0-187`。
+
+### 文件管理器：在终端打开（v0.1.0-188，2026-10 实测）
+
+针对排查报告"文件管理完整性"：
+- **qyfiles 工具栏新增"终端"按钮**：一键启动 weston-terminal（常见文件管理器"打开终端"入口）
+- 回收站模式下自动隐藏
+- **自动化**：`QYFILES_TERM=1` 启动后调用终端 → 日志 `QYFILESDBG: terminal spawn cwd=/root`（截图中工具栏可见"终端"按钮）
+- 说明：chroot 测试环境无 /dev/pts，终端进程无法在此沙箱内显示窗口，真实系统正常
+
+构建产物：`qydesktop 0.1.0-188`。

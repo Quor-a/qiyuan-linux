@@ -38,6 +38,7 @@ static void add_class(GtkWidget *w, const char *cls) {
 /* 工具栏按钮（按 普通目录 / 回收站 切换可见性） */
 static GtkWidget *b_mk = NULL, *b_del = NULL, *b_ren = NULL;
 static GtkWidget *b_nf = NULL;   /* 新建文件按钮 */
+static GtkWidget *b_term = NULL; /* 在终端打开按钮 */
 static GtkWidget *b_open = NULL;
 static GtkWidget *b_cp = NULL, *b_prop = NULL;
 static GtkWidget *b_res = NULL, *b_pur = NULL, *b_emp = NULL;
@@ -47,6 +48,7 @@ static void set_mode_buttons(void) {
     gboolean trash = in_trash;
     gtk_widget_set_visible(b_mk, !trash);
     gtk_widget_set_visible(b_nf, !trash);
+    gtk_widget_set_visible(b_term, !trash);
     gtk_widget_set_visible(b_del, !trash);
     gtk_widget_set_visible(b_ren, !trash);
     gtk_widget_set_visible(b_open, !trash);
@@ -333,6 +335,20 @@ static gboolean auto_newfile(gpointer p) {
         g_printerr("QYFILESDBG: newfile failed\n");
     g_free(full);
     chdir_to(cwd);
+    return G_SOURCE_REMOVE;
+}
+
+/* 在终端中打开（weston-terminal 启动默认终端，目录为当前用户主目录） */
+static void do_open_terminal(void) {
+    g_printerr("QYFILESDBG: terminal spawn cwd=%s\n", cwd);
+    if (!g_spawn_command_line_async("weston-terminal", NULL))
+        g_printerr("QYFILESDBG: terminal spawn failed\n");
+}
+
+/* 自动化: QYFILES_TERM=1 启动后在当前目录打开终端 */
+static gboolean auto_terminal(gpointer p) {
+    (void)p;
+    do_open_terminal();
     return G_SOURCE_REMOVE;
 }
 
@@ -967,6 +983,9 @@ static void activate(GtkApplication *app, gpointer ud) {
     b_nf = gtk_button_new_with_label(TR("新建文件"));
     add_class(b_nf, "qy-btn");
     g_signal_connect(b_nf, "clicked", G_CALLBACK(do_newfile), NULL);
+    b_term = gtk_button_new_with_label(TR("终端"));
+    add_class(b_term, "qy-btn");
+    g_signal_connect(b_term, "clicked", G_CALLBACK(do_open_terminal), NULL);
     b_del = gtk_button_new_with_label(TR("删除"));
     add_class(b_del, "qy-btn");
     g_signal_connect(b_del, "clicked", G_CALLBACK(do_delete), NULL);
@@ -999,6 +1018,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(hbox), b_up, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_mk, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_nf, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), b_term, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_del, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_ren, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hbox), b_cp, FALSE, FALSE, 0);
@@ -1107,6 +1127,9 @@ static void activate(GtkApplication *app, gpointer ud) {
     /* 自动化验证: QYFILES_NEWFILE=1 启动后新建未命名.txt */
     if (g_getenv("QYFILES_NEWFILE"))
         g_timeout_add(900, (GSourceFunc)auto_newfile, NULL);
+    /* 自动化验证: QYFILES_TERM=1 启动后在当前目录打开终端 */
+    if (g_getenv("QYFILES_TERM"))
+        g_timeout_add(1200, (GSourceFunc)auto_terminal, NULL);
 }
 
 int main(int argc, char **argv) {
