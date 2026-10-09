@@ -14,7 +14,7 @@
 
 name = "mo"
 version = "1.10.0"
-release = 9
+release = 10
 summary = "墨语言——启元官方系统开发语言（自举编译器 + 标准库 + 工具链）"
 homepage = "https://github.com/Quor-a/qiyuan-linux"
 license = "MIT"
