@@ -294,7 +294,8 @@ class Builder:
                                  "pkgdir": self.paths["pkgs"],
                                  "sysroot_path": self.target_sysroot},
                            self.sandbox, self.log, cross=self.cross)
-        ctx.sysroot = self.target_sysroot
+        ctx.sysroot = self.target_sysroot if self.cross is not None \
+            else self.sysroot
 
         t0 = util.timer()
         try:

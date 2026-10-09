@@ -21,7 +21,7 @@ if [ -n "$MODE" ]; then
     fi
 fi
 
-if ls /sys/class/drm/ 2>/dev/null | grep -q "^card"; then
+if [ -e /sys/class/drm/card0 ]; then
     echo DRM-BRANCH >> /tmp/branch
     /usr/bin/weston --backend=drm --renderer=pixman --idle-time=0 > /tmp/werr 2>&1 &
     echo "WESTON-RC=$?" >> /tmp/branch

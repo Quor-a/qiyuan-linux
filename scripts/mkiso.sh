@@ -7,7 +7,7 @@ Q="$(cd "$(dirname "$0")/.." && pwd)"
 ISO=/home/agentuser/qiyuan-linux-$VERSION.iso
 
 rm -rf /tmp/qyiso && mkdir -p /tmp/qyiso/live /tmp/qyiso/boot/grub
-cp $Q/var/sysroot/boot/vmlinuz-6.16.1 /tmp/qyiso/boot/vmlinuz
+cp $Q/var/sysroot/boot/vmlinuz-7.2.9 /tmp/qyiso/boot/vmlinuz
 [ -f /tmp/live-initramfs.img ] || { echo "缺 /tmp/live-initramfs.img (live initrd，见 scripts/build-initramfs.sh)"; exit 1; }
 cp /tmp/live-initramfs.img /tmp/qyiso/boot/initramfs.img
 [ -f /tmp/BOOTX64.EFI ] || { echo "缺 /tmp/BOOTX64.EFI (standalone grub，见 scripts/build-bootefi.sh)"; exit 1; }

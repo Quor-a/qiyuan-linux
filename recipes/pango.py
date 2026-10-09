@@ -27,7 +27,7 @@ def build(ctx):
     ctx.run("rm -rf build && mkdir -p build")
     ctx.run("sed -i 's/-Werror=redundant-decls/-Wno-redundant-decls/' meson.build")
     ctx.env("CFLAGS", (ctx.env("CFLAGS") or "") + " -Wno-error -Wno-redundant-decls")
-    ctx.run("export PATH={0}/usr/bin:$PATH; export PYTHONPATH={0}/usr/lib/x86_64-linux-gnu/gobject-introspection; export PKG_CONFIG_PATH={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; export LD_LIBRARY_PATH={0}/usr/lib/x86_64-linux-gnu:{0}/usr/lib:{0}/lib; cd build && meson setup .. --prefix=/usr -Ddocumentation=false -Dintrospection=enabled -Dcpp_args=-Wno-redundant-decls,-Wno-format-nonliteral,-Wno-undef".format(ctx.sysroot))
+    ctx.run("export PATH={0}/usr/bin:$PATH; export PYTHONPATH={0}/usr/lib/x86_64-linux-gnu/gobject-introspection; export PKG_CONFIG_PATH={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; export LD_LIBRARY_PATH={0}/usr/lib/x86_64-linux-gnu:{0}/usr/lib:{0}/lib; cd build && meson setup .. --prefix=/usr -Ddocumentation=false -Dintrospection=disabled -Dxft=disabled -Dcpp_args=-Wno-redundant-decls,-Wno-format-nonliteral,-Wno-undef".format(ctx.sysroot))
 
 
 def package(ctx):

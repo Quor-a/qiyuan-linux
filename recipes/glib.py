@@ -35,5 +35,5 @@ def build(ctx):
 
 
 def package(ctx):
-    ctx.run("export PATH={0}/usr/bin:$PATH; export PYTHONPATH={0}/usr/lib/x86_64-linux-gnu/gobject-introspection; export LD_LIBRARY_PATH={0}/usr/lib/x86_64-linux-gnu:{0}/usr/lib:{0}/lib; cd build && ninja".format(ctx.sysroot))
+    ctx.run("export PATH={0}/usr/bin:$PATH; export PYTHONPATH={0}/usr/lib/x86_64-linux-gnu/gobject-introspection; export LD_LIBRARY_PATH={1}/../../../sysroot/lib:{0}/lib:{0}/usr/lib:{0}/usr/lib/x86_64-linux-gnu:{0}/lib/x86_64-linux-gnu; cd build && ninja".format(ctx.sysroot, ctx.srcdir))
     ctx.run("cd build && DESTDIR={} ninja install".format(ctx.destdir))
