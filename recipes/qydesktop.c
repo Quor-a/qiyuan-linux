@@ -872,6 +872,7 @@ static void build_bar(void) {
     /* 系统托盘: 网络/声音/剪贴板/截图/锁屏 */
     GtkWidget *tray_hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
     gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_btn("🌐", TR("网络"), "qynet"), FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_btn("💾", TR("驱动"), "qydriver"), FALSE, FALSE, 0);
     GtkWidget *vol_btn = gtk_button_new_with_label("🔊");
     gtk_button_set_relief(GTK_BUTTON(vol_btn), GTK_RELIEF_NONE);
     add_class(vol_btn, "qy-status-btn");
