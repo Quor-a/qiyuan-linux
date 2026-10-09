@@ -97,6 +97,11 @@ list row button:hover {
     background-color: rgba(10, 15, 26, 0.92);
     border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
+.qy-bar-left {
+    border-right: 1px solid rgba(255, 255, 255, 0.08);
+    margin-right: 8px;
+    padding-right: 8px;
+}
 .qy-clock {
     color: #e6e9ef;
     font-weight: bold;
@@ -263,6 +268,23 @@ list row button:hover {
 .qy-btn:active {
     background-color: #c9441a;
     box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35);
+}
+.qy-btn, .qy-btn-danger { min-height: 28px; }
+.qy-btn-danger {
+    background-color: rgba(233, 84, 32, 0.15);
+    color: #ff9a76;
+    border: 1px solid rgba(233, 84, 32, 0.4);
+    border-radius: 8px;
+    min-height: 28px;
+    padding: 2px 12px;
+}
+.qy-btn-danger:hover {
+    background-color: rgba(233, 84, 32, 0.25);
+    color: #ffffff;
+}
+.qy-btn-danger:active {
+    background-color: #c9441a;
+    color: #ffffff;
 }
 /* ---------- 对话框 ---------- */
 .qy-dialog {
@@ -665,6 +687,24 @@ notebook tab:checked {
     border-left: 2px solid #E95420;
     border-top: none;
     border-radius: 0;
+}
+/* 设置页卡片化（release 230）：整体成卡片，行分隔弱化 */
+#qysettings-notebook {
+    background-color: #141a24;
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 12px;
+    padding: 12px;
+}
+#qysettings-notebook .qy-settings-row {
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+/* 设置页分组标题（qysettings 中已有加粗标题 label 使用） */
+.qy-settings-group {
+    font-size: 12px;
+    font-weight: 600;
+    color: #9aa3b2;
+    margin-top: 8px;
+    margin-bottom: 4px;
 }
 
 /* ---------- 编辑器工具栏按钮 ---------- */

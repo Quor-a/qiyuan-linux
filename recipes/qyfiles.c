@@ -964,9 +964,6 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(vbox), toolbar, FALSE, FALSE, 2);
     /* 路径地址栏 */
     GtkWidget *pathbar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
-    GtkWidget *plabel = gtk_label_new(TR("路径"));
-    add_class(plabel, "qy-files-status");
-    gtk_box_pack_start(GTK_BOX(pathbar), plabel, FALSE, FALSE, 4);
     path_entry = gtk_entry_new();
     gtk_entry_set_placeholder_text(GTK_ENTRY(path_entry), "/");
     g_signal_connect(path_entry, "activate", G_CALLBACK(on_path_activate), NULL);
@@ -990,13 +987,13 @@ static void activate(GtkApplication *app, gpointer ud) {
     b_term = gtk_button_new_with_label(TR("终端"));
     add_class(b_term, "qy-btn");
     g_signal_connect(b_term, "clicked", G_CALLBACK(do_open_terminal), NULL);
-    b_del = gtk_button_new_with_label(TR("删除"));
+    b_del = qy_icon_button(QY_ICON_DELETE, 18, TR("删除"), "qy-btn-danger");
     add_class(b_del, "qy-btn");
     g_signal_connect(b_del, "clicked", G_CALLBACK(do_delete), NULL);
     b_ren = gtk_button_new_with_label(TR("重命名"));
     add_class(b_ren, "qy-btn");
     g_signal_connect(b_ren, "clicked", G_CALLBACK(do_rename), NULL);
-    b_cp = gtk_button_new_with_label(TR("复制"));
+    b_cp = qy_icon_button(QY_ICON_COPY, 18, TR("复制"), NULL);
     add_class(b_cp, "qy-btn");
     g_signal_connect(b_cp, "clicked", G_CALLBACK(do_copy), NULL);
     b_prop = gtk_button_new_with_label(TR("属性"));

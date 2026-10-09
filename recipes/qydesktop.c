@@ -968,6 +968,7 @@ static void build_bar(void) {
     /* 左区（固定 240px）：品牌 logo 玻璃 tile + 当前应用标题 */
     GtkWidget *left = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
     gtk_widget_set_size_request(left, 240, -1);
+    add_class(left, "qy-bar-left");
     GtkWidget *app_btn = gtk_button_new();
     gtk_button_set_relief(GTK_BUTTON(app_btn), GTK_RELIEF_NONE);
     add_class(app_btn, "qy-logo-btn");

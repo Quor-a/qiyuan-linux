@@ -1982,6 +1982,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     GtkWidget *llb = gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(llb), TR("<b>界面语言 / Interface Language</b>"));
     gtk_widget_set_halign(llb, GTK_ALIGN_START);
+    qy_add_class(llb, "qy-settings-group");
     gtk_box_pack_start(GTK_BOX(vlang), llb, FALSE, FALSE, 0);
     /* 当前语言（/etc/qylang: zh/en，默认 zh） */
     {

@@ -2381,3 +2381,12 @@ ngs-about-v2.png`。
 - **开始菜单**：`#qyappmenu-win` 圆角 14 + 1px 边框 + 阴影
 - **qymedia**：播放/暂停用 QY_ICON_PLAY/PAUSE 图标按钮（set_pause_icon 换图）
 - 审计字符归零；构建产物 `qydesktop 0.1.0-229`
+
+### UI 改版第 10 轮：设置页卡片+文件管理器图标工具栏+顶栏分隔+危险按钮（v0.1.0-230，2026-10 实测）
+
+- **设置页卡片化**：`#qysettings-notebook` 面板（#141a24 圆角 12 + 边框 + padding）、`.qy-settings-group` 组标题、行分隔细化
+- **文件管理器**：删除/复制按钮改 qy_icon（DELETE/COPY 18px），删除用 `.qy-btn-danger`；删冗余"路径"标签让地址栏占满；修复 add_class 空格类名 bug（`"qy-btn qy-btn-danger"` 拆两次，GTK3 不按空格拆分）
+- **顶栏分隔**：左区 `.qy-bar-left` 右侧 1px 分隔 + 间距，信息层级更清晰
+- **浏览器**：删"地址"文本标签；刷新按钮确认已图标化
+- **统一按钮四档**：新增 `.qy-btn-danger`（半透明橙底/边框 → hover 加深 → active 实橙）与 `.qy-btn,.qy-btn-danger{min-height:28px}`
+- 审计字符归零；构建产物 `qydesktop 0.1.0-230`

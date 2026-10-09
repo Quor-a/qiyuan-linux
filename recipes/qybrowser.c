@@ -482,7 +482,6 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_widget_set_sensitive(fwd_btn, FALSE);
     g_signal_connect(back_btn, "clicked", G_CALLBACK(on_back), NULL);
     g_signal_connect(fwd_btn, "clicked", G_CALLBACK(on_fwd), NULL);
-    GtkWidget *lbl = gtk_label_new(TR("地址"));
     url_entry = gtk_entry_new();
     gtk_entry_set_placeholder_text(GTK_ENTRY(url_entry), "https://...");
     GtkWidget *btn = gtk_button_new_with_label(TR("打开"));
@@ -497,7 +496,6 @@ static void activate(GtkApplication *app, gpointer ud) {
     g_signal_connect(url_entry, "activate", G_CALLBACK(on_entry_activate), NULL);
     gtk_box_pack_start(GTK_BOX(bar), back_btn, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(bar), fwd_btn, FALSE, FALSE, 0);
-    gtk_box_pack_start(GTK_BOX(bar), lbl, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(bar), url_entry, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(bar), btn, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(bar), bm_btn, FALSE, FALSE, 0);
