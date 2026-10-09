@@ -51,12 +51,17 @@ sys.path.insert(0, '.')
 from qyos import crosstool as CT
 t = CT.Triple(build="x86_64", host="aarch64")
 e = CT.CrossEnv(t, sysroot=pathlib.Path("/opt/root")).env()
-# pkg-config 必须用目标机的，用宿主的会返回 x86_64 库路径，
-# 编出的包装到设备上直接"找不到共享库"
-assert e["PKG_CONFIG"].startswith("/opt/root"), f"pkg-config 指向宿主: {e['PKG_CONFIG']}"
-assert e["PKG_CONFIG_SYSROOT_DIR"] == "/opt/root"
-assert "PKG_CONFIG_LIBDIR" in e
-print("  pkg-config 指向目标 sysroot，且设了 LIBDIR")
+# pkg-config 解析必须只看目标 sysroot。实现：宿主 pkgconf 二进制
+# + PKG_CONFIG_SYSROOT_DIR（-I/-L 自动加 sysroot 前缀）
+# + PKG_CONFIG_LIBDIR（只在 sysroot 里找 .pc）。
+# 之前往 sysroot 塞 shell 包装器的做法废弃了：那是构建产物目录，
+# 会被打包/回滚逻辑当成系统文件，清理时就消失。
+assert "PKG_CONFIG_SYSROOT_DIR" in e and str(e["PKG_CONFIG_SYSROOT_DIR"]).startswith("/opt/root"), \
+    f"SYSROOT_DIR 没指到目标: {e.get('PKG_CONFIG_SYSROOT_DIR')}"
+assert "/opt/root/usr/lib/pkgconfig" in e.get("PKG_CONFIG_LIBDIR", ""), \
+    f"LIBDIR 没限定到目标 sysroot: {e.get('PKG_CONFIG_LIBDIR')}"
+assert e.get("PKG_CONFIG"), "PKG_CONFIG 未设置"
+print("  pkg-config 解析限定在目标 sysroot（宿主二进制 + SYSROOT_DIR/LIBDIR）")
 PYEOF
 [ $? -eq 0 ] && ok "pkg-config 用目标机的（不会误链宿主库）" || bad "pkg-config 配置错误"
 
