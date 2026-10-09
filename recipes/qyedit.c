@@ -2,6 +2,7 @@
 #include "qyl10n.h"
 #include "qytheme.h"
 #include <gtk/gtk.h>
+#include <gdk/gdkkeysyms.h>
 #include <string.h>
 
 static GtkWidget *text_view = NULL;
@@ -288,6 +289,16 @@ int main(int argc, char **argv) {
     }
     set_title();
     g_signal_connect(win, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    /* ---------- 文本编辑器标准快捷键 ---------- */
+    GtkAccelGroup *accel = gtk_accel_group_new();
+    gtk_window_add_accel_group(GTK_WINDOW(win), accel);
+    gtk_widget_add_accelerator(b_save, "clicked", accel, GDK_KEY_s, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE); /* Ctrl+S 保存 */
+    gtk_widget_add_accelerator(b_open, "clicked", accel, GDK_KEY_o, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE); /* Ctrl+O 打开 */
+    gtk_widget_add_accelerator(b_new, "clicked", accel, GDK_KEY_n, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);  /* Ctrl+N 新建 */
+    GtkWidget *b_find = gtk_button_new();
+    g_signal_connect(b_find, "clicked", G_CALLBACK(on_find_clicked), NULL);
+    gtk_widget_add_accelerator(b_find, "clicked", accel, GDK_KEY_f, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE); /* Ctrl+F 查找 */
+    g_printerr("QYEDITDBG: accel 4 keys\n");
     gtk_widget_show_all(win);
 
     /* 自动化验证: QYEDIT_FONT_BIGGER=1 启动后自动增大字号两次 */

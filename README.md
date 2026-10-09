@@ -2137,3 +2137,13 @@ ngs-about-v2.png`。
 - **截图**：docs/screenshots/qyfiles-accel.png
 
 构建产物：`qydesktop 0.1.0-205`。
+
+### 文本编辑器键盘加速键（v0.1.0-206，2026-10 实测）
+
+针对快捷键审计"qyedit 有保存按钮但无 Ctrl+S / 无 Ctrl+F"：
+- **GtkAccelGroup 绑定 4 个快捷键**：Ctrl+S 保存 · Ctrl+O 打开 · Ctrl+N 新建 · Ctrl+F 查找
+- 查找功能已有但无独立按钮，用隐藏按钮承载加速键
+- **实测**：`QYEDITDBG: accel 4 keys`，qyedit 在 weston 下运行正常
+- **截图**：docs/screenshots/qyedit-accel.png
+
+构建产物：`qydesktop 0.1.0-206`。
