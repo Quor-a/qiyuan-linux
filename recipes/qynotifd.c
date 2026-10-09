@@ -10,6 +10,9 @@
 #include <gio/gio.h>
 #include <string.h>
 #include <stdio.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <linux/input.h>
 
 static gboolean notif_enabled = TRUE;
 static gboolean mon_enabled = FALSE;
@@ -416,6 +419,192 @@ static gboolean lock_poll_cb(gpointer ud) {
     return G_SOURCE_CONTINUE;
 }
 
+/* ---------- 全局快捷键守护（evdev；weston 不提供自定义命令绑定时的可行方案） ----------
+ * 配置: weston.ini 的 [bindings] 段 或 /etc/qyshortcuts.conf（同名 keyfile）
+ *   单键:  KEY_SYSRQ=qyshot
+ *   修饰键: KEY_LEFTMETA=qyappmenu（Super 松开触发，防组合误触）
+ *   组合:  KEY_LEFTMETA+KEY_L=qylock
+ * 机制: root 直接读 /dev/input/event*，组合键第二键按下时检查修饰键状态。 */
+#define QYSHORTCUTS_MAX 32
+typedef struct { int code1; int code2; char cmd[128]; } Shortcut;
+static Shortcut shortcuts[QYSHORTCUTS_MAX];
+static int n_shortcuts = 0;
+static gboolean *key_state = NULL;
+static gint64 meta_suppress_until = 0;
+#define SHORTCUT_META_MS 250
+
+static gboolean is_meta_key(int code) {
+    return code == KEY_LEFTMETA || code == KEY_RIGHTMETA;
+}
+
+static int keycode_by_name(const char *name) {
+    if (!name) return -1;
+    struct { const char *name; int code; } map[] = {
+        { "KEY_LEFTMETA", KEY_LEFTMETA }, { "Super", KEY_LEFTMETA },
+        { "KEY_RIGHTMETA", KEY_RIGHTMETA },
+        { "KEY_SYSRQ", KEY_SYSRQ }, { "PrtSc", KEY_SYSRQ },
+        { "KEY_L", KEY_L }, { "L", KEY_L }, { "KEY_A", KEY_A }, { "A", KEY_A },
+        { "KEY_S", KEY_S }, { "S", KEY_S }, { "KEY_D", KEY_D }, { "D", KEY_D },
+        { "KEY_E", KEY_E }, { "E", KEY_E }, { "KEY_T", KEY_T }, { "T", KEY_T },
+        { "KEY_I", KEY_I }, { "I", KEY_I }, { "KEY_R", KEY_R }, { "R", KEY_R },
+        { "KEY_TAB", KEY_TAB }, { "KEY_F1", KEY_F1 }, { "KEY_F2", KEY_F2 },
+        { "KEY_F4", KEY_F4 }, { "KEY_F5", KEY_F5 }, { "KEY_F11", KEY_F11 },
+        { "KEY_VOLUMEUP", KEY_VOLUMEUP }, { "XF86AudioRaiseVolume", KEY_VOLUMEUP },
+        { "KEY_VOLUMEDOWN", KEY_VOLUMEDOWN }, { "XF86AudioLowerVolume", KEY_VOLUMEDOWN },
+        { "KEY_MUTE", KEY_MUTE }, { "XF86AudioMute", KEY_MUTE },
+        { "KEY_PLAYPAUSE", KEY_PLAYPAUSE }, { "XF86AudioPlay", KEY_PLAYPAUSE },
+        { "KEY_NEXTSONG", KEY_NEXTSONG }, { "XF86AudioNext", KEY_NEXTSONG },
+        { "KEY_PREVIOUSSONG", KEY_PREVIOUSSONG }, { "XF86AudioPrev", KEY_PREVIOUSSONG },
+        { "KEY_STOPCD", KEY_STOPCD }, { "XF86AudioStop", KEY_STOPCD },
+        { "KEY_BRIGHTNESSUP", KEY_BRIGHTNESSUP }, { "XF86MonBrightnessUp", KEY_BRIGHTNESSUP },
+        { "KEY_BRIGHTNESSDOWN", KEY_BRIGHTNESSDOWN }, { "XF86MonBrightnessDown", KEY_BRIGHTNESSDOWN },
+        { "KEY_POWER", KEY_POWER }, { "XF86PowerOff", KEY_POWER },
+        { "KEY_SLEEP", KEY_SLEEP }, { "XF86Sleep", KEY_SLEEP },
+        { "KEY_ESC", KEY_ESC }, { "KEY_DELETE", KEY_DELETE },
+        { "KEY_BACKSPACE", KEY_BACKSPACE }, { "KEY_LEFT", KEY_LEFT },
+        { "KEY_RIGHT", KEY_RIGHT }, { "KEY_UP", KEY_UP }, { "KEY_DOWN", KEY_DOWN },
+        { "KEY_ENTER", KEY_ENTER }, { "KEY_SPACE", KEY_SPACE },
+        { "KEY_HOME", KEY_HOME }, { "KEY_END", KEY_END },
+    };
+    for (size_t i = 0; i < G_N_ELEMENTS(map); i++)
+        if (!g_ascii_strcasecmp(name, map[i].name)) return map[i].code;
+    return -1;
+}
+
+static void load_bindings(void) {
+    n_shortcuts = 0;
+    const char *paths[] = {
+        "/etc/xdg/weston/weston.ini",
+        "/etc/weston.ini",
+        "/etc/qyshortcuts.conf",
+    };
+    for (int p = 0; p < 3 && n_shortcuts < QYSHORTCUTS_MAX; p++) {
+        GKeyFile *kf = g_key_file_new();
+        if (!g_key_file_load_from_file(kf, paths[p], G_KEY_FILE_NONE, NULL)) {
+            g_key_file_free(kf);
+            continue;
+        }
+        gsize nk = 0;
+        gchar **keys = g_key_file_get_keys(kf, "bindings", &nk, NULL);
+        for (gsize i = 0; keys && i < nk && n_shortcuts < QYSHORTCUTS_MAX; i++) {
+            char *cmd = g_key_file_get_string(kf, "bindings", keys[i], NULL);
+            if (!cmd || !cmd[0]) { g_free(cmd); continue; }
+            char keybuf[64];
+            g_strlcpy(keybuf, keys[i], sizeof keybuf);
+            char *plus = strchr(keybuf, '+');
+            int c2 = 0;
+            int c1 = keycode_by_name(keybuf);
+            if (plus) {
+                *plus = 0;
+                c1 = keycode_by_name(keybuf);
+                c2 = keycode_by_name(plus + 1);
+            }
+            if (c1 >= 0) {
+                shortcuts[n_shortcuts].code1 = c1;
+                shortcuts[n_shortcuts].code2 = c2;
+                g_strlcpy(shortcuts[n_shortcuts].cmd, cmd, sizeof shortcuts[0].cmd);
+                n_shortcuts++;
+                g_printerr("QYSHORTCUTS: bind %s=%s code=%d+%d\n", keys[i], cmd, c1, c2);
+            }
+            g_free(cmd);
+        }
+        g_strfreev(keys);
+        g_key_file_free(kf);
+    }
+    g_printerr("QYSHORTCUTS: loaded=%d\n", n_shortcuts);
+}
+
+static void run_cmd(const char *cmd) {
+    g_printerr("QYSHORTCUT: run %s\n", cmd);
+    gchar *full = g_strdup_printf("%s &", cmd);
+    g_spawn_command_line_async(full, NULL);
+    g_free(full);
+}
+
+/* Super 松开触发（若配置了 Super 单键） */
+static gboolean meta_release_cb(gpointer p) {
+    (void)p;
+    if (g_get_monotonic_time() < meta_suppress_until) return G_SOURCE_REMOVE;
+    for (int i = 0; i < n_shortcuts; i++) {
+        if (shortcuts[i].code2 == 0 && is_meta_key(shortcuts[i].code1)) {
+            if (!key_state[shortcuts[i].code1]) {
+                run_cmd(shortcuts[i].cmd);
+                return G_SOURCE_REMOVE;
+            }
+            return G_SOURCE_CONTINUE;
+        }
+    }
+    return G_SOURCE_REMOVE;
+}
+
+static void handle_key(unsigned code, int value) {
+    if (!key_state || code >= KEY_MAX) return;
+    if (value == 1) key_state[code] = TRUE;
+    else if (value == 0) key_state[code] = FALSE;
+    else return;
+    if (value != 1) return;
+    /* 按下事件 */
+    for (int i = 0; i < n_shortcuts; i++) {
+        Shortcut *sc = &shortcuts[i];
+        if (sc->code2 != 0) {
+            if (sc->code2 == (int)code && key_state[sc->code1]) {
+                meta_suppress_until = g_get_monotonic_time() + 300000; /* 300ms 抑制 Super 单键 */
+                run_cmd(sc->cmd);
+                return;
+            }
+        } else if (!is_meta_key(sc->code1) && sc->code1 == (int)code) {
+            if (g_get_monotonic_time() < meta_suppress_until) return;
+            run_cmd(sc->cmd);
+            return;
+        }
+    }
+    /* Super 单键：启动松开触发窗口 */
+    if (is_meta_key(code)) {
+        meta_suppress_until = 0;
+        g_timeout_add(SHORTCUT_META_MS, meta_release_cb, NULL);
+    }
+}
+
+static gboolean on_input_ready(GIOChannel *ch, GIOCondition cond, gpointer ud) {
+    (void)ud;
+    if (cond & (G_IO_ERR | G_IO_HUP)) return FALSE;
+    struct input_event ev;
+    ssize_t r = read(g_io_channel_unix_get_fd(ch), &ev, sizeof ev);
+    if (r < (ssize_t)sizeof ev) return TRUE;
+    if (ev.type == EV_KEY) handle_key(ev.code, ev.value);
+    return TRUE;
+}
+
+static void watch_input_device(const char *path) {
+    int fd = open(path, O_RDONLY | O_NONBLOCK | O_CLOEXEC);
+    if (fd < 0) return;
+    GIOChannel *ch = g_io_channel_unix_new(fd);
+    g_io_channel_set_close_on_unref(ch, TRUE);
+    g_io_channel_set_encoding(ch, NULL, NULL);
+    g_io_channel_set_buffered(ch, FALSE);
+    g_io_add_watch(ch, G_IO_IN | G_IO_ERR | G_IO_HUP, on_input_ready, NULL);
+    g_io_channel_unref(ch);
+    g_printerr("QYSHORTCUTS: watching %s\n", path);
+}
+
+static void shortcut_watch_start(void) {
+    if (!key_state) {
+        key_state = g_new0(gboolean, KEY_MAX);
+        load_bindings();
+    }
+    int watched = 0;
+    for (int i = 0; i < 32; i++) {
+        gchar *path = g_strdup_printf("/dev/input/event%d", i);
+        if (g_file_test(path, G_FILE_TEST_EXISTS)) {
+            watch_input_device(path);
+            watched++;
+        }
+        g_free(path);
+    }
+    if (!watched)
+        g_printerr("QYSHORTCUTS: 无输入设备（真实系统将自动监听）\n");
+}
+
 int main(int argc, char **argv) {
     (void)argc; (void)argv;
     GMainLoop *loop = g_main_loop_new(NULL, FALSE);
@@ -440,6 +629,7 @@ int main(int argc, char **argv) {
     else
         g_timeout_add_seconds(60, battery_check_cb, NULL);
     g_printerr("qynotifd: started\n");
+    shortcut_watch_start();
     g_main_loop_run(loop);
     g_object_unref(mon);
     return 0;

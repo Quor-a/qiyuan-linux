@@ -2109,3 +2109,19 @@ ngs-about-v2.png`。
 - **截图**：docs/screenshots/qymon-procs.png
 
 构建产物：`qydesktop 0.1.0-203`。
+
+### 全局快捷键守护（v0.1.0-204，2026-10 实测）
+
+针对快捷键审计"全仓 0 处全局快捷键"：
+- **weston 不支持自定义命令绑定**（只有硬编码组合），启元采用 **qynotifd evdev 守护**方案：root 直接读 /dev/input/event*，Wayland 下也能捕获全局按键
+- **配置在 weston.ini 的 [bindings] 段**（用户可见可编辑），qynotifd 用 GKeyFile 读取
+- **默认绑定**（8 项）：
+  - Super → qyappmenu（松开触发，防组合误触）
+  - Super+L → qylock
+  - PrtSc → qyshot
+  - XF86Audio 音量±/静音 → amixer
+  - XF86MonBrightness 亮度± → brightnessctl
+- **组合键**：`修饰键+键=命令`；组合触发后 300ms 抑制 Super 单键
+- **实测**：`QYSHORTCUTS: loaded=8`，8 个绑定解析正确
+
+构建产物：`qydesktop 0.1.0-204`。
