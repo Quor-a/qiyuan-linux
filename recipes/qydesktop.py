@@ -6,7 +6,7 @@
 
 name = "qydesktop"
 version = "0.1.0"
-release = 186
+release = 187
 summary = "启元桌面 shell（GTK3 单窗口 + 主题）"
 license = "MIT"
 
@@ -42,6 +42,7 @@ RECIPE_CLIP_C = Path(__file__).parent / "qyclip.c"
 RECIPE_LOCK_C = Path(__file__).parent / "qylock.c"
 RECIPE_SEARCH_C = Path(__file__).parent / "qysearch.c"
 RECIPE_MEDIA_C = Path(__file__).parent / "qymedia.c"
+RECIPE_CALC_C = Path(__file__).parent / "qycalc.c"
 RECIPE_SWX11_C = Path(__file__).parent / "qysw-x11.c"
 RECIPE_SWITCH_C = Path(__file__).parent / "qyswitcher.c"
 RECIPE_NOTIFY_C = Path(__file__).parent / "qynotify.c"
@@ -71,6 +72,7 @@ def build(ctx):
     shutil.copy(RECIPE_LOCK_C, Path(ctx.srcdir) / "qylock.c")
     shutil.copy(RECIPE_SEARCH_C, Path(ctx.srcdir) / "qysearch.c")
     shutil.copy(RECIPE_MEDIA_C, Path(ctx.srcdir) / "qymedia.c")
+    shutil.copy(RECIPE_CALC_C, Path(ctx.srcdir) / "qycalc.c")
     shutil.copy(RECIPE_SWX11_C, Path(ctx.srcdir) / "qysw-x11.c")
     shutil.copy(RECIPE_SWITCH_C, Path(ctx.srcdir) / "qyswitcher.c")
     shutil.copy(RECIPE_NOTIFY_C, Path(ctx.srcdir) / "qynotify.c")
@@ -126,6 +128,7 @@ def build(ctx):
         "gcc qylock.c qytheme.c qyl10n.c -o qylock $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qysearch.c qytheme.c qyl10n.c -o qysearch $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qymedia.c qytheme.c qyl10n.c -o qymedia $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
+        "gcc qycalc.c qytheme.c qyl10n.c -o qycalc $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qysw-x11.c -o qysw-x11 -I{0}/usr/include -L{0}/usr/lib -lX11 -O2 && "
         "gcc qyswitcher.c qytheme.c qyl10n.c -o qyswitcher $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qynotify.c -o qynotify $(pkg-config --cflags --libs glib-2.0 gio-2.0) -O2 && "
