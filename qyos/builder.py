@@ -393,7 +393,8 @@ class Builder:
         if pub is None:
             cand = self.repo_dir / "keys" / "qiyuan.pub"
             pub = cand if cand.exists() else None
-        mgr = PM.Manager(_sr, self.repo_dir, pub, allow_unsigned=True)
+        mgr = PM.Manager(_sr, self.repo_dir, pub, allow_unsigned=True,
+                         arch=self.target_arch if self.cross is not None else None)
         installed = mgr.db.installed()
 
         # 尚未构建出来的重包（gcc / glibc 之类）由宿主提供。

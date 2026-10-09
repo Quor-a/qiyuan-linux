@@ -25,7 +25,7 @@ def build(ctx):
     # popt 装在 sysroot：configure 的链接 run-test 会撞宿主 libpopt 段错误，
     # 用缓存变量跳过；头文件/库路径显式传（Makefile 会覆盖注入的 CFLAGS）。
     sr = ctx.sysroot
-    ctx.run("./configure --prefix=/usr --sysconfdir=/etc "
+    ctx.run("./configure" + " " .join(ctx.configure_args()) + " --prefix=/usr --sysconfdir=/etc "
             "--with-acl=no --with-selinux=no --without-systemd "
             "ac_cv_func_poptParseArgvString=yes "
             "ac_cv_lib_popt_poptParseArgvString=yes "

@@ -33,7 +33,7 @@ def build(ctx):
     # （readline 链接 tinfow 修复后，宿主 awk 不再被 sysroot 库炸掉。）
     ctx.env("LD_LIBRARY_PATH",
             "{0}/usr/lib:{0}/usr/lib/x86_64-linux-gnu:{0}/lib".format(ctx.sysroot))
-    ctx.run("./configure --prefix=/usr --enable-shared --enable-xft "
+    ctx.run("./configure" + " " .join(ctx.configure_args()) + " --prefix=/usr --enable-shared --enable-xft "
             "--enable-xinerama --enable-xcursor --enable-xfixes "
             "--enable-xdbe --disable-gl "
             "--with-system-libpng --with-system-zlib")

@@ -33,7 +33,7 @@ def build(ctx):
     # configure 传 --with-openssl-rpath=auto：让 _ssl/_hashlib 直接 rpath 到
     # sysroot openssl，不靠运行时 LD_LIBRARY_PATH
     ctx.env("LD_LIBRARY_PATH", "{0}/usr/lib:{0}/lib".format(ctx.sysroot))
-    ctx.run("./configure --prefix=/usr --enable-shared --with-system-expat "
+    ctx.run("./configure" + " " .join(ctx.configure_args()) + " --prefix=/usr --enable-shared --with-system-expat "
             "--with-openssl-rpath=auto --with-ensurepip=yes")
     ctx.run("make")
 

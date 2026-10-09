@@ -32,7 +32,8 @@ def build(ctx):
     # bash 内置的 termcap 支持缺位：readline 必须显式链上 ncursesw，
     # 否则 libreadline.so 只 NEED libc，UP/BC 等 termcap 能力符号无人
     # 提供，任何带 LD_LIBRARY_PATH 的构建都会被它炸掉（宿主 awk 实测）。
-    ctx.run("./configure --prefix=/usr --disable-static "
+    ctx.run("./configure " + " ".join(ctx.configure_args()) +
+            " --prefix=/usr --disable-static "
             "--with-curses=yes "
             "bash_cv_termcap_lib=libncursesw")
     # configure 有时不填 SHLIB_LIBS（上游已知问题），直接改 Makefile 兜底。

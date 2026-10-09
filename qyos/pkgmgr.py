@@ -155,9 +155,11 @@ class DB:
 class Manager:
     def __init__(self, root: Path, repo_dir: Path | None = None,
                  pubkey: Path | None = None, dry_run: bool = False,
-                 allow_unsigned: bool = False, auto_recover: bool = True):
+                 allow_unsigned: bool = False, auto_recover: bool = True,
+                 arch: str | None = None):
         self.root = Path(root)
         self.repo_dir = Path(repo_dir) if repo_dir else None
+        self.arch = arch  # None = 宿主架构默认
         self.pubkey = Path(pubkey) if pubkey else None
         self.dry_run = dry_run
         self.allow_unsigned = allow_unsigned
@@ -175,7 +177,8 @@ class Manager:
             if not self.repo_dir:
                 raise PkgError("未指定仓库目录")
             self._index = repomod.load_index(
-                self.repo_dir, pub_path=self.pubkey,
+                self.repo_dir, arch=self.arch or util.ARCH,
+                pub_path=self.pubkey,
                 require_sig=not self.allow_unsigned)
         return self._index
 

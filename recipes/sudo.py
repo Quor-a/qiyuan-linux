@@ -45,7 +45,7 @@ ADMIN_GROUP = "wheel"
 
 
 def build(ctx):
-    ctx.run("./configure --prefix=/usr --disable-makeinstall-chown --disable-makeinstall-root"
+    ctx.run("./configure" + " " .join(ctx.configure_args()) + " --prefix=/usr --disable-makeinstall-chown --disable-makeinstall-root"
             " --sbindir=/usr/sbin"
             " --libexecdir=/usr/lib"
             " --with-pam"

@@ -32,7 +32,7 @@ config_files = ["etc/iwd/main.conf"]
 
 def build(ctx):
     ctx.env("LIBS", "-ltinfow")
-    ctx.run("./configure --prefix=/usr --sysconfdir=/etc"
+    ctx.run("./configure" + " " .join(ctx.configure_args()) + " --prefix=/usr --sysconfdir=/etc"
             " --localstatedir=/var --enable-wired --enable-ofono=no")
     ctx.run("make")
 

@@ -26,7 +26,7 @@ compression = "xz"
 
 
 def build(ctx):
-    ctx.run("./configure --prefix=/usr --release-channel=stable"
+    ctx.run("./configure" + " " .join(ctx.configure_args()) + " --prefix=/usr --release-channel=stable"
             " --disable-docs")
     ctx.run("make")
 

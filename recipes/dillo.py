@@ -34,7 +34,7 @@ def build(ctx):
     ctx.run("./autogen.sh")
     # 宿主工具链有 bison/flex/gperf/perl；FLTK 由 dillo 内嵌实现（3.2 起）
     ctx.env("FLTK_CONFIG", "{0}/usr/bin/fltk-config".format(ctx.sysroot))
-    ctx.run("./configure --prefix=/usr --sysconfdir=/etc "
+    ctx.run("./configure" + " " .join(ctx.configure_args()) + " --prefix=/usr --sysconfdir=/etc "
             "--enable-tls --disable-xembed "
             "ac_cv_path_FLTK_CONFIG={}/usr/bin/fltk-config".format(ctx.sysroot))
     ctx.run("make -j{}".format(ctx.jobs))

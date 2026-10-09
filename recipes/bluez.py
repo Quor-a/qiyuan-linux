@@ -26,7 +26,7 @@ def build(ctx):
     # 上游 5.82 发行包是 autotools（meson 仅 git 主干），按 autotools 构建。
     # sysroot 的 libreadline.so 不带 tinfo 依赖，链接期补 LIBS
     ctx.env("LIBS", "-ltinfow")
-    ctx.run("./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var "
+    ctx.run("./configure" + " " .join(ctx.configure_args()) + " --prefix=/usr --sysconfdir=/etc --localstatedir=/var "
             "--enable-tools --disable-systemd --enable-experimental "
             "--disable-mesh --disable-manpages --with-udevdir=/usr/lib/udev "
             "--with-dbusconfdir=/etc/dbus-1/system.d")

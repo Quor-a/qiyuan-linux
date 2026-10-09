@@ -32,7 +32,7 @@ def build(ctx):
     import os
     inc = os.path.join(str(ctx.sysroot), "usr/include")
     lib = os.path.join(str(ctx.sysroot), "usr/lib")
-    ctx.run("./configure --prefix=/usr --sysconfdir=/etc/ssh --with-md5-passwords "
+    ctx.run("./configure" + " " .join(ctx.configure_args()) + " --prefix=/usr --sysconfdir=/etc/ssh --with-md5-passwords "
             "--with-privsep-path=/var/lib/sshd "
             "--with-openssl-opt=no "
             "CPPFLAGS=-I{inc} LDFLAGS='-L{lib} -Wl,-rpath,{lib}'".format(inc=inc, lib=lib))
