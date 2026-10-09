@@ -198,6 +198,9 @@ class CrossEnv:
         e["OBJDUMP"] = pre + "objdump"
         e["READELF"] = pre + "readelf"
         e["CC"] = pre + "gcc"
+        # 内核与 busybox 等 Kbuild 体系只认 CROSS_COMPILE（不看 CC），
+        # 不注入的话它们回落到宿主 gcc，编出来的还是 x86_64 的包。
+        e["CROSS_COMPILE"] = pre
         e["CXX"] = pre + "g++"
         e["CPP"] = pre + "cpp"
 
@@ -370,6 +373,10 @@ def scan_pkg_arch(pkg_path: Path, want: str) -> list:
     with tempfile.TemporaryDirectory() as td:
         pkg.extract(Path(td), check_hashes=False)
         for p in Path(td).rglob("*"):
+            if p.is_symlink():
+                # 符号链接指向包内其它文件，架构由目标文件决定，
+                # 单独判会误报（如 busybox 的 sh -> busybox）
+                continue
             if not p.is_file():
                 continue
             try:

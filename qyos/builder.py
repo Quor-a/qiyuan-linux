@@ -231,6 +231,10 @@ class Builder:
     # -- 路径 ------------------------------------------------------
 
     def pkg_path(self, rec) -> Path:
+        # 交叉编译时包文件名跟产物架构走（busybox-…-1.aarch64.qyp），
+        # 不然 x86_64 与 aarch64 的同名包在 var/pkgs 里互相覆盖。
+        if self.target_arch != self.arch:
+            return self.paths["pkgs"] / f"{rec.pkgid}.{self.target_arch}.qyp"
         return self.paths["pkgs"] / rec.filename
 
     def _drop_older(self, rec) -> None:
@@ -570,7 +574,7 @@ class Builder:
 
         meta = fmt.Meta(
             name=rec.name, version=rec.version, release=rec.release,
-            arch=self.arch, summary=rec.summary, description=rec.description,
+            arch=self.target_arch, summary=rec.summary, description=rec.description,
             homepage=rec.homepage, license=rec.license,
             depends=depends, makedepends=list(rec.makedepends),
             provides=list(rec.provides), conflicts=list(rec.conflicts),
@@ -622,12 +626,15 @@ class Builder:
     def publish(self) -> None:
         """把已构建的包同步进仓库并重建索引，供后续包的构建依赖使用。"""
         from . import repo as R
-        pkgs = sorted(self.paths["pkgs"].glob("*.qyp"))
+        # 交叉编译产物归入目标架构目录（repo/aarch64/…），
+        # 与 x86_64 索引分开——混在一起装包时架构就乱了。
+        arch = self.target_arch if self.cross is not None else self.arch
+        pkgs = sorted(self.paths["pkgs"].glob(f"*.{arch}.qyp"))
         if not pkgs:
             return
-        R.add_packages(self.repo_dir, [str(p) for p in pkgs], arch=self.arch)
-        index = R.build_index(self.repo_dir, self.arch)
-        R.write_index(self.repo_dir, index, self.arch, self.sign_key)
+        R.add_packages(self.repo_dir, [str(p) for p in pkgs], arch=arch)
+        index = R.build_index(self.repo_dir, arch)
+        R.write_index(self.repo_dir, index, arch, self.sign_key)
         util.log("info", f"仓库已更新: {index['count']} 个包")
 
     def check_buildable(self, rec) -> None:
