@@ -2348,3 +2348,9 @@ ngs-about-v2.png`。
 - **字符/颜色归零**：`grep -P [\x{2190}-\x{2BFF}]` 全库仅余注释；`[\x{2600}-\x{27BF}]` 零命中；.c-view 青块→玻璃底、qymon 蓝绿/琥珀→橙白灰、qytheme.c 删 blue/green 分支、√→OK、●◉▢⇥◀▶↓↑⬇ 全部 ASCII 化；qyappmenu 删 icon/color 死字段、qydesktop 删 glyph 死字段
 - **时钟分层**：`.qy-clock-label`（14px/500 #E6E9EF）；dock 网格按钮 ⊞→cairo 图标
 - 编译：15 个应用全部 rc=0；构建产物 `qydesktop 0.1.0-226`
+
+### ISO 实测（v0.1.0-226，QEMU）
+- 构建：`VERSION=1.5.1 bash scripts/mkiso.sh`（先跑 build-live-initramfs/build-bootefi/build-install-initramfs）→ `qiyuan-linux-1.5.1.iso`（453MB）
+- 运行：`qemu-system-x86_64 -m 3072 -cdrom qiyuan-linux-1.5.1.iso -boot d -accel tcg -vga none -device virtio-gpu-pci,xres=1280,yres=800 -monitor unix:/tmp/qymon.sock,server,nowait -serial file:/tmp/qy-serial.log`
+- 结果：ISO 引导 Linux 6.16.1 → live 自动拉起启元桌面（qywelcome/qyfiles/qymon 运行）；`screendump` 1280×800 真实桌面
+- 截图：`docs/screenshots/226-live-{desktop,qy-menu,qy-screen3}.png`；打包 `/home/agentuser/qiyuan-live-226-test.tar.gz`
