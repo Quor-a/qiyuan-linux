@@ -238,6 +238,13 @@ static gboolean on_key(GtkWidget *w, GdkEventKey *ev, gpointer ud) {
         load_by_index(GTK_WIDGET(ud), n);
     } else if (ev->keyval == GDK_KEY_0) {
         zoom = 1.0; pan_x = pan_y = 0; gtk_widget_queue_draw(w);
+        update_zoom();
+    } else if (ev->keyval == GDK_KEY_plus || ev->keyval == GDK_KEY_equal) {
+        /* + 或 = 放大 */
+        zoom *= 1.15; gtk_widget_queue_draw(w); update_zoom();
+    } else if (ev->keyval == GDK_KEY_minus) {
+        /* - 缩小 */
+        zoom /= 1.15; gtk_widget_queue_draw(w); update_zoom();
     }
     return FALSE;
 }
