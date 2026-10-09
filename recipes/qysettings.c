@@ -3703,9 +3703,11 @@ static void activate(GtkApplication *app, gpointer ud) {
     }
     GClosure *clc = g_cclosure_new(G_CALLBACK(on_accel_close), win, NULL);
     gtk_accel_group_connect(accel, GDK_KEY_w, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, clc);
+    /* Esc 关闭设置窗口 */
+    gtk_accel_group_connect(accel, GDK_KEY_Escape, 0, GTK_ACCEL_VISIBLE, clc);
     /* Ctrl+F 聚焦设置搜索框 */
     gtk_widget_add_accelerator(search_entry, "grab-focus", accel, GDK_KEY_f, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
-    g_printerr("QYSETTINGSDKG: accel 11 keys\n");
+    g_printerr("QYSETTINGSDKG: accel 12 keys\n");
 
     gtk_widget_show_all(win);
 

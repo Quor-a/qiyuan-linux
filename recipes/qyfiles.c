@@ -1130,6 +1130,8 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_widget_add_accelerator(b_cp, "clicked", accel, GDK_KEY_c, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);     /* Ctrl+C 复制 */
     gtk_widget_add_accelerator(b_home, "clicked", accel, GDK_KEY_Home, GDK_MOD1_MASK, GTK_ACCEL_VISIBLE);   /* Alt+Home 主目录 */
     gtk_widget_add_accelerator(b_open, "clicked", accel, GDK_KEY_Return, 0, GTK_ACCEL_VISIBLE);             /* Enter 打开 */
+    gtk_widget_add_accelerator(b_open, "clicked", accel, GDK_KEY_o, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);  /* Ctrl+O 打开 */
+    gtk_widget_add_accelerator(b_ref, "clicked", accel, GDK_KEY_F5, 0, GTK_ACCEL_VISIBLE);                 /* F5 刷新 */
     gtk_widget_add_accelerator(search_entry, "grab-focus", accel, GDK_KEY_f, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE); /* Ctrl+F 搜索 */
     gtk_widget_add_accelerator(path_entry, "grab-focus", accel, GDK_KEY_l, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE); /* Ctrl+L 地址栏 */
     /* Ctrl+A 全选（多选模式已启用） */
