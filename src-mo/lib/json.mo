@@ -116,3 +116,48 @@ fn json_true(s: ptr, key: ptr) -> i64 {
     if val_type(s, p) == 3 { return 1; }
     return 0;
 }
+
+# 解析字符串数组：把 key 对应的 ["a","b",...] 逐个取出
+# 第 from 个元素写入 dst（最多 dstmax 字节），返回 1；越界/无该 key/类型不对返回 0
+# 用法: i=0; while json_array_str(s,"depends",i,&buf,256)==1 { ...; i=i+1; }
+fn json_array_str(s: ptr, key: ptr, idx: i64, dst: ptr, dstmax: i64) -> i64 {
+    let p: i64 = find_key(s, key, 0);
+    if p < 0 { return 0; }
+    if s[p] != 91 { return 0; }    # 必须以 [ 开头
+    p = p + 1;
+    p = skip_ws(s, p);
+    let cur: i64 = 0;
+    let end: i64 = strlen(s);
+    while p < end {
+        if s[p] == 93 { return 0; }    # 数组结束
+        if s[p] == 34 {
+            if cur == idx {
+                # 取这个字符串
+                let e: i64 = p + 1;
+                while s[e] != 34 { e = e + 1; }
+                let len: i64 = e - (p + 1);
+                if len >= dstmax { len = dstmax - 1; }
+                let j: i64 = 0;
+                while j < len {
+                    store8(dst + j, s[p + 1 + j]);
+                    j = j + 1;
+                }
+                store8(dst + len, 0);
+                return 1;
+            }
+            cur = cur + 1;
+            p = e_skip_str(s, p) + 1;
+        } else {
+            p = p + 1;
+        }
+        p = skip_ws(s, p);
+    }
+    return 0;
+}
+
+# 跳过 p 处（p 指向开引号）的字符串，返回结束引号下标
+fn e_skip_str(s: ptr, p: i64) -> i64 {
+    let e: i64 = p + 1;
+    while s[e] != 34 { e = e + 1; }
+    return e;
+}
