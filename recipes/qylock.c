@@ -13,7 +13,6 @@ static GtkWidget *clock_label = NULL;
 static GtkWidget *date_label = NULL;
 static GtkWidget *pass_entry = NULL;
 static GtkWidget *status_label = NULL;
-static GtkApplication *g_app = NULL;
 
 /* 读取锁屏密码（配置文件或默认） */
 static const char *get_lock_pass(void) {
@@ -55,8 +54,7 @@ static void try_unlock(void) {
         return;
     }
     if (strcmp(input, lock_pass) == 0) {
-        if (g_app) g_application_quit(G_APPLICATION(g_app));
-        else exit(0);
+        exit(0);
         return;
     }
     gtk_label_set_text(GTK_LABEL(status_label), TR("密码错误，请重试"));
@@ -84,11 +82,9 @@ static gboolean auto_unlock(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
-static void activate(GtkApplication *app, gpointer ud) {
-    (void)ud;
-    g_app = app;
+static void build_ui(void) {
     qy_load_theme();
-    GtkWidget *win = gtk_application_window_new(app);
+    GtkWidget *win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(win), TR("锁屏"));
     gtk_window_set_default_size(GTK_WINDOW(win), 1280, 800);
     gtk_window_fullscreen(GTK_WINDOW(win));
@@ -138,10 +134,8 @@ static void activate(GtkApplication *app, gpointer ud) {
 }
 
 int main(int argc, char **argv) {
-    GtkApplication *app = gtk_application_new("com.qiyuan.lock", G_APPLICATION_NON_UNIQUE);
-    g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
-    char *own_argv[2] = { argv[0], NULL };
-    int rc = g_application_run(G_APPLICATION(app), 1, own_argv);
-    g_object_unref(app);
-    return rc;
+    gtk_init(&argc, &argv);
+    build_ui();
+    gtk_main();
+    return 0;
 }

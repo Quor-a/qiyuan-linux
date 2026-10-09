@@ -88,6 +88,9 @@ static gboolean conf_flag(const char *path, const char *key) {
     return on;
 }
 
+/* 前向声明：进程存活检查（定义在文件后部，供 run_autostart 使用） */
+static gboolean proc_alive(const char *name);
+
 /* 自动启动白名单：仅允许启动已知 qy* 应用，防止 conf 被篡改后执行任意命令 */
 static const char *autostart_whitelist[] = {
     "qydesktop", "qynotifd", "qynet", "qyfiles", "qyedit", "qymon",
@@ -121,9 +124,7 @@ static void run_autostart(void) {
         gboolean on = (eq[1] == 'o' && eq[2] == 'n');
         if (on && autostart_allowed(name)) {
             /* 防重复：应用已在运行则跳过（设置页重复保存不会重复启动） */
-            char chk[128];
-            snprintf(chk, sizeof chk, "pidof %s >/dev/null 2>&1", name);
-            if (system(chk) == 0) {
+            if (proc_alive(name)) {
                 g_printerr("qynotifd: autostart %s already running\n", name);
                 continue;
             }
@@ -174,7 +175,7 @@ static void handle_conf(const char *basename) {
     if (g_str_has_prefix(basename, "qybluetooth")) {
         gboolean on = conf_flag(path, "bluetooth");
         gchar cmd[128];
-        g_snprintf(cmd, sizeof cmd, "rfkill unblock bluetooth 2>/dev/null; %s", on ? "hciconfig hci0 up 2>/dev/null" : "hciconfig hci0 down 2>/dev/null");
+        g_snprintf(cmd, sizeof cmd, "rfkill unblock bluetooth 2>/dev/null; %s", on ? "bluetoothctl power on 2>/dev/null" : "bluetoothctl power off 2>/dev/null");
         g_spawn_command_line_async(cmd, NULL);
         if (on) {
             if (access("/sys/class/bluetooth/hci0", F_OK) == 0)
@@ -268,9 +269,30 @@ static gboolean load_initial_conf(gpointer ud) {
 static guint lock_timer = 0;
 static guint unlock_poll = 0;
 static int lock_idle_secs = 0;
+static guint64 last_irq_count = 0;
 
 static gboolean lock_cb(gpointer ud);
 static gboolean unlock_poll_cb(gpointer ud);
+
+/* 读取键盘/鼠标相关 IRQ 计数（i8042/atkbd/USB 控制器），用于空闲检测 */
+static guint64 read_input_irqs(void) {
+    gchar *c = NULL;
+    guint64 total = 0;
+    if (g_file_get_contents("/proc/interrupts", &c, NULL, NULL) && c) {
+        gchar **lines = g_strsplit(c, "\n", 0);
+        for (int i = 0; lines[i]; i++) {
+            if (strstr(lines[i], "i8042") || strstr(lines[i], "atkbd") ||
+                strstr(lines[i], "uhci") || strstr(lines[i], "ehci") ||
+                strstr(lines[i], "xhci")) {
+                const char *p = strchr(lines[i], ':');
+                if (p) total += strtoull(p + 1, NULL, 10);
+            }
+        }
+        g_strfreev(lines);
+        g_free(c);
+    }
+    return total;
+}
 
 static int read_idle_secs(void) {
     gchar *c = NULL;
@@ -292,9 +314,30 @@ static int read_idle_secs(void) {
     return secs;
 }
 
-/* qylock 是否正在运行（pidof 退出码 0=运行中） */
+/* 检查进程是否存活（遍历 /proc/comm，不依赖 pidof——busybox 可能未提供） */
+static gboolean proc_alive(const char *name) {
+    GDir *dir = g_dir_open("/proc", 0, NULL);
+    if (!dir) return FALSE;
+    const char *ent;
+    gboolean found = FALSE;
+    while ((ent = g_dir_read_name(dir)) != NULL) {
+        if (!g_ascii_isdigit(ent[0])) continue;
+        gchar *cp = g_strdup_printf("/proc/%s/comm", ent);
+        gchar *comm = NULL;
+        if (g_file_get_contents(cp, &comm, NULL, NULL) && comm) {
+            g_strstrip(comm);
+            if (strcmp(comm, name) == 0) { found = TRUE; g_free(comm); g_free(cp); break; }
+        }
+        g_free(comm);
+        g_free(cp);
+    }
+    g_dir_close(dir);
+    return found;
+}
+
+/* qylock 是否正在运行（遍历 /proc） */
 static gboolean qylock_running(void) {
-    return system("pidof qylock >/dev/null 2>&1") == 0;
+    return proc_alive("qylock");
 }
 
 static gboolean unlock_poll_cb(gpointer ud) {
@@ -317,6 +360,16 @@ static gboolean lock_cb(gpointer ud) {
             unlock_poll = g_timeout_add(2000, unlock_poll_cb, NULL);
         return G_SOURCE_REMOVE;
     }
+    /* 空闲检测：有键盘/鼠标 IRQ 活动则重置定时器，不锁屏（打字/看视频不会误锁） */
+    guint64 irq_now = read_input_irqs();
+    if (last_irq_count != 0 && irq_now != last_irq_count) {
+        last_irq_count = irq_now;
+        g_printerr("qynotifd: input active, autolock postponed (%ds)\n", lock_idle_secs);
+        if (lock_idle_secs > 0)
+            lock_timer = g_timeout_add_seconds((guint)lock_idle_secs, lock_cb, NULL);
+        return G_SOURCE_REMOVE;
+    }
+    last_irq_count = irq_now;
     g_printerr("qynotifd: autolock idle=%ds triggered\n", lock_idle_secs);
     /* qylock 是 Wayland 客户端，需带桌面会话环境启动（用 g_spawn_async 显式传 env） */
     const char *xrd = g_getenv("XDG_RUNTIME_DIR");

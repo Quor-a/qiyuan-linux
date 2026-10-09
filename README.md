@@ -2004,3 +2004,14 @@ ngs-about-v2.png`。
 - **qyedit 查找**：工具栏「查找」按钮 + QYEDIT_FIND 自动化；实测 `find 'gamma' line=3`
 
 构建产物：`qydesktop 0.1.0-192`。
+
+### 蓝牙 bluez5 + 自动锁屏空闲检测（v0.1.0-193，2026-10 实测）
+
+针对排查报告"新组件看着能用实际不能"：
+- **蓝牙改 bluetoothctl**：bluez 5.x 已移除 hciconfig，开关改用 `bluetoothctl power on/off`
+- **自动锁屏改为空闲检测**：锁屏前读取键盘/鼠标 IRQ 计数，有活动则重置定时器（打字/看视频不再误锁）
+- **qylock 不再依赖 dbus**：GtkApplication 改普通 gtk_init，无 session bus 也能锁屏
+- **进程检测改用 /proc/comm**：不依赖 busybox 未提供的 pidof，autostart 防重复与解锁检测更可靠
+- 实测：配置 idle-time=5 后 qynotifd 触发自动锁屏，qylock 全屏锁屏保持运行
+
+构建产物：`qydesktop 0.1.0-193`。
