@@ -1,6 +1,7 @@
 /* qyfiles - 启元文件管理器 (GTK3) — v4: 目录搜索过滤 */
 #include "qyl10n.h"
 #include <gtk/gtk.h>
+#include <gdk/gdkkeysyms.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -1086,6 +1087,28 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_widget_set_halign(status, GTK_ALIGN_START);
     add_class(status, "qy-files-status");
     gtk_box_pack_start(GTK_BOX(vbox), status, FALSE, FALSE, 2);
+
+    /* ---------- 文件管理器标准快捷键（GtkAccelGroup） ---------- */
+    GtkAccelGroup *accel = gtk_accel_group_new();
+    gtk_window_add_accel_group(GTK_WINDOW(win), accel);
+    gtk_widget_add_accelerator(b_ref, "clicked", accel, GDK_KEY_r, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);   /* Ctrl+R 刷新 */
+    gtk_widget_add_accelerator(b_up, "clicked", accel, GDK_KEY_BackSpace, 0, GTK_ACCEL_VISIBLE);            /* Backspace 上一级 */
+    gtk_widget_add_accelerator(b_mk, "clicked", accel, GDK_KEY_n, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);      /* Ctrl+N 新建文件夹 */
+    gtk_widget_add_accelerator(b_del, "clicked", accel, GDK_KEY_Delete, 0, GTK_ACCEL_VISIBLE);              /* Delete 删除到回收站 */
+    gtk_widget_add_accelerator(b_pur, "clicked", accel, GDK_KEY_Delete, GDK_SHIFT_MASK, GTK_ACCEL_VISIBLE); /* Shift+Delete 彻底删除 */
+    gtk_widget_add_accelerator(b_ren, "clicked", accel, GDK_KEY_F2, 0, GTK_ACCEL_VISIBLE);                 /* F2 重命名 */
+    gtk_widget_add_accelerator(b_cp, "clicked", accel, GDK_KEY_c, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);     /* Ctrl+C 复制 */
+    gtk_widget_add_accelerator(b_home, "clicked", accel, GDK_KEY_Home, GDK_MOD1_MASK, GTK_ACCEL_VISIBLE);   /* Alt+Home 主目录 */
+    gtk_widget_add_accelerator(b_open, "clicked", accel, GDK_KEY_Return, 0, GTK_ACCEL_VISIBLE);             /* Enter 打开 */
+    gtk_widget_add_accelerator(search_entry, "grab-focus", accel, GDK_KEY_f, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE); /* Ctrl+F 搜索 */
+    /* 剪切/粘贴（功能存在但无工具栏按钮，用隐藏按钮承载加速键） */
+    GtkWidget *b_cut = gtk_button_new();
+    GtkWidget *b_paste = gtk_button_new();
+    g_signal_connect(b_cut, "clicked", G_CALLBACK(do_cut), NULL);
+    g_signal_connect(b_paste, "clicked", G_CALLBACK(do_paste), NULL);
+    gtk_widget_add_accelerator(b_cut, "clicked", accel, GDK_KEY_x, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);   /* Ctrl+X 剪切 */
+    gtk_widget_add_accelerator(b_paste, "clicked", accel, GDK_KEY_v, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE); /* Ctrl+V 粘贴 */
+    g_printerr("QYFILESDBG: accel 12 keys\n");
 
     gtk_widget_show_all(win);
     /* argv[1]=="--trash" → 启动即进回收站视图 (调试/自证用) */

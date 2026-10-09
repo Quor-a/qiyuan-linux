@@ -2125,3 +2125,15 @@ ngs-about-v2.png`。
 - **实测**：`QYSHORTCUTS: loaded=8`，8 个绑定解析正确
 
 构建产物：`qydesktop 0.1.0-204`。
+
+### 文件管理器键盘加速键（v0.1.0-205，2026-10 实测）
+
+针对快捷键审计"qyfiles 一行键盘代码都没有"：
+- **GtkAccelGroup 绑定 12 个快捷键**：
+  - Ctrl+R 刷新 · Backspace 上一级 · Ctrl+N 新建文件夹 · Delete 删除 · Shift+Delete 彻底删除
+  - F2 重命名 · Ctrl+C 复制 · Ctrl+X 剪切 · Ctrl+V 粘贴 · Alt+Home 主目录 · Enter 打开 · Ctrl+F 搜索
+- 剪切/粘贴功能已有但无工具栏按钮，用隐藏按钮承载加速键
+- **实测**：`QYFILESDBG: accel 12 keys`，qyfiles 在 weston 下运行正常
+- **截图**：docs/screenshots/qyfiles-accel.png
+
+构建产物：`qydesktop 0.1.0-205`。
