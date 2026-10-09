@@ -14,13 +14,27 @@
 static gboolean notif_enabled = TRUE;
 static gboolean mon_enabled = FALSE;
 
-/* 发送通知（写入 latest.msg） */
+/* 发送通知（写入 latest.msg + 追加 history.log 历史） */
 static void send_notif(const char *title, const char *msg) {
     if (!notif_enabled) return;
     g_mkdir_with_parents("/tmp/qynotif", 0755);
     gchar *content = g_strdup_printf("%s|%s\n", title, msg);
     g_file_set_contents("/tmp/qynotif/latest.msg", content, -1, NULL);
     g_free(content);
+    /* 追加通知历史（保留最近约 8KB） */
+    gchar *hist = NULL;
+    g_file_get_contents("/tmp/qynotif/history.log", &hist, NULL, NULL);
+    GString *h = g_string_new(hist ? hist : "");
+    g_free(hist);
+    g_string_append_printf(h, "%s|%s\n", title, msg);
+    if (h->len > 8192) {
+        const char *tail = h->str + (h->len - 8192);
+        const char *nl = strchr(tail, '\n');
+        if (nl) tail = nl + 1;
+        g_string_erase(h, 0, tail - h->str);
+    }
+    g_file_set_contents("/tmp/qynotif/history.log", h->str, h->len, NULL);
+    g_string_free(h, TRUE);
 }
 
 /* ---------- 电源/电池监控 ---------- */

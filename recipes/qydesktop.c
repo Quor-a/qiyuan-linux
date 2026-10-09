@@ -686,6 +686,30 @@ static gboolean auto_res_apply(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* 点击通知图标：弹出通知历史 */
+static gboolean on_notif_clicked(GtkWidget *w, GdkEventButton *ev, gpointer ud) {
+    (void)w; (void)ev; (void)ud;
+    gchar *hist = NULL;
+    if (!g_file_get_contents("/tmp/qynotif/history.log", &hist, NULL, NULL) || !hist)
+        hist = g_strdup(TR("暂无通知"));
+    GtkWidget *dlg = gtk_dialog_new_with_buttons(TR("通知历史"), NULL, GTK_DIALOG_MODAL,
+        TR("关闭"), GTK_RESPONSE_CLOSE, NULL);
+    GtkWidget *tv = gtk_text_view_new();
+    gtk_text_view_set_editable(GTK_TEXT_VIEW(tv), FALSE);
+    gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(tv), GTK_WRAP_WORD_CHAR);
+    gtk_text_buffer_set_text(gtk_text_view_get_buffer(GTK_TEXT_VIEW(tv)), hist, -1);
+    GtkWidget *sw = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
+    gtk_container_add(GTK_CONTAINER(sw), tv);
+    gtk_widget_set_size_request(sw, 460, 260);
+    gtk_box_pack_start(GTK_BOX(gtk_dialog_get_content_area(GTK_DIALOG(dlg))), sw, TRUE, TRUE, 4);
+    gtk_widget_show_all(dlg);
+    gtk_dialog_run(GTK_DIALOG(dlg));
+    gtk_widget_destroy(dlg);
+    g_free(hist);
+    return TRUE;
+}
+
 /* 通知显示：读取 /tmp/qynotif/latest.msg（qynotify/qynotifd 写入） */
 static gboolean notif_tick(gpointer ud) {
     (void)ud;
@@ -863,11 +887,15 @@ static void build_bar(void) {
     gtk_widget_set_tooltip_text(power, TR("系统"));
     gtk_box_pack_start(GTK_BOX(st), power, FALSE, FALSE, 0);
 
-    /* 通知显示 */
+    /* 通知显示（可点击查看历史） */
+    GtkWidget *notif_eb = gtk_event_box_new();
+    add_class(notif_eb, "qy-status-btn");
+    gtk_widget_add_events(notif_eb, GDK_BUTTON_PRESS_MASK);
+    g_signal_connect(notif_eb, "button-press-event", G_CALLBACK(on_notif_clicked), NULL);
+    gtk_widget_set_tooltip_text(notif_eb, TR("查看通知"));
     notif_label = gtk_label_new("🔔");
-    add_class(notif_label, "qy-status-btn");
-    gtk_widget_set_tooltip_text(notif_label, TR("通知"));
-    gtk_box_pack_start(GTK_BOX(st), notif_label, FALSE, FALSE, 0);
+    gtk_container_add(GTK_CONTAINER(notif_eb), notif_label);
+    gtk_box_pack_start(GTK_BOX(st), notif_eb, FALSE, FALSE, 0);
 
     /* 系统托盘: 网络/声音/剪贴板/截图/锁屏 */
     GtkWidget *tray_hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);

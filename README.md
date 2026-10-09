@@ -2089,3 +2089,12 @@ ngs-about-v2.png`。
 - 均编译验证通过（qydesktop rc=0）
 
 构建产物：`qydesktop 0.1.0-201`。
+
+### 通知历史 + 顶栏点击查看（v0.1.0-202，2026-10 实测）
+
+- **qynotifd 追加通知历史**：每次通知写入 `/tmp/qynotif/history.log`（保留最近约 8KB）
+- **顶栏通知图标可点击**：点击弹出「通知历史」对话框（滚动 TextView 显示最近通知）
+- **实测**：qydesktop 在 weston 下运行，history.log 正确保留两条模拟通知
+- **截图**：docs/screenshots/qydesktop-notif.png
+
+构建产物：`qydesktop 0.1.0-202`。
