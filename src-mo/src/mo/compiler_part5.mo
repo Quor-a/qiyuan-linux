@@ -79,6 +79,7 @@ fn parse_stmt() -> i64 {
     if accept("let") == 1 { return parse_let(); }
     if accept("if") == 1 { return parse_if(); }
     if accept("while") == 1 { return parse_while(); }
+    if accept("switch") == 1 { return parse_switch(); }
     if accept("for") == 1 { return parse_for(); }
     if accept("return") == 1 { return parse_return(); }
     if gv(K_TKIND) == 1 {
@@ -465,6 +466,63 @@ fn parse_while() -> i64 {
     parse_block(d);
     emit_jmp(a);
     place_label(b);
+    loop_pop();
+    return 0;
+}
+
+# switch <expr> { <val> { ... } <val> { ... } else { ... } }
+# 生成顺序：对每个 case 先 cmp+jcc 跳到分支体，末尾统一 end。
+# case 值必须是整型常量（字面量或 -字面量）；else 分支可选。
+# break 落到 loop 栈（把 end 当 break 标签压入），复用 loop_brk。
+fn parse_switch() -> i64 {
+    # 开关值算进 rax；每个 case 用 cmp rax,imm / je L 直接比较——
+    # 不用 g_push_rax/g_pop_rcx（常量折叠窥孔会改坏值，实战踩坑）。
+    # else 为最后一段：先 jmp 到 els 让前面的 case 跳过它，再顺序放 else 体。
+    parse_expr();
+    let d: i64 = gv(K_DEPTH) + 1;
+    let end: i64 = new_label();
+    loop_push(-1, end, -1);          # break → switch 出口
+    let els: i64 = -1;
+    let has_els: i64 = 0;
+    expect("{");
+    while tok_is("}") == 0 {
+        if accept("else") == 1 {
+            has_els = 1;
+            els = new_label();
+            emit_jmp(els);           # 前面 case 命中后 jmp end，不会落到这里
+            place_label(els);
+            parse_block(d);          # 消费 else 的 { }
+            emit_jmp(end);
+            break;
+        }
+        let l: i64 = new_label();
+        let v: i64 = 0;
+        if gv(K_TKIND) == 2 {
+            v = gv(K_TIVAL);
+            next_token();
+        } else {
+            if accept("-") == 1 {
+                if gv(K_TKIND) == 2 { v = -(gv(K_TIVAL)); next_token(); }
+                else { return syntax_error(); }
+            } else {
+                return err_atp("switch case value must be an integer constant", gv(K_PLINE), gv(K_PCOL), gv(K_PPOS));
+            }
+        }
+        # cmp rax, v ; je l
+        if v >= -128 && v <= 127 {
+            ops3(0x48, 0x83, 0xf8);
+            emit1(v & 255);
+        } else {
+            ops2(0x48, 0x3d);
+            emit4(v);
+        }
+        emit_jcc(0x85, l);        # jne skip：不命中则跳过本 case 体
+        parse_block(d);
+        emit_jmp(end);
+        place_label(l);
+    }
+    expect("}");                     # switch 的收尾 }
+    place_label(end);
     loop_pop();
     return 0;
 }
@@ -997,6 +1055,10 @@ fn parse_struct() -> i64 {
         if tok_is("i64") == 1 {
             next_token();
         } else {
+            if tok_is("f64") == 1 {
+                ft = ty_f64();
+                next_token();
+            } else {
             if gv(K_TKIND) == 1 {
                 let sub: i64 = st_lookup(tokbuf());
                 if sub >= 0 {
@@ -1007,6 +1069,7 @@ fn parse_struct() -> i64 {
                 }
             } else {
                 return err_at2("expected a type", gv(K_LINE), gv(K_COL));
+            }
             }
         }
         st_add_field(si, scratch1(), ft);
