@@ -3,6 +3,7 @@
  * 适合轻量桌面（无 WebKit）：快速查看网页文字内容。
  */
 #include <gtk/gtk.h>
+#include <gdk/gdkkeysyms.h>
 #include <curl/curl.h>
 #include <string.h>
 #include <stdlib.h>
@@ -555,6 +556,19 @@ static void activate(GtkApplication *app, gpointer ud) {
                 g_timeout_add(9000, auto_go_back, NULL);
         }
     }
+
+    /* ---------- 浏览器标准快捷键 ---------- */
+    GtkAccelGroup *accel = gtk_accel_group_new();
+    gtk_window_add_accel_group(GTK_WINDOW(win), accel);
+    gtk_widget_add_accelerator(url_entry, "grab-focus", accel, GDK_KEY_l, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE); /* Ctrl+L 地址栏 */
+    gtk_widget_add_accelerator(back_btn, "clicked", accel, GDK_KEY_Left, GDK_MOD1_MASK, GTK_ACCEL_VISIBLE);     /* Alt+← 后退 */
+    gtk_widget_add_accelerator(fwd_btn, "clicked", accel, GDK_KEY_Right, GDK_MOD1_MASK, GTK_ACCEL_VISIBLE);    /* Alt+→ 前进 */
+    gtk_widget_add_accelerator(bm_btn, "clicked", accel, GDK_KEY_d, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);      /* Ctrl+D 收藏 */
+    /* Ctrl+R 刷新（隐藏按钮重新打开当前地址） */
+    GtkWidget *b_reload = gtk_button_new();
+    g_signal_connect(b_reload, "clicked", G_CALLBACK(on_entry_activate), NULL);
+    gtk_widget_add_accelerator(b_reload, "clicked", accel, GDK_KEY_r, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+    g_printerr("QYBROWSERDBG: accel 5 keys\n");
 
     gtk_widget_show_all(win);
 }

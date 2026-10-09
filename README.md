@@ -2147,3 +2147,14 @@ ngs-about-v2.png`。
 - **截图**：docs/screenshots/qyedit-accel.png
 
 构建产物：`qydesktop 0.1.0-206`。
+
+### 浏览器键盘加速键（v0.1.0-207，2026-10 实测）
+
+针对快捷键审计"qybrowser 键盘代码 0 处"：
+- **GtkAccelGroup 绑定 5 个快捷键**：
+  - Ctrl+L 聚焦地址栏 · Alt+← 后退 · Alt+→ 前进 · Ctrl+D 收藏 · Ctrl+R 刷新
+- 刷新用隐藏按钮重新打开当前地址
+- **实测**：`QYBROWSERDBG: accel 5 keys`，qybrowser 在 weston 下运行正常
+- **截图**：docs/screenshots/qybrowser-accel.png
+
+构建产物：`qydesktop 0.1.0-207`。
