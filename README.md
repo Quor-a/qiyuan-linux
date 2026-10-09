@@ -2054,3 +2054,14 @@ ngs-about-v2.png`。
 - **实测**：`QYSHOTDBG: wayland capture via weston-screenshooter`，qyshot 在 weston 下成功截图并预览
 
 构建产物：`qydesktop 0.1.0-197`。
+
+### 驱动管理器 9 类硬件检测（v0.1.0-198，2026-10 实测）
+
+针对排查报告"内核驱动 9 类仍全 0"：
+- **不再只看 /proc/modules**：驱动编入内核时 /proc/modules 为空（内置驱动），现增加 /sys/class 硬件设备检测
+- **9 类概览**：显卡/声卡/网卡/无线/蓝牙/USB存储/摄像头/输入/文件系统，每类显示 ✓/-（支持/未检测到）
+- **检测策略**：模块名匹配优先；未命中则检查 /sys/class/drm、sound、net、bluetooth、video4linux、input 等
+- **自动化**：`QYDRIVERDBG: cats=1/9`（容器内网卡/文件系统可识别），类别数随环境变化
+- **截图**：docs/screenshots/qydriver-cats.png
+
+构建产物：`qydesktop 0.1.0-198`。

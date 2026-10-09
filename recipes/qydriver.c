@@ -17,6 +17,94 @@ static GtkListStore *store = NULL;
 static GtkWidget *count_label = NULL;
 static GtkWidget *usb_label = NULL;
 
+/* ---------- 9 类驱动概览：按常见内核模块检测硬件支持 ---------- */
+typedef struct { const char *name; const char *mods[4]; } DrvCat;
+static const DrvCat drv_cats[] = {
+    { "显卡",   { "i915", "nouveau", "amdgpu", "radeon" } },
+    { "声卡",   { "snd_hda_intel", "snd_hda_codec", "snd_hda_codec_realtek", NULL } },
+    { "网卡",   { "e1000", "r8169", "igb", "i40e" } },
+    { "无线",   { "iwlwifi", "ath9k", "rtl8xxxu", "rtl8188ee" } },
+    { "蓝牙",   { "bluetooth", "btusb", NULL, NULL } },
+    { "USB存储", { "usb_storage", "uas", NULL, NULL } },
+    { "摄像头",  { "uvcvideo", NULL, NULL, NULL } },
+    { "输入",   { "hid_generic", "usbhid", NULL, NULL } },
+    { "文件系统",{ "ext4", "vfat", "ntfs3", "f2fs" } },
+};
+#define NDRV ((int)(sizeof drv_cats / sizeof drv_cats[0]))
+
+static GtkWidget *cat_label = NULL;
+
+/* 目录存在且非空 */
+static gboolean dir_has_entry(const char *path) {
+    GDir *d = g_dir_open(path, 0, NULL);
+    if (!d) return FALSE;
+    gboolean has = g_dir_read_name(d) != NULL;
+    g_dir_close(d);
+    return has;
+}
+
+/* /proc/filesystems 是否支持某文件系统 */
+static gboolean fs_supported(const char *fs) {
+    gchar *c = NULL;
+    g_file_get_contents("/proc/filesystems", &c, NULL, NULL);
+    gboolean ok = c && strstr(c, fs);
+    g_free(c);
+    return ok;
+}
+
+/* 检测某一类别是否受支持：优先匹配 /proc/modules 模块名；
+ * 未作为模块加载时（驱动编入内核）回退检查 /sys/class 设备。 */
+static int cat_supported(int idx) {
+    gchar *c = NULL;
+    g_file_get_contents("/proc/modules", &c, NULL, NULL);
+    for (int k = 0; k < 4 && drv_cats[idx].mods[k]; k++)
+        if (c && strstr(c, drv_cats[idx].mods[k])) { g_free(c); return 1; }
+    g_free(c);
+    switch (idx) {
+        case 0: return dir_has_entry("/sys/class/drm");       /* 显卡 */
+        case 1: return dir_has_entry("/sys/class/sound");     /* 声卡 */
+        case 2: return dir_has_entry("/sys/class/net");       /* 网卡 */
+        case 3: { /* 无线: 网卡列表中存在 wlan 或 wlp 前缀 */
+            GDir *d = g_dir_open("/sys/class/net", 0, NULL);
+            if (!d) return FALSE;
+            const char *e; int ok = 0;
+            while ((e = g_dir_read_name(d)) != NULL) {
+                if (strncmp(e, "wlan", 4) == 0 || strncmp(e, "wlp", 3) == 0) { ok = 1; break; }
+            }
+            g_dir_close(d);
+            return ok;
+        }
+        case 4: return dir_has_entry("/sys/class/bluetooth");  /* 蓝牙 */
+        case 5: return dir_has_entry("/sys/bus/usb/devices");  /* USB 存储 */
+        case 6: return dir_has_entry("/sys/class/video4linux");/* 摄像头 */
+        case 7: return dir_has_entry("/sys/class/input");      /* 输入 */
+        case 8: return fs_supported("ext4") || fs_supported("vfat") ||
+                       fs_supported("ntfs3") || fs_supported("f2fs"); /* 文件系统 */
+    }
+    return 0;
+}
+
+/* 统计已检测到的驱动类别数（模块 + 硬件设备） */
+static int detect_driver_cats(void) {
+    int found = 0;
+    for (int i = 0; i < NDRV; i++)
+        if (cat_supported(i)) found++;
+    return found;
+}
+
+/* 刷新类别概览标签 */
+static void refresh_driver_cats(void) {
+    if (!cat_label) return;
+    GString *s = g_string_new(TR("驱动类别: "));
+    for (int i = 0; i < NDRV; i++) {
+        int ok = cat_supported(i);
+        g_string_append_printf(s, "%s %s  ", drv_cats[i].name, ok ? "✓" : "-");
+    }
+    gchar *txt = g_string_free(s, FALSE);
+    gtk_label_set_text(GTK_LABEL(cat_label), txt);
+    g_free(txt);
+}
+
 /* 读取 /proc/modules 填充驱动列表 */
 static void refresh_modules(void) {
     gtk_list_store_clear(store);
@@ -122,6 +210,12 @@ int main(int argc, char **argv) {
     gtk_container_set_border_width(GTK_CONTAINER(vbox), 8);
     gtk_container_add(GTK_CONTAINER(win), vbox);
 
+    /* 驱动类别概览（9 类硬件支持状态） */
+    cat_label = gtk_label_new("");
+    qy_add_class(cat_label, "qy-mon-info");
+    gtk_widget_set_halign(cat_label, GTK_ALIGN_START);
+    gtk_box_pack_start(GTK_BOX(vbox), cat_label, FALSE, FALSE, 0);
+
     /* 模块列表 */
     store = gtk_list_store_new(N_COLS, G_TYPE_STRING, G_TYPE_STRING,
                                 G_TYPE_STRING, G_TYPE_STRING);
@@ -155,6 +249,10 @@ int main(int argc, char **argv) {
     gtk_widget_show_all(win);
     refresh_modules();
     refresh_usb();
+    refresh_driver_cats();
+    /* 自动化验证: QYDRIVER=1 额外打印类别数 */
+    if (g_getenv("QYDRIVER"))
+        g_printerr("QYDRIVERDBG: cats=%d/%d\n", detect_driver_cats(), NDRV);
     gtk_main();
     return 0;
 }
