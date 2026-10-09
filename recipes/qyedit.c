@@ -60,6 +60,23 @@ static gboolean auto_goto_line(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* ---------- 自动保存：有路径时周期性写回文件 ---------- */
+static gboolean auto_save_file(gpointer p) {
+    (void)p;
+    if (!current_path || !current_path[0])
+        return G_SOURCE_CONTINUE;
+    GtkTextBuffer *b = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
+    GtkTextIter start, end;
+    gtk_text_buffer_get_bounds(b, &start, &end);
+    gchar *text = gtk_text_buffer_get_text(b, &start, &end, FALSE);
+    if (g_file_set_contents(current_path, text, -1, NULL))
+        g_printerr("QYEDITDBG: autosaved %s\n", current_path);
+    else
+        g_printerr("QYEDITDBG: autosave failed %s\n", current_path);
+    g_free(text);
+    return G_SOURCE_CONTINUE;
+}
+
 /* ---------- 状态栏: 行 / 列 / 字符数 ---------- */
 static void update_status(GtkTextBuffer *b) {
     GtkTextIter it;
@@ -238,6 +255,17 @@ int main(int argc, char **argv) {
     const char *line_env = getenv("QYEDIT_LINE");
     if (line_env && atoi(line_env) > 0)
         g_timeout_add(700, auto_goto_line, g_strdup(line_env));
+    /* 自动化验证: QYEDIT_TEXT=新内容 启动后写入 buffer（配合自动保存测试） */
+    const char *text_env = getenv("QYEDIT_TEXT");
+    if (text_env) {
+        GtkTextBuffer *b = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
+        gtk_text_buffer_set_text(b, text_env, -1);
+    }
+    /* 自动保存：默认 30 秒；QYEDIT_AUTOSAVE=1 时 2 秒（自动化验证） */
+    if (getenv("QYEDIT_AUTOSAVE"))
+        g_timeout_add(2000, auto_save_file, NULL);
+    else
+        g_timeout_add_seconds(30, auto_save_file, NULL);
     gtk_main();
     return 0;
 }
