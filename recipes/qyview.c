@@ -300,11 +300,11 @@ static void activate(GtkApplication *app, gpointer ud) {
     add_class(nav, "qy-view-nav");
     gtk_widget_set_margin_top(nav, 4);
     gtk_widget_set_margin_bottom(nav, 4);
-    GtkWidget *b_prev = gtk_button_new_with_label("◀ 上一张");
+    GtkWidget *b_prev = gtk_button_new_with_label("< 上一张");
     add_class(b_prev, "qy-view-nav-btn");
     page_label = gtk_label_new("1 / 1");
     add_class(page_label, "qy-view-nav-label");
-    GtkWidget *b_next = gtk_button_new_with_label("下一张 ▶");
+    GtkWidget *b_next = gtk_button_new_with_label("下一张 >");
     add_class(b_next, "qy-view-nav-btn");
     GtkWidget *b_fit = gtk_button_new_with_label(TR("适应窗口"));
     add_class(b_fit, "qy-view-nav-btn");

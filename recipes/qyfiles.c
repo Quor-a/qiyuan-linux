@@ -38,6 +38,16 @@ static void add_class(GtkWidget *w, const char *cls) {
     gtk_style_context_add_class(gtk_widget_get_style_context(w), cls);
 }
 
+/* 图标按钮助手：无边框纯图标按钮，接入统一 qyicon 线稿库 */
+static GtkWidget *icon_btn(QyIconId id, int px, const char *tip) {
+    GtkWidget *b = gtk_button_new();
+    gtk_button_set_relief(GTK_BUTTON(b), GTK_RELIEF_NONE);
+    GtkWidget *img = gtk_image_new_from_pixbuf(qy_icon_pixbuf(id, px, NULL));
+    gtk_container_add(GTK_CONTAINER(b), img);
+    if (tip) gtk_widget_set_tooltip_text(b, tip);
+    return b;
+}
+
 /* 工具栏按钮（按 普通目录 / 回收站 切换可见性） */
 static GtkWidget *b_mk = NULL, *b_del = NULL, *b_ren = NULL;
 static GtkWidget *b_nf = NULL;   /* 新建文件按钮 */
@@ -1012,13 +1022,13 @@ static void activate(GtkApplication *app, gpointer ud) {
     g_signal_connect(path_entry, "activate", G_CALLBACK(on_path_activate), NULL);
     gtk_box_pack_start(GTK_BOX(pathbar), path_entry, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), pathbar, FALSE, FALSE, 2);
-    GtkWidget *b_ref = gtk_button_new_with_label(TR("刷新"));
+    GtkWidget *b_ref = icon_btn(QY_ICON_REFRESH, 18, TR("刷新"));
     add_class(b_ref, "qy-btn");
     g_signal_connect(b_ref, "clicked", G_CALLBACK(on_refresh), NULL);
     GtkWidget *b_home = gtk_button_new_with_label(TR("主目录"));
     add_class(b_home, "qy-btn");
     g_signal_connect(b_home, "clicked", G_CALLBACK(on_home), NULL);
-    GtkWidget *b_up = gtk_button_new_with_label(TR("上一级"));
+    GtkWidget *b_up = icon_btn(QY_ICON_UP, 18, TR("上级目录"));
     add_class(b_up, "qy-btn");
     g_signal_connect(b_up, "clicked", G_CALLBACK(on_up), NULL);
     b_mk = gtk_button_new_with_label(TR("新建文件夹"));

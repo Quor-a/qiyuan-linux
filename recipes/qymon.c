@@ -222,7 +222,7 @@ static gboolean tick(gpointer ud) {
             if (net_kbs > 1024) net_kbs = 1024;
             if (hist_n > 0) net_hist[hist_n - 1] = net_kbs / 1024.0;
             size_t L = strlen(info);
-            g_snprintf(info + L, sizeof info - L, " · ↓%.0fKB/s ↑%.0fKB/s", rx, tx);
+            g_snprintf(info + L, sizeof info - L, " · 下行 %.0fKB/s 上行 %.0fKB/s", rx, tx);
         }
         if (info_label) gtk_label_set_text(GTK_LABEL(info_label), info);
     }

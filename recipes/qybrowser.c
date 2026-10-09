@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include "qytheme.h"
 #include "qyl10n.h"
+#include "qyicon.h"
 
 static GtkWidget *url_entry = NULL;
 static GtkWidget *view      = NULL;
@@ -24,6 +25,16 @@ static gboolean hist_nav = FALSE;   /* 历史导航时不重复入栈 */
 static gboolean finish_fetch(gpointer ud);   /* 前向声明 */
 static void on_link_clicked(GtkWidget *w, gpointer ud);   /* 前向声明 */
 static void open_url(const char *url);   /* 前向声明 */
+
+/* 图标按钮助手：无边框纯图标按钮，接入统一 qyicon 线稿库 */
+static GtkWidget *icon_btn(QyIconId id, int px, const char *tip) {
+    GtkWidget *b = gtk_button_new();
+    gtk_button_set_relief(GTK_BUTTON(b), GTK_RELIEF_NONE);
+    GtkWidget *img = gtk_image_new_from_pixbuf(qy_icon_pixbuf(id, px, NULL));
+    gtk_container_add(GTK_CONTAINER(b), img);
+    if (tip) gtk_widget_set_tooltip_text(b, tip);
+    return b;
+}
 
 /* ---------- libcurl 写回调 ---------- */
 struct curl_buf { char *data; size_t len; };
@@ -475,11 +486,9 @@ static void activate(GtkApplication *app, gpointer ud) {
 
     /* 工具栏: 后退/前进 + 地址栏 + 打开 + 收藏 + 清空 */
     GtkWidget *bar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
-    back_btn = gtk_button_new_with_label("⇐");
-    gtk_widget_set_tooltip_text(back_btn, TR("后退"));
+    back_btn = icon_btn(QY_ICON_BACK, 18, TR("后退"));
     gtk_widget_set_sensitive(back_btn, FALSE);
-    fwd_btn = gtk_button_new_with_label("⇒");
-    gtk_widget_set_tooltip_text(fwd_btn, TR("前进"));
+    fwd_btn = icon_btn(QY_ICON_FORWARD, 18, TR("前进"));
     gtk_widget_set_sensitive(fwd_btn, FALSE);
     g_signal_connect(back_btn, "clicked", G_CALLBACK(on_back), NULL);
     g_signal_connect(fwd_btn, "clicked", G_CALLBACK(on_fwd), NULL);
@@ -564,10 +573,11 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_widget_add_accelerator(back_btn, "clicked", accel, GDK_KEY_Left, GDK_MOD1_MASK, GTK_ACCEL_VISIBLE);     /* Alt+← 后退 */
     gtk_widget_add_accelerator(fwd_btn, "clicked", accel, GDK_KEY_Right, GDK_MOD1_MASK, GTK_ACCEL_VISIBLE);    /* Alt+→ 前进 */
     gtk_widget_add_accelerator(bm_btn, "clicked", accel, GDK_KEY_d, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);      /* Ctrl+D 收藏 */
-    /* Ctrl+R 刷新（隐藏按钮重新打开当前地址） */
-    GtkWidget *b_reload = gtk_button_new();
+    /* Ctrl+R 刷新（图标按钮重新打开当前地址） */
+    GtkWidget *b_reload = icon_btn(QY_ICON_REFRESH, 18, TR("刷新"));
     g_signal_connect(b_reload, "clicked", G_CALLBACK(on_entry_activate), NULL);
     gtk_widget_add_accelerator(b_reload, "clicked", accel, GDK_KEY_r, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
+    gtk_box_pack_start(GTK_BOX(bar), b_reload, FALSE, FALSE, 0);
     g_printerr("QYBROWSERDBG: accel 5 keys\n");
 
     gtk_widget_show_all(win);

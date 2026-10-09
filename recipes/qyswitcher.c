@@ -68,7 +68,7 @@ static void add_running_apps(void) {
         for (int k = 0; k < NKNOWN; k++) {
             if (strcmp(name, known_apps[k]) == 0) {
                 GtkWidget *row = gtk_button_new_with_label(
-                    g_strdup_printf("● %s", name));
+                    g_strdup_printf("· %s", name));
                 gtk_widget_set_halign(row, GTK_ALIGN_FILL);
                 gtk_widget_set_tooltip_text(row, TR("已运行"));
                 g_signal_connect(row, "clicked", G_CALLBACK(on_row_clicked),
@@ -197,7 +197,7 @@ static void build_ui(void) {
     gtk_container_add(GTK_CONTAINER(win), vbox);
 
     GtkWidget *row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
-    GtkWidget *lbl = gtk_label_new("⇥");
+    GtkWidget *lbl = gtk_label_new("Tab");
     GtkWidget *b_refresh = gtk_button_new_with_label(TR("刷新"));
     g_signal_connect(b_refresh, "clicked", G_CALLBACK(on_refresh), NULL);
     gtk_box_pack_start(GTK_BOX(row), lbl, FALSE, FALSE, 0);

@@ -36,6 +36,20 @@ typedef enum {
     QY_ICON_VIDEO,     /* 视频 */
     QY_ICON_DOC,       /* PDF/文档 */
     QY_ICON_FILE,      /* 通用文件 */
+    QY_ICON_BACK,      /* 返回 */
+    QY_ICON_FORWARD,   /* 前进 */
+    QY_ICON_UP,        /* 上移/父目录 */
+    QY_ICON_REFRESH,   /* 刷新 */
+    QY_ICON_DELETE,    /* 删除（复用 draw_trash） */
+    QY_ICON_COPY,      /* 复制 */
+    QY_ICON_CUT,       /* 剪切 */
+    QY_ICON_PASTE,     /* 粘贴（复用 draw_clipboard） */
+    QY_ICON_CLOSE,     /* 关闭 */
+    QY_ICON_MIN,       /* 最小化 */
+    QY_ICON_MAX,       /* 最大化 */
+    QY_ICON_PLUS,      /* 加号 */
+    QY_ICON_VOLUME,    /* 音量 */
+    QY_ICON_POWER,     /* 电源 */
     QY_ICON_COUNT
 } QyIconId;
 

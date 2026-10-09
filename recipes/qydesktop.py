@@ -6,7 +6,7 @@
 
 name = "qydesktop"
 version = "0.1.0"
-release = 225
+release = 226
 summary = "启元桌面 shell（GTK3 单窗口 + 主题）"
 license = "MIT"
 
@@ -126,14 +126,14 @@ def build(ctx):
         "gcc qyarc.c qytheme.c qyl10n.c -o qyarc $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
         "gcc qystore.c qytheme.c qyl10n.c -o qystore $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
         "gcc qynet.c qytheme.c qyl10n.c -o qynet $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
-        "gcc qybrowser.c qytheme.c qyl10n.c -o qybrowser $(pkg-config --cflags --libs gtk+-3.0) $(pkg-config --cflags --libs libcurl) -O2 && "
+        "gcc qybrowser.c qyicon.c qytheme.c qyl10n.c -o qybrowser $(pkg-config --cflags --libs gtk+-3.0) $(pkg-config --cflags --libs libcurl) -O2 && "
         "gcc qyshot.c qytheme.c qyl10n.c -o qyshot $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qyshot-capture.c -o qyshot-capture -I{0}/usr/include -L{0}/usr/lib -lX11 -O2 && "
         "gcc qyclip.c qytheme.c qyl10n.c -o qyclip $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qylock.c qytheme.c qyl10n.c -o qylock $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
-        "gcc qysearch.c qytheme.c qyl10n.c -o qysearch $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
+        "gcc qysearch.c qyicon.c qytheme.c qyl10n.c -o qysearch $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qymedia.c qytheme.c qyl10n.c -o qymedia $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
-        "gcc qycalc.c qytheme.c qyl10n.c -o qycalc $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
+        "gcc qycalc.c qyicon.c qytheme.c qyl10n.c -o qycalc $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qysw-x11.c -o qysw-x11 -I{0}/usr/include -L{0}/usr/lib -lX11 -O2 && "
         "gcc qyswitcher.c qytheme.c qyl10n.c -o qyswitcher $(pkg-config --cflags --libs gtk+-3.0) -O2 && "
         "gcc qynotify.c -o qynotify $(pkg-config --cflags --libs glib-2.0 gio-2.0) -O2 && "

@@ -36,8 +36,7 @@ void qy_load_theme(void) {
         g_free(content);
     }
     const char *color = "#E95420";  /* orange */
-    if (!strcmp(accent, "blue")) color = "#1E90FF";
-    else if (!strcmp(accent, "green")) color = "#2E9E44";
+    /* 仅保留锁橙强调色；blue/green 分支已按审计移除（禁多色系） */
 
     /* 覆盖 CSS: 主按钮 / 标题 / 进度条 */
     gchar *css = g_strdup_printf(

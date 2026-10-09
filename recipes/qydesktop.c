@@ -5,17 +5,18 @@
  * 在 Wayland 被忽略导致 bar/dock 错位）的问题。
  *
  * 布局（1280x800）:
- *   ┌──────────────────────────────┐ 0
- *   │ ⊞ | 窗口任务栏 …  时钟   ⏻ │ 30  顶栏
- *   ├────┬─────────────────────────┤
- *   │Dock│ 壁纸 + 桌面图标          │
- *   │  ▤ │                          │
- *   │ >_ │                          │
- *   │ 设置 │                          │
- *   │ ▦  │                          │
- *   │ ── │                          │
- *   │ ⊞  │                          │
- *   └────┴─────────────────────────┘
+ *   +------------------------------+ 0
+ *   | [开始] | 窗口任务栏 ... 时钟 [电源] | 30  顶栏
+ *   +------+-----------------------+
+ *   | Dock | 壁纸 + 桌面图标          |
+ *   | [文件] |                       |
+ *   | [终端] |                       |
+ *   | [设置] |                       |
+ *   | [软件] |                       |
+ *   | [监视] |                       |
+ *   | [回收站]|                       |
+ *   | [应用] |                       |
+ *   +------+-----------------------+
  *
  * 任务栏数据源：weston 合成器补丁每 500ms 写的 /tmp/xdg/qy-windows，
  * 点击窗口按钮写 /tmp/xdg/qy-focus 让合成器激活对应窗口。
@@ -43,9 +44,9 @@
 #define DOCK_W    66
 
 /* ---------- 应用注册表 ---------- */
+/* Dock/桌面图标统一走 qyicon（task_icon_id 按应用名映射），glyph 字段已废弃删除 */
 typedef struct {
     const char *name;
-    const char *glyph;
     const char *css;      /* 主题颜色类 */
     const char *cmdline;
     const char *exe;      /* /proc/<pid>/comm */
@@ -54,12 +55,12 @@ typedef struct {
 } AppEntry;
 
 static AppEntry apps[] = {
-    { "文件",   "▤", "c-files",    "qyfiles",          "qyfiles",      0, NULL },
-    { "终端",   ">_", "c-term",     "weston-terminal",  "weston-termi", 0, NULL },
-    { "设置",   "set", "c-settings", "qysettings",       "qysettings",   0, NULL },
-    { "软件中心", "▦", "c-store",    "qystore",          "qystore",      0, NULL },
-    { "监视",   "▦", "c-mon",     "qymon",             "qymon",        0, NULL },
-    { "回收站", "del", "c-trash",   "qyfiles --trash",   "qyfiles",      0, NULL },
+    { "文件",   "c-files",    "qyfiles",          "qyfiles",      0, NULL },
+    { "终端",   "c-term",     "weston-terminal",  "weston-termi", 0, NULL },
+    { "设置",   "c-settings", "qysettings",       "qysettings",   0, NULL },
+    { "软件中心", "c-store",    "qystore",          "qystore",      0, NULL },
+    { "监视",   "c-mon",     "qymon",             "qymon",        0, NULL },
+    { "回收站", "c-trash",   "qyfiles --trash",   "qyfiles",      0, NULL },
 };
 #define NAPPS ((int)(sizeof apps / sizeof apps[0]))
 
@@ -329,7 +330,7 @@ static GtkWidget *dock_icon(AppEntry *a) {
     g_signal_connect(ic, "draw", G_CALLBACK(dock_icon_draw_cb), a);
     gtk_widget_set_halign(ic, GTK_ALIGN_CENTER);
     gtk_box_pack_start(GTK_BOX(v), ic, TRUE, TRUE, 0);
-    GtkWidget *dot = gtk_label_new("●");
+    GtkWidget *dot = gtk_label_new("•");
     gtk_widget_set_halign(dot, GTK_ALIGN_CENTER);
     add_class(dot, "qy-dock-dot");
     gtk_box_pack_start(GTK_BOX(v), dot, FALSE, FALSE, 0);
@@ -350,7 +351,7 @@ static gboolean dock_tick(gpointer ud) {
 }
 
 /* ---------- 桌面图标 ---------- */
-/* 字符 glyph → 统一图标 id（桌面图标接入点） */
+/* 应用名 → 统一图标 id（qyicon 接入点） */
 static gboolean desktop_icon_draw_cb(GtkWidget *w, cairo_t *cr, gpointer ud) {
     QyIconId id = (QyIconId)GPOINTER_TO_INT(ud);
     GtkAllocation al;
@@ -398,7 +399,7 @@ static GtkWidget *desktop_icon(QyIconId iid, const char *css,
 static GdkPixbuf *wallpaper = NULL;
 static guint wall_seed = 0;
 
-/* 程序化生成品牌壁纸: 深蓝→深紫渐变 + 橙/紫柔光圆斑（种子不同图案不同） */
+/* 程序化生成品牌壁纸: 深蓝底 + 橙光柔光圆斑 + 白色星点（种子不同图案不同） */
 static GdkPixbuf *gen_wallpaper(guint seed) {
     int w = 1600, h = 900;
     cairo_surface_t *surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, w, h);
@@ -740,7 +741,7 @@ static gboolean notif_tick(gpointer ud) {
             char *bar = strchr(content, '|');
             if (bar) {
                 *bar = 0;
-                gchar *title = g_strdup_printf("● %s", content);
+                gchar *title = g_strdup_printf("• %s", content);
                 gtk_label_set_text(GTK_LABEL(notif_label), title);
                 gtk_widget_set_tooltip_text(notif_label, bar + 1);
                 g_free(title);
@@ -763,81 +764,30 @@ static void tray_launch(const char *cmd) {
 static void on_tray_clicked(GtkWidget *w, gpointer ud) {
     tray_launch((const char *)ud);
 }
-/* ---------- 托盘 cairo 线稿图标（替代 emoji，去 AI 感） ---------- */
+/* ---------- 托盘统一 qyicon 线稿图标（替代 emoji，去 AI 感） ---------- */
 enum { TRAY_NET, TRAY_DRV, TRAY_VOL, TRAY_CLIP, TRAY_SHOT, TRAY_LOCK, TRAY_PWR };
 
-static void qy_rounded_rect(cairo_t *cr, double x, double y, double w, double h, double r) {
-    cairo_new_sub_path(cr);
-    cairo_arc(cr, x + w - r, y + r, r, -G_PI / 2, 0);
-    cairo_arc(cr, x + w - r, y + h - r, r, 0, G_PI / 2);
-    cairo_arc(cr, x + r, y + h - r, r, G_PI / 2, G_PI);
-    cairo_arc(cr, x + r, y + r, r, G_PI, 3 * G_PI / 2);
-    cairo_close_path(cr);
+static QyIconId tray_icon_id(int t) {
+    switch (t) {
+    case TRAY_NET:  return QY_ICON_NETWORK;
+    case TRAY_DRV:  return QY_ICON_DRIVER;
+    case TRAY_VOL:  return QY_ICON_VOLUME;
+    case TRAY_CLIP: return QY_ICON_CLIPBOARD;
+    case TRAY_SHOT: return QY_ICON_SHOT;
+    case TRAY_LOCK: return QY_ICON_LOCK;
+    case TRAY_PWR:  return QY_ICON_POWER;
+    default:        return QY_ICON_SETTINGS;
+    }
 }
 
 static gboolean tray_draw_cb(GtkWidget *w, cairo_t *cr, gpointer ud) {
-    int icon = GPOINTER_TO_INT(ud);
-    double cx = gtk_widget_get_allocated_width(w) / 2.0;
-    double cy = gtk_widget_get_allocated_height(w) / 2.0;
-    gboolean hover = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(w), "hover"));
-    if (hover) cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
-    else cairo_set_source_rgb(cr, 0.79, 0.80, 0.83);   /* #c9cdd4 与 .qy-status-btn 一致 */
-    cairo_set_line_width(cr, 1.6);
-    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
-    cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);
-    switch (icon) {
-    case TRAY_NET: {
-        cairo_arc(cr, cx, cy, 7, 0, 2 * G_PI); cairo_stroke(cr);
-        cairo_move_to(cr, cx - 7, cy); cairo_line_to(cr, cx + 7, cy); cairo_stroke(cr);
-        cairo_save(cr);
-        cairo_scale(cr, 1, 0.6);
-        cairo_arc(cr, cx, cy / 0.6, 7, 0, 2 * G_PI);
-        cairo_restore(cr);
-        cairo_stroke(cr);
-        break;
-    }
-    case TRAY_DRV: {
-        qy_rounded_rect(cr, cx - 9, cy - 6, 18, 12, 2.5); cairo_stroke(cr);
-        cairo_rectangle(cr, cx - 3, cy - 3.5, 6, 4); cairo_stroke(cr);
-        cairo_move_to(cr, cx - 5, cy + 4.5); cairo_line_to(cr, cx + 5, cy + 4.5); cairo_stroke(cr);
-        break;
-    }
-    case TRAY_VOL: {
-        cairo_move_to(cr, cx - 6, cy - 2.5);
-        cairo_line_to(cr, cx - 2, cy - 2.5);
-        cairo_line_to(cr, cx + 3, cy - 6.5);
-        cairo_line_to(cr, cx + 3, cy + 6.5);
-        cairo_line_to(cr, cx - 2, cy + 2.5);
-        cairo_line_to(cr, cx - 6, cy + 2.5);
-        cairo_close_path(cr); cairo_stroke(cr);
-        cairo_arc(cr, cx + 5, cy, 3.5, -0.9, 0.9); cairo_stroke(cr);
-        cairo_arc(cr, cx + 6.8, cy, 6.2, -0.9, 0.9); cairo_stroke(cr);
-        break;
-    }
-    case TRAY_CLIP: {
-        qy_rounded_rect(cr, cx - 6, cy - 8, 12, 14, 2); cairo_stroke(cr);
-        qy_rounded_rect(cr, cx - 3, cy - 10, 6, 3, 1); cairo_stroke(cr);
-        cairo_move_to(cr, cx - 3, cy - 2); cairo_line_to(cr, cx + 3, cy - 2); cairo_stroke(cr);
-        cairo_move_to(cr, cx - 3, cy + 1.5); cairo_line_to(cr, cx + 3, cy + 1.5); cairo_stroke(cr);
-        break;
-    }
-    case TRAY_SHOT: {
-        qy_rounded_rect(cr, cx - 8, cy - 5, 16, 11, 2.5); cairo_stroke(cr);
-        qy_rounded_rect(cr, cx - 3.5, cy - 8, 7, 4, 1); cairo_stroke(cr);
-        cairo_arc(cr, cx, cy, 3, 0, 2 * G_PI); cairo_stroke(cr);
-        break;
-    }
-    case TRAY_LOCK: {
-        qy_rounded_rect(cr, cx - 6.5, cy - 2, 13, 10, 2); cairo_stroke(cr);
-        cairo_arc(cr, cx, cy - 2, 4, G_PI, 2 * G_PI); cairo_stroke(cr);
-        break;
-    }
-    case TRAY_PWR: {
-        cairo_arc(cr, cx, cy + 0.8, 5.2, G_PI * 0.2, G_PI * 1.8); cairo_stroke(cr);
-        cairo_move_to(cr, cx, cy - 7); cairo_line_to(cr, cx, cy - 1.5); cairo_stroke(cr);
-        break;
-    }
-    }
+    QyIconId id = tray_icon_id(GPOINTER_TO_INT(ud));
+    GtkAllocation al;
+    gtk_widget_get_allocation(w, &al);
+    gboolean pre = (gtk_widget_get_state_flags(w) & GTK_STATE_FLAG_PRELIGHT) != 0;
+    GdkRGBA col;
+    gdk_rgba_parse(&col, pre ? "#ffffff" : "#c9cdd4");
+    qy_icon_draw(cr, id, (al.width - 18) / 2.0, (al.height - 18) / 2.0, 18, FALSE, &col);
     return FALSE;
 }
 
@@ -861,24 +811,15 @@ static gboolean bell_draw_cb(GtkWidget *w, cairo_t *cr, gpointer ud) {
     return FALSE;
 }
 
-/* 托盘图标 hover 高亮 */
-static gboolean tray_hover_cb(GtkWidget *b, GdkEventCrossing *ev, gpointer da) {
-    (void)b;
-    g_object_set_data(G_OBJECT(da), "hover", GINT_TO_POINTER(ev->type == GDK_ENTER_NOTIFY ? 1 : 0));
-    gtk_widget_queue_draw(GTK_WIDGET(da));
-    return FALSE;
-}
-
+/* 托盘图标 hover 高亮：由 tray_draw_cb 读取 GTK_STATE_FLAG_PRELIGHT 状态实现 */
 static GtkWidget *make_tray_icon_btn_cb(int icon, const char *tip, GCallback cb, gpointer data) {
     GtkWidget *b = gtk_button_new();
     gtk_button_set_relief(GTK_BUTTON(b), GTK_RELIEF_NONE);
     add_class(b, "qy-status-btn");
     GtkWidget *da = gtk_drawing_area_new();
-    gtk_widget_set_size_request(da, 22, 22);
+    gtk_widget_set_size_request(da, 28, 28);
     g_signal_connect(da, "draw", G_CALLBACK(tray_draw_cb), GINT_TO_POINTER(icon));
     gtk_container_add(GTK_CONTAINER(b), da);
-    g_signal_connect(b, "enter-notify-event", G_CALLBACK(tray_hover_cb), da);
-    g_signal_connect(b, "leave-notify-event", G_CALLBACK(tray_hover_cb), da);
     gtk_widget_set_tooltip_text(b, tip);
     g_signal_connect(b, "clicked", cb, data);
     return b;
@@ -1013,6 +954,7 @@ static void build_bar(void) {
     gtk_button_set_relief(GTK_BUTTON(clock_btn), GTK_RELIEF_NONE);
     add_class(clock_btn, "qy-clock");
     clock_label = gtk_label_new("");
+    add_class(clock_label, "qy-clock-label");
     gtk_container_add(GTK_CONTAINER(clock_btn), clock_label);
     g_signal_connect(clock_btn, "clicked", G_CALLBACK(on_clock_clicked), NULL);
     gtk_box_pack_start(GTK_BOX(st), clock_btn, FALSE, FALSE, 0);
@@ -1086,13 +1028,17 @@ static void build_dock(void) {
     GtkWidget *sep = gtk_separator_new(GTK_ORIENTATION_HORIZONTAL);
     gtk_box_pack_start(GTK_BOX(vbox), sep, FALSE, FALSE, 4);
 
-    /* 底部应用网格 */
+    /* 底部应用网格：统一 cairo 图标（暂无网格枚举，先用 QY_ICON_SEARCH 占位） */
     GtkWidget *grid_btn = gtk_button_new();
     gtk_button_set_relief(GTK_BUTTON(grid_btn), GTK_RELIEF_NONE);
     add_class(grid_btn, "qy-dock-icon");
     add_class(grid_btn, "c-grid");
-    GtkWidget *gl = gtk_label_new("⊞");
-    gtk_container_add(GTK_CONTAINER(grid_btn), gl);
+    GtkWidget *gd = gtk_drawing_area_new();
+    gtk_widget_set_size_request(gd, 26, 26);
+    gtk_widget_set_halign(gd, GTK_ALIGN_CENTER);
+    gtk_widget_set_valign(gd, GTK_ALIGN_CENTER);
+    g_signal_connect(gd, "draw", G_CALLBACK(desktop_icon_draw_cb), GINT_TO_POINTER(QY_ICON_SEARCH));
+    gtk_container_add(GTK_CONTAINER(grid_btn), gd);
     gtk_widget_set_tooltip_text(grid_btn, TR("显示应用"));
     g_signal_connect(grid_btn, "clicked", G_CALLBACK(on_appmenu_clicked), NULL);
     gtk_box_pack_end(GTK_BOX(vbox), grid_btn, FALSE, FALSE, 0);

@@ -234,7 +234,7 @@ static void load_repo(const char *filter, int status_filter) {
         if (status_filter == 2 && is_installed(name)) continue;
         char sz[32], status[64];
         human_size(size, sz, sizeof sz);
-        snprintf(status, sizeof status, "%s", is_installed(name) ? TR("√ 已安装") : TR("可安装"));
+        snprintf(status, sizeof status, "%s", is_installed(name) ? TR("OK 已安装") : TR("可安装"));
         gtk_list_store_insert_with_values(store, NULL, -1,
             C_NAME, name, C_VER, ver, C_SIZE, sz, C_STATUS, status,
             C_FILE, file, -1);
@@ -353,7 +353,7 @@ static void on_act(GtkWidget *w, gpointer ud) {
     while (gtk_events_pending()) gtk_main_iteration();
     rc = system(cmd);
     char msg[128];
-    snprintf(msg, sizeof msg, rc == 0 ? TR("完成 √") : TR("失败 (rc=%d)"), rc);
+    snprintf(msg, sizeof msg, rc == 0 ? TR("完成 OK") : TR("失败 (rc=%d)"), rc);
     append_log(msg);
     snprintf(g_status, sizeof g_status, "%s", is_installed(g_name) ? "installed" : "available");
     gtk_button_set_label(GTK_BUTTON(btn_act), g_status[0] == 'i' ? TR("卸载") : TR("安装"));

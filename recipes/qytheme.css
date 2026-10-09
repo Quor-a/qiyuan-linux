@@ -76,27 +76,17 @@ list row button:hover {
     background-color: rgba(10, 15, 26, 0.92);
     border-bottom: 1px solid rgba(233, 84, 32, 0.3);
 }
-.qy-bar-btn {
-    background-image: none;
-    background-color: transparent;
-    border: none;
-    border-radius: 6px;
-    padding: 2px 10px;
-    color: #e6e9ef;
-    font-size: 13px;
-    transition: background-color 150ms ease, color 150ms ease;
-}
-.qy-bar-btn:hover {
-    background-color: rgba(255, 255, 255, 0.12);
-}
-.qy-bar-btn:active {
-    background-color: rgba(233, 84, 32, 0.45);
-}
 .qy-clock {
     color: #e6e9ef;
     font-weight: bold;
     letter-spacing: 0.5px;
     font-size: 13px;
+}
+.qy-clock-label {
+    color: #e6e9ef;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
 }
 .qy-status {
     color: #c9cdd4;
@@ -107,14 +97,15 @@ list row button:hover {
     background-color: transparent;
     border: none;
     border-radius: 8px;
-    padding: 4px 8px;
+    padding: 0;
+    min-width: 28px;
     min-height: 28px;
     color: #c9cdd4;
     font-size: 14px;
     transition: background-color 150ms ease, color 150ms ease;
 }
 .qy-status-btn:hover {
-    background-color: rgba(255, 255, 255, 0.12);
+    background-color: rgba(255, 255, 255, 0.10);
     color: #ffffff;
 }
 
@@ -144,7 +135,7 @@ list row button:hover {
     font-size: 8px;
 }
 
-/* ---------- 图标颜色类（统一玻璃底，配色交给 cairo 线稿，根除紫色） ---------- */
+/* ---------- 图标颜色类（统一玻璃底，配色交给 cairo 线稿） ---------- */
 .c-files, .c-term, .c-settings, .c-store, .c-mon, .c-home, .c-trash, .c-grid {
     background-color: rgba(255, 255, 255, 0.08);
 }
@@ -414,12 +405,12 @@ notebook tab:checked {
 .qy-mon-cpu {
     font-size: 32px;
     font-weight: bold;
-    color: #F59E0B;
+    color: #E95420;
 }
 .qy-mon-mem {
     font-size: 32px;
     font-weight: bold;
-    color: #5BA3F0;
+    color: #E6E9EF;
 }
 .qy-mon-info {
     font-size: 12px;
@@ -467,7 +458,7 @@ notebook tab:checked {
 .qy-mon-disk {
     font-size: 32px;
     font-weight: bold;
-    color: #34D399;
+    color: #C9CDD4;
 }
 
 /* ---------- 任务栏窗口按钮: 图标+标题 ---------- */
@@ -529,10 +520,10 @@ notebook tab:checked {
 
 /* ---------- 桌面图标: 图片查看 ---------- */
 .c-view {
-    background-color: #14B8A6;
+    background-color: rgba(255, 255, 255, 0.08);
 }
 .c-view:hover {
-    background-color: #2DD4BF;
+    background-color: rgba(255, 255, 255, 0.16);
 }
 
 /* ---------- 文本编辑器状态栏 ---------- */

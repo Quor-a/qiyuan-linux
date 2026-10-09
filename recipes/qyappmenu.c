@@ -7,8 +7,6 @@
 
 typedef struct {
     const char *name;
-    const char *icon;
-    const char *color;      /* 图标底色 (统一主题色板) */
     const char *cmdline;
     int launches;          /* 常用排序 */
     const char *cat;       /* 分类: 系统/文件/工具 */
@@ -16,28 +14,28 @@ typedef struct {
 
 /* 统一图标主题色板 (v1.7): 每应用固定主色 */
 static AppEntry apps[] = {
-    { "系统设置",   "set",  "#6b7280", "qysettings",      0, "系统" },
-    { "系统监视",   "▦", "#f59e0b", "qymon",           0, "系统" },
-    { "系统安装",   "⬇", "#f97316", "qysetup",         0, "系统" },
-    { "用户管理",   "usr", "#0ea5e9", "qyusers",         0, "系统" },
-    { "网络管理",   "⇄", "#22c55e", "qynet",           0, "系统" },
-    { "文件管理器", "▤", "#3b82f6", "qyfiles",         0, "文件" },
-    { "图片查看",   "▣", "#14B8A6", "qyview",          0, "文件" },
-    { "压缩管理",   "▣", "#ef4444", "qyarc",           0, "文件" },
-    { "回收站",     "del", "#6b7280", "qyfiles --trash", 0, "文件" },
-    { "终端",       ">_", "#334155", "weston-terminal", 0, "工具" },
-    { "文本编辑",   "edt", "#10b981", "qyedit",          0, "工具" },
-    { "软件中心",   "▦", "#0a7ea4", "qystore",         0, "工具" },
-    { "浏览器",     "◎", "#60a5fa", "qybrowser",       0, "工具" },
-    { "截图工具",   "◉", "#f472b6", "qyshot",          0, "工具" },
-    { "剪贴板",     "≡", "#f59e0b", "qyclip",          0, "工具" },
-    { "锁屏",       "◈", "#94a3b8", "qylock",          0, "系统" },
-    { "全局搜索",   "◯", "#22d3ee", "qysearch",        0, "系统" },
-    { "音乐播放器", "mus", "#ec4899", "qymedia",         0, "娱乐" },
-    { "窗口切换器", "⇥", "#333B49", "qyswitcher",     0, "系统" },
-    { "驱动管理器", "■", "#64748b", "qydriver",       0, "系统" },
-    { "Git 工具",   "⎇", "#f97316", "qygit",           0, "工具" },
-    { "欢迎",       "wel", "#22c55e", "qywelcome",      0, "系统" },
+    { "系统设置", "qysettings",      0, "系统" },
+    { "系统监视", "qymon",           0, "系统" },
+    { "系统安装", "qysetup",         0, "系统" },
+    { "用户管理", "qyusers",         0, "系统" },
+    { "网络管理", "qynet",           0, "系统" },
+    { "文件管理器", "qyfiles",         0, "文件" },
+    { "图片查看", "qyview",          0, "文件" },
+    { "压缩管理", "qyarc",           0, "文件" },
+    { "回收站", "qyfiles --trash", 0, "文件" },
+    { "终端", "weston-terminal", 0, "工具" },
+    { "文本编辑", "qyedit",          0, "工具" },
+    { "软件中心", "qystore",         0, "工具" },
+    { "浏览器", "qybrowser",       0, "工具" },
+    { "截图工具", "qyshot",          0, "工具" },
+    { "剪贴板", "qyclip",          0, "工具" },
+    { "锁屏", "qylock",          0, "系统" },
+    { "全局搜索", "qysearch",        0, "系统" },
+    { "音乐播放器", "qymedia",         0, "娱乐" },
+    { "窗口切换器", "qyswitcher",     0, "系统" },
+    { "驱动管理器", "qydriver",       0, "系统" },
+    { "Git 工具", "qygit",           0, "工具" },
+    { "欢迎", "qywelcome",      0, "系统" },
 };
 #define NAPPS ((int)(sizeof apps / sizeof apps[0]))
 
@@ -424,7 +422,7 @@ int main(int argc, char **argv) {
     /* 4. 底部用户区 */
     gtk_box_pack_start(GTK_BOX(vbox), gtk_separator_new(GTK_ORIENTATION_HORIZONTAL), FALSE, FALSE, 2);
     GtkWidget *bottom = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-    GtkWidget *user = gtk_label_new("● root");
+    GtkWidget *user = gtk_label_new("· root");
     gtk_widget_set_halign(user, GTK_ALIGN_START);
     add_class(user, "qy-appmenu-user");
     gtk_box_pack_start(GTK_BOX(bottom), user, TRUE, TRUE, 0);

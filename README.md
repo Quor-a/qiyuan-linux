@@ -2338,3 +2338,13 @@ ngs-about-v2.png`。
 - 编译：qydesktop/qyappmenu/qyfiles/qystore/qywelcome/qydriver/qyarc 全部 rc=0
 
 构建产物：`qydesktop 0.1.0-225`。
+
+### UI 改版第 6 轮：托盘28px统一 + 12动作图标 + 应用工具栏接入 qyicon + 全库字符/颜色归零（v0.1.0-226，2026-10 实测）
+
+群聊第一轮 4 专家共识 + 主持人协调落地：
+- **托盘 28px 统一**：da 22→28，`.qy-status-btn{padding:0;min-width:28px;min-height:28px}`；托盘图标统一 `qy_icon_draw`（18px 居中，hover 白/常态 #c9cdd4），本地手绘 switch 与 static qy_rounded_rect 删除；新增 VOLUME/POWER 图标（qyicon 共 40 图标）
+- **12 个动作图标**：QY_ICON_BACK/FORWARD/UP/REFRESH/DELETE/COPY/CUT/PASTE/CLOSE/MIN/MAX/PLUS（DELETE/PASTE 复用 TRASH/CLIPBOARD），lw=size/16 全尺寸一致
+- **应用工具栏接入 qyicon**：qybrowser（⇐⇒→BACK/FORWARD，reload→REFRESH）、qyfiles（UP/REFRESH）、qysearch（CLOSE、结果行字符→·）、qycalc（⌫→BACK）；qycalc 编译命令补 qyicon.c
+- **字符/颜色归零**：`grep -P [\x{2190}-\x{2BFF}]` 全库仅余注释；`[\x{2600}-\x{27BF}]` 零命中；.c-view 青块→玻璃底、qymon 蓝绿/琥珀→橙白灰、qytheme.c 删 blue/green 分支、√→OK、●◉▢⇥◀▶↓↑⬇ 全部 ASCII 化；qyappmenu 删 icon/color 死字段、qydesktop 删 glyph 死字段
+- **时钟分层**：`.qy-clock-label`（14px/500 #E6E9EF）；dock 网格按钮 ⊞→cairo 图标
+- 编译：15 个应用全部 rc=0；构建产物 `qydesktop 0.1.0-226`

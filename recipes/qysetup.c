@@ -208,7 +208,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_scrolled_window_set_min_content_height(GTK_SCROLLED_WINDOW(scroll), 110);
     gtk_box_pack_start(GTK_BOX(v), scroll, FALSE, FALSE, 0);
 
-    btn_install = gtk_button_new_with_label(TR("⬇  安装启元到所选磁盘"));
+    btn_install = gtk_button_new_with_label(TR("安装启元到所选磁盘"));
     g_signal_connect(btn_install, "clicked", G_CALLBACK(do_install), NULL);
     gtk_box_pack_start(GTK_BOX(v), btn_install, FALSE, FALSE, 0);
 
