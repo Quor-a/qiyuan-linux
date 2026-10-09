@@ -5,7 +5,7 @@ https://tiswww.case.edu/php/chet/readline/rltop.html
 """
 
 name = "readline"
-version = "8.2"
+version = "8.3"
 release = 1
 summary = "命令行行编辑与历史库"
 homepage = "https://tiswww.case.edu/php/chet/readline/rltop.html"
@@ -14,8 +14,8 @@ license = "GPL-3.0-or-later"
 # 远程源码的 sha256 尚未填回，构建前会被拒绝：
 # 静默接受未校验的远程源码等于给供应链攻击敞开大门。
 # 在能联网的构建机上执行：qybuild --fetch-checksums readline
-source = ["https://mirrors.aliyun.com/gnu/readline/readline-8.2.tar.gz"]
-sha256 = ["3feb7171f16a84ee82ca18a36d7b9be109a52c04f492a053331d7d1095007c35"]
+source = ["https://mirrors.aliyun.com/gnu/readline/readline-8.3.tar.gz"]
+sha256 = ["fe5383204467828cd495ee8d1d3c037a7eba1389c22bc6a041f627976f9061cc"]
 
 depends = ["ncurses"]
 makedepends = ["ncurses"]
