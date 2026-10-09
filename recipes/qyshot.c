@@ -60,17 +60,33 @@ static GdkPixbuf *bmp_to_pixbuf(const char *path) {
     return pb;
 }
 
-/* 截取整个屏幕: 调用 qyshot-capture（纯 X11）抓根窗口保存 BMP 后加载 */
+/* 截取整个屏幕: Wayland 优先用 grim/weston-screenshooter，否则回退 X11 qyshot-capture */
 static GdkPixbuf *capture_screen(void) {
     const char *disp = g_getenv("QYSHOT_DISPLAY");
     if (!disp) disp = ":0";
     char tmp[96];
-    g_snprintf(tmp, sizeof tmp, "/tmp/qyshot-%d.bmp", (int)getpid());
-    char cmd[640];
-    g_snprintf(cmd, sizeof cmd, "DISPLAY=%s /usr/bin/qyshot-capture %s 2>/dev/null", disp, tmp);
-    int rc = system(cmd);
     GdkPixbuf *pb = NULL;
-    if (rc == 0)
+    char cmd[640];
+    const char *wld = g_getenv("WAYLAND_DISPLAY");
+    const char *tool = NULL;
+    if (wld) {
+        if (g_find_program_in_path("grim")) tool = "grim";
+        else if (g_find_program_in_path("weston-screenshooter")) tool = "weston-screenshooter";
+    }
+    if (tool) {
+        g_printerr("QYSHOTDBG: wayland capture via %s\n", tool);
+        g_snprintf(tmp, sizeof tmp, "/tmp/qyshot-%d.png", (int)getpid());
+        g_snprintf(cmd, sizeof cmd, "%s %s 2>/dev/null", tool, tmp);
+        if (system(cmd) == 0)
+            pb = gdk_pixbuf_new_from_file(tmp, NULL);
+        unlink(tmp);
+        return pb;
+    }
+    /* X11 回退（测试环境/无 Wayland 截图工具时仍可用） */
+    g_printerr("QYSHOTDBG: x11 fallback capture disp=%s\n", disp);
+    g_snprintf(tmp, sizeof tmp, "/tmp/qyshot-%d.bmp", (int)getpid());
+    g_snprintf(cmd, sizeof cmd, "DISPLAY=%s /usr/bin/qyshot-capture %s 2>/dev/null", disp, tmp);
+    if (system(cmd) == 0)
         pb = bmp_to_pixbuf(tmp);
     unlink(tmp);
     return pb;

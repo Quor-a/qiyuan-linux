@@ -2045,3 +2045,12 @@ ngs-about-v2.png`。
 - **自动化**：`QYNET_WIFI=SSID|密码` 实测 `QYNETWIFI: connect ssid=MyHome iface=wlan0`，conf 内容正确
 
 构建产物：`qydesktop 0.1.0-196`。
+
+### 截图工具 Wayland 支持（v0.1.0-197，2026-10 实测）
+
+针对排查报告"qyshot 仍 X11"：
+- **Wayland 优先截图**：检测到 WAYLAND_DISPLAY 时自动使用 `grim` 或 `weston-screenshooter`
+- **X11 回退**：无 Wayland 截图工具时回退 qyshot-capture（测试/混合会话仍可用）
+- **实测**：`QYSHOTDBG: wayland capture via weston-screenshooter`，qyshot 在 weston 下成功截图并预览
+
+构建产物：`qydesktop 0.1.0-197`。
