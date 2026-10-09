@@ -65,6 +65,7 @@ static AppEntry apps[] = {
 #define NAPPS ((int)(sizeof apps / sizeof apps[0]))
 
 static GtkWidget *taskbar_box   = NULL;
+static GtkWidget *dock_vbox     = NULL;
 static GtkWidget *active_title  = NULL;
 static guint     active_id     = 0;   /* 最近点击的任务栏窗口（本地高亮反馈） */
 static long      active_until  = 0;   /* 高亮截止时间戳 */
@@ -338,15 +339,53 @@ static GtkWidget *dock_icon(AppEntry *a) {
     gtk_widget_set_visible(dot, FALSE);
     a->dot = dot;
     gtk_widget_set_tooltip_text(btn, TR(a->name));
+    g_object_set_data(G_OBJECT(btn), "app", a);
     g_signal_connect(btn, "clicked", G_CALLBACK(dock_click), a);
     return btn;
 }
 
 static gboolean dock_tick(gpointer ud) {
+    (void)ud;
+    /* 运行指示点 */
     for (int i = 0; i < NAPPS; i++) {
         int pid = proc_running(apps[i].exe);
         apps[i].pid = pid;
         if (apps[i].dot) gtk_widget_set_visible(apps[i].dot, pid > 0);
+    }
+
+    /* 激活态动态焦点：读焦点窗口标题，匹配 apps[] 的 name/cmdline */
+    int focus_app = -1;
+    guint focus = read_focus();
+    if (focus) {
+        WinInfo wins[16];
+        int n = taskbar_parse(wins, 16);
+        const char *title = "";
+        for (int i = 0; i < n; i++)
+            if (wins[i].id == focus) { title = wins[i].title; break; }
+        if (title[0]) {
+            /* 先按应用名匹配，再按命令行兜底 */
+            for (int i = 0; i < NAPPS; i++)
+                if (apps[i].name && strstr(title, apps[i].name)) { focus_app = i; break; }
+            if (focus_app < 0)
+                for (int i = 0; i < NAPPS; i++)
+                    if (apps[i].cmdline && strstr(title, apps[i].cmdline)) { focus_app = i; break; }
+        }
+    }
+
+    /* 先清除所有 dock 图标的激活态，再给匹配焦点的加回 */
+    if (dock_vbox) {
+        GList *ch = gtk_container_get_children(GTK_CONTAINER(dock_vbox));
+        for (GList *it = ch; it; it = it->next) {
+            GtkWidget *w = GTK_WIDGET(it->data);
+            AppEntry *a = (AppEntry *)g_object_get_data(G_OBJECT(w), "app");
+            if (!a) continue;
+            gtk_style_context_remove_class(gtk_widget_get_style_context(w),
+                                           "qy-dock-active");
+            if (focus_app >= 0 && a == &apps[focus_app])
+                gtk_style_context_add_class(gtk_widget_get_style_context(w),
+                                            "qy-dock-active");
+        }
+        g_list_free(ch);
     }
     return G_SOURCE_CONTINUE;
 }
@@ -1037,6 +1076,7 @@ static void build_dock(void) {
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
     gtk_container_set_border_width(GTK_CONTAINER(vbox), 6);
     gtk_container_add(GTK_CONTAINER(dock), vbox);
+    dock_vbox = vbox;
 
     for (int i = 0; i < NAPPS; i++)
         gtk_box_pack_start(GTK_BOX(vbox), dock_icon(&apps[i]), FALSE, FALSE, 0);

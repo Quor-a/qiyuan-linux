@@ -277,7 +277,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     GtkWidget *win = gtk_application_window_new(app);
     g_win = GTK_WINDOW(win);
     gtk_window_set_title(GTK_WINDOW(win), "启元图片查看器");
-    gtk_window_set_default_size(GTK_WINDOW(win), 700, 500);
+    qy_window_setup(GTK_WINDOW(win), 700, 500, 480, 360, FALSE);
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_container_add(GTK_CONTAINER(win), vbox);

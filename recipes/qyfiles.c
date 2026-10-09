@@ -931,16 +931,14 @@ static void activate(GtkApplication *app, gpointer ud) {
     load_theme();
     GtkWidget *win = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(win), TR("启元文件管理器"));
-    GdkGeometry geo = { .max_width = 1920, .max_height = 1080 };
-    gtk_window_set_geometry_hints(GTK_WINDOW(win), NULL, &geo, GDK_HINT_MAX_SIZE);
-    gtk_window_set_default_size(GTK_WINDOW(win), 920, 560);
+    qy_window_setup(GTK_WINDOW(win), 920, 560, 720, 480, FALSE);
 
     GtkWidget *hpane = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_container_add(GTK_CONTAINER(win), hpane);
 
     /* 侧边栏 */
     GtkWidget *side = gtk_box_new(GTK_ORIENTATION_VERTICAL, 2);
-    gtk_widget_set_size_request(side, 120, -1);
+    gtk_widget_set_size_request(side, 148, -1);
     gtk_container_set_border_width(GTK_CONTAINER(side), 4);
     const char *home = g_get_home_dir();
     static char p_home[512], p_docs[512], p_dl[512], p_pics[512];

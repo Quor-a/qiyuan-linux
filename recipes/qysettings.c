@@ -1746,11 +1746,11 @@ static void activate(GtkApplication *app, gpointer ud) {
     qy_load_theme();
     GtkWidget *win = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(win), TR("启元系统设置"));
-    GdkGeometry geo = { .max_width = 1920, .max_height = 1080 };
-    gtk_window_set_geometry_hints(GTK_WINDOW(win), NULL, &geo, GDK_HINT_MAX_SIZE);
-    gtk_window_set_default_size(GTK_WINDOW(win), 620, 420);
+    qy_window_setup(GTK_WINDOW(win), 620, 420, 560, 420, FALSE);
 
     GtkWidget *nb = gtk_notebook_new();
+    gtk_widget_set_name(nb, "qysettings-notebook");
+    gtk_notebook_set_tab_pos(GTK_NOTEBOOK(nb), GTK_POS_LEFT);
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
     gtk_container_add(GTK_CONTAINER(win), vbox);
     GtkWidget *search_entry = gtk_search_entry_new();

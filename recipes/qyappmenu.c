@@ -378,6 +378,7 @@ int main(int argc, char **argv) {
     load_theme();
 
     menu_win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_widget_set_name(GTK_WIDGET(menu_win), "qyappmenu-win");
     gtk_window_set_decorated(GTK_WINDOW(menu_win), FALSE);
     gtk_window_set_default_size(GTK_WINDOW(menu_win), 460, 420);
     gtk_window_move(GTK_WINDOW(menu_win), 6, 32);

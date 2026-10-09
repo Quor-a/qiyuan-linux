@@ -138,8 +138,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     qy_load_theme();
     GtkWidget *win = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(win), TR("全局搜索"));
-    gtk_window_set_default_size(GTK_WINDOW(win), 560, 420);
-    gtk_window_set_position(GTK_WINDOW(win), GTK_WIN_POS_CENTER);
+    qy_window_setup(GTK_WINDOW(win), 560, 420, 480, 360, TRUE);
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
     gtk_widget_set_margin_start(vbox, 10);

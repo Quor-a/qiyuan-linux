@@ -2371,3 +2371,13 @@ ngs-about-v2.png`。
 - **qydesktop**：删 3 个死函数（on_power_clicked/on_res_btn_clicked/make_tray_btn）、时钟去秒、资源文本改 tooltip、间距 2→4、通知徽标跨角（20×20 alignment + pass_through）、任务 pill 图标 22px
 - **审计**：mo.py → 修复；qyl10n 死翻译清理；`[\x{2190}-\x{2BFF}]` 仅注释、`[\x{2600}-\x{27BF}]` 零命中
 - 18 应用编译 rc=0（qybrowser 宿主 -lcurl 需 OpenSSL 3.2，真实构建正常）；构建产物 `qydesktop 0.1.0-228`
+
+### UI 改版第 9 轮：窗口统一+设置左侧导航+Dock激活态（v0.1.0-229，2026-10 实测）
+
+- **窗口统一**：`qy_window_setup` 接入 qyfiles/qybrowser/qysearch/qyview/qymedia/qysettings（默认/最小尺寸+居中），删无意义 max 1920×1080 hints
+- **设置页**：notebook 改左侧竖向导航（`#qysettings-notebook tab` 样式：透明底、checked 橙左边条 2px）
+- **Dock 激活态**：dock_tick 读焦点窗口标题匹配应用，动态加/删 `.qy-dock-active`（橙内描边）；dock 按钮挂 app 数据
+- **文件管理器**：侧栏 120→148px；`treeview.view{padding:5px 0}`；选中行半透明橙 `rgba(233,84,32,0.28)`
+- **开始菜单**：`#qyappmenu-win` 圆角 14 + 1px 边框 + 阴影
+- **qymedia**：播放/暂停用 QY_ICON_PLAY/PAUSE 图标按钮（set_pause_icon 换图）
+- 审计字符归零；构建产物 `qydesktop 0.1.0-229`

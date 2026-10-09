@@ -465,7 +465,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     qy_load_theme();
     GtkWidget *win = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(win), TR("启元浏览器"));
-    gtk_window_set_default_size(GTK_WINDOW(win), 720, 520);
+    qy_window_setup(GTK_WINDOW(win), 720, 520, 560, 420, FALSE);
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
     gtk_widget_set_margin_start(vbox, 10);

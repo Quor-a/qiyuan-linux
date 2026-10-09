@@ -18,6 +18,18 @@ static GPid player_pid = -1;
 static gchar *current_file = NULL;
 static gboolean paused = FALSE;
 
+/* 切换暂停按钮图标（qy_icon_button 内部是图片子部件） */
+static void set_pause_icon(QyIconId id) {
+    if (!btn_pause) return;
+    GList *ch = gtk_container_get_children(GTK_CONTAINER(btn_pause));
+    if (ch && GTK_IS_IMAGE(ch->data)) {
+        GdkPixbuf *pb = qy_icon_pixbuf(id, 18, NULL);
+        gtk_image_set_from_pixbuf(GTK_IMAGE(ch->data), pb);
+        if (pb) g_object_unref(pb);
+    }
+    g_list_free(ch);
+}
+
 /* 停止当前播放 */
 static void stop_player(void) {
     if (player_pid > 0) {
@@ -26,7 +38,7 @@ static void stop_player(void) {
         player_pid = -1;
     }
     paused = FALSE;
-    gtk_button_set_label(GTK_BUTTON(btn_pause), TR("暂停"));
+    set_pause_icon(QY_ICON_PAUSE);
 }
 
 /* 播放文件 */
@@ -81,7 +93,7 @@ static void play_file(const char *path) {
     } else {
         g_spawn_close_pid(player_pid);
         paused = FALSE;
-        gtk_button_set_label(GTK_BUTTON(btn_pause), TR("暂停"));
+        set_pause_icon(QY_ICON_PAUSE);
     }
     g_strfreev(argv);
 }
@@ -113,12 +125,12 @@ static void on_pause(GtkWidget *w, gpointer ud) {
     if (!paused) {
         kill(player_pid, SIGSTOP);
         paused = TRUE;
-        gtk_button_set_label(GTK_BUTTON(btn_pause), TR("继续"));
+        set_pause_icon(QY_ICON_PLAY);
         gtk_label_set_text(GTK_LABEL(status_label), TR("已暂停"));
     } else {
         kill(player_pid, SIGCONT);
         paused = FALSE;
-        gtk_button_set_label(GTK_BUTTON(btn_pause), TR("暂停"));
+        set_pause_icon(QY_ICON_PAUSE);
         gtk_label_set_text(GTK_LABEL(status_label), TR("正在播放"));
     }
 }
@@ -141,7 +153,7 @@ static void build_ui(void) {
     qy_load_theme();
     GtkWidget *win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(win), TR("启元音乐"));
-    gtk_window_set_default_size(GTK_WINDOW(win), 480, 320);
+    qy_window_setup(GTK_WINDOW(win), 480, 320, 360, 260, FALSE);
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
     gtk_widget_set_margin_start(vbox, 12);
@@ -163,8 +175,8 @@ static void build_ui(void) {
     gtk_widget_set_halign(bar, GTK_ALIGN_CENTER);
     GtkWidget *b_open = gtk_button_new_with_label(TR("打开音频"));
     qy_add_class(b_open, "qy-btn");
-    btn_play = gtk_button_new_with_label(TR("播放"));
-    btn_pause = gtk_button_new_with_label(TR("暂停"));
+    btn_play = qy_icon_button(QY_ICON_PLAY, 18, TR("播放"), NULL);
+    btn_pause = qy_icon_button(QY_ICON_PAUSE, 18, TR("暂停"), NULL);
     btn_stop = gtk_button_new_with_label(TR("停止"));
     g_signal_connect(b_open, "clicked", G_CALLBACK(on_open), NULL);
     g_signal_connect(btn_play, "clicked", G_CALLBACK(on_play), NULL);

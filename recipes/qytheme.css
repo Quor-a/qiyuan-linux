@@ -320,14 +320,22 @@ list row button:hover {
     background-color: rgba(255, 255, 255, 0.12);
     color: #ffffff;
 }
+#qyappmenu-win {
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+}
 
 /* ---------- 文件管理器 qyfiles ---------- */
+treeview.view {
+    padding: 5px 0;
+}
 treeview {
     background-color: #141b24;
     color: #e6e9ef;
 }
 treeview:selected {
-    background-color: #e95420;
+    background-color: rgba(233, 84, 32, 0.28);
     color: #ffffff;
 }
 treeview:hover {
@@ -637,6 +645,26 @@ notebook tab:checked {
 .qy-settings-row {
     padding: 6px 4px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+/* 设置页左侧竖向导航（qysettings 中 gtk_widget_set_name(nb, "qysettings-notebook")） */
+#qysettings-notebook tab {
+    padding: 8px 14px;
+    font-size: 13px;
+    color: #9aa3b2;
+    background-color: transparent;
+    border: none;
+    border-radius: 0;
+}
+#qysettings-notebook tab:hover {
+    background-color: rgba(255, 255, 255, 0.06);
+    color: #e6e9ef;
+}
+#qysettings-notebook tab:checked {
+    color: #ffffff;
+    background-color: rgba(233, 84, 32, 0.15);
+    border-left: 2px solid #E95420;
+    border-top: none;
+    border-radius: 0;
 }
 
 /* ---------- 编辑器工具栏按钮 ---------- */
