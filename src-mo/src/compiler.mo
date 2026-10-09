@@ -2232,6 +2232,16 @@ fn parse_addr() -> i64 {
     if gv(K_TKIND) != 1 { return syntax_error(); }
     memcpy(scratch1(), tokbuf());
     next_token();
+    # &函数名 → 函数代码地址（函数符号 kind==0 与全局变量同区，
+    # sym_lookup 只查 kind!=0？不——sym_lookup 查 kind!=0 失败，故先查函数表）
+    let fy: i64 = sym_lookup_func(scratch1());
+    if fy >= 0 {
+        # 函数地址在 resolve 阶段才回填？否——函数地址在 parse_func 时
+        # sym_add(name,0,addr,0) 已是最终代码地址（code 基址相对）。
+        g_movabs_rax(sym_addr(fy));
+        R_ETY = ty_int();
+        return 0;
+    }
     let sy: i64 = sym_lookup(scratch1());
     if sy < 0 { return undef_err(scratch1()); }
     if sym_kind(sy) == 1 {
@@ -2379,6 +2389,32 @@ fn parse_primary() -> i64 {
             # 否则 s[i] 会一次读进 8 个字节。
             if ty_kind(e2) == 5 { g_load_at_b(); } else { g_load_at(); }
             R_ETY = e2;
+            # 函数指针数组：ops[i](args) —— 元素值是代码地址，直接间接调用
+            if tok_is("(") == 1 {
+                next_token();
+                let na2: i64 = 0;
+                while tok_is(")") == 0 {
+                    parse_expr();
+                    g_push_rax();
+                    na2 = na2 + 1;
+                    if accept(",") == 0 {
+                        if tok_is(")") == 0 { return syntax_error(); }
+                    }
+                }
+                expect(")");
+                # 被调地址已在 rax（栈上是参数），先存 rax 再弹参
+                g_push_rax();          # 保住地址
+                if na2 >= 6 { g_pop_r9(); }
+                if na2 >= 5 { g_pop_r8(); }
+                if na2 >= 4 { g_pop_rcx(); }
+                if na2 >= 3 { g_pop_rdx(); }
+                if na2 >= 2 { g_pop_rsi(); }
+                if na2 >= 1 { g_pop_rdi(); }
+                g_pop_rax();           # 恢复地址
+                spill_cache();
+                ops2(0xff, 0xd0);      # call rax
+                R_ETY = ty_int();
+            }
             return 0;
         }
         if tok_is(".") == 1 {
@@ -2672,9 +2708,19 @@ fn parse_call() -> i64 {
     if na >= 1 { g_pop_rdi(); }
     R_SYM = sym_lookup_func(cscratch());
     if R_SYM < 0 {
-        let cn: i64 = cscratch();
+        # 不是已知函数：若是保存了函数地址的变量，走间接调用 call rax
+        let vy: i64 = sym_lookup(cscratch());
+        if vy < 0 {
+            let cn: i64 = cscratch();
+            CALLD = CALLD - 1;
+            return undef_err(cn);
+        }
+        load_sym(vy);
+        spill_cache();
+        ops2(0xff, 0xd0);          # call rax
         CALLD = CALLD - 1;
-        return undef_err(cn);
+        R_ETY = ty_int();
+        return 0;
     }
     emit_call_patch(R_SYM);
     CALLD = CALLD - 1;
