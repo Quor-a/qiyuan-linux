@@ -411,6 +411,14 @@ static void do_copy(GtkButton *b, gpointer ud) {
     chdir_to(cwd);
 }
 
+/* Ctrl+A 全选当前目录 */
+static void on_select_all(GtkAccelGroup *ag, GObject *a, guint keyval,
+                          GdkModifierType mod, gpointer ud) {
+    (void)ag; (void)a; (void)keyval; (void)mod;
+    gtk_tree_selection_select_all(gtk_tree_view_get_selection(GTK_TREE_VIEW(view)));
+    g_printerr("QYFILESDBG: select all\n");
+}
+
 /* ---------- 剪切 / 粘贴（移动文件） ---------- */
 static void do_cut(GtkButton *b, gpointer ud) {
     (void)b; (void)ud;
@@ -1101,6 +1109,9 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_widget_add_accelerator(b_home, "clicked", accel, GDK_KEY_Home, GDK_MOD1_MASK, GTK_ACCEL_VISIBLE);   /* Alt+Home 主目录 */
     gtk_widget_add_accelerator(b_open, "clicked", accel, GDK_KEY_Return, 0, GTK_ACCEL_VISIBLE);             /* Enter 打开 */
     gtk_widget_add_accelerator(search_entry, "grab-focus", accel, GDK_KEY_f, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE); /* Ctrl+F 搜索 */
+    /* Ctrl+A 全选（多选模式已启用） */
+    GClosure *selcl = g_cclosure_new(G_CALLBACK(on_select_all), NULL, NULL);
+    gtk_accel_group_connect(accel, GDK_KEY_a, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, selcl);
     /* 剪切/粘贴（功能存在但无工具栏按钮，用隐藏按钮承载加速键） */
     GtkWidget *b_cut = gtk_button_new();
     GtkWidget *b_paste = gtk_button_new();

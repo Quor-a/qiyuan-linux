@@ -2199,3 +2199,12 @@ ngs-about-v2.png`。
 - **截图**：docs/screenshots/qysettings-search.png
 
 构建产物：`qydesktop 0.1.0-211`。
+
+### 文件管理器 Ctrl+A 全选（v0.1.0-212，2026-10 实测）
+
+针对快捷键审计"qyfiles 无 Ctrl+A 全选"：
+- 视图本就启用多选（GTK_SELECTION_MULTIPLE），补充 **Ctrl+A 全选**加速键（g_cclosure_new 绑定，直接调 gtk_tree_selection_select_all）
+- **实测**：qyfiles 编译 rc=0，窗口运行正常
+- 快捷键总计：qyfiles 现在 13 个加速键（Ctrl+A 加入）
+
+构建产物：`qydesktop 0.1.0-212`。
