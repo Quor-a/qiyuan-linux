@@ -440,7 +440,7 @@ static const pair tbl[] = {
     { "重命名", "Rename" },
     { "音频后端", "Audio backend" },
     { "（暂无普通用户）", "(no regular users)" },
-    { "＋ 新建用户", "＋ New User" },
+    { "新建用户", "New User" },
 
     { "启元软件中心", "Qiyuan Store" },
     { "软件中心", "Store" },

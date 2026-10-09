@@ -51,6 +51,18 @@ typedef enum {
     QY_ICON_VOLUME,    /* 音量 */
     QY_ICON_POWER,     /* 电源 */
     QY_ICON_GRID,      /* 应用网格 */
+    QY_ICON_PLAY,      /* 播放 */
+    QY_ICON_PAUSE,     /* 暂停 */
+    QY_ICON_STOP,      /* 停止 */
+    QY_ICON_PREV,      /* 上一个 */
+    QY_ICON_NEXT,      /* 下一个 */
+    QY_ICON_BOOKMARK,  /* 书签 */
+    QY_ICON_LIST,      /* 列表视图 */
+    QY_ICON_CALC,      /* 计算器 */
+    QY_ICON_SAVE,      /* 保存 */
+    QY_ICON_ROTATE,    /* 旋转 */
+    QY_ICON_FIT,       /* 适应窗口 */
+    QY_ICON_OPEN,      /* 打开/展开 */
     QY_ICON_COUNT
 } QyIconId;
 

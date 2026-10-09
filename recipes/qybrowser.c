@@ -26,16 +26,6 @@ static gboolean finish_fetch(gpointer ud);   /* 前向声明 */
 static void on_link_clicked(GtkWidget *w, gpointer ud);   /* 前向声明 */
 static void open_url(const char *url);   /* 前向声明 */
 
-/* 图标按钮助手：无边框纯图标按钮，接入统一 qyicon 线稿库 */
-static GtkWidget *icon_btn(QyIconId id, int px, const char *tip) {
-    GtkWidget *b = gtk_button_new();
-    gtk_button_set_relief(GTK_BUTTON(b), GTK_RELIEF_NONE);
-    GtkWidget *img = gtk_image_new_from_pixbuf(qy_icon_pixbuf(id, px, NULL));
-    gtk_container_add(GTK_CONTAINER(b), img);
-    if (tip) gtk_widget_set_tooltip_text(b, tip);
-    return b;
-}
-
 /* ---------- libcurl 写回调 ---------- */
 struct curl_buf { char *data; size_t len; };
 static size_t write_cb(void *ptr, size_t size, size_t nmemb, void *ud) {
@@ -486,9 +476,9 @@ static void activate(GtkApplication *app, gpointer ud) {
 
     /* 工具栏: 后退/前进 + 地址栏 + 打开 + 收藏 + 清空 */
     GtkWidget *bar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
-    back_btn = icon_btn(QY_ICON_BACK, 18, TR("后退"));
+    back_btn = qy_icon_button(QY_ICON_BACK, 18, TR("后退"), NULL);
     gtk_widget_set_sensitive(back_btn, FALSE);
-    fwd_btn = icon_btn(QY_ICON_FORWARD, 18, TR("前进"));
+    fwd_btn = qy_icon_button(QY_ICON_FORWARD, 18, TR("前进"), NULL);
     gtk_widget_set_sensitive(fwd_btn, FALSE);
     g_signal_connect(back_btn, "clicked", G_CALLBACK(on_back), NULL);
     g_signal_connect(fwd_btn, "clicked", G_CALLBACK(on_fwd), NULL);
@@ -497,11 +487,9 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_entry_set_placeholder_text(GTK_ENTRY(url_entry), "https://...");
     GtkWidget *btn = gtk_button_new_with_label(TR("打开"));
     qy_add_class(btn, "qy-btn");
-    GtkWidget *bm_btn = gtk_button_new_from_icon_name("starred-symbolic", GTK_ICON_SIZE_MENU);
-    gtk_widget_set_tooltip_text(bm_btn, TR("收藏"));
+    GtkWidget *bm_btn = qy_icon_button(QY_ICON_BOOKMARK, 18, TR("收藏"), NULL);
     g_signal_connect(bm_btn, "clicked", G_CALLBACK(on_bookmark), NULL);
-    GtkWidget *bm_list_btn = gtk_button_new_from_icon_name("starred-symbolic", GTK_ICON_SIZE_MENU);
-    gtk_widget_set_tooltip_text(bm_list_btn, TR("书签列表"));
+    GtkWidget *bm_list_btn = qy_icon_button(QY_ICON_LIST, 18, TR("书签列表"), NULL);
     g_signal_connect(bm_list_btn, "clicked", G_CALLBACK(on_show_bookmarks), NULL);
     GtkWidget *btn2 = gtk_button_new_with_label(TR("清空"));
     g_signal_connect(btn, "clicked", G_CALLBACK(on_open), NULL);
@@ -574,7 +562,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_widget_add_accelerator(fwd_btn, "clicked", accel, GDK_KEY_Right, GDK_MOD1_MASK, GTK_ACCEL_VISIBLE);    /* Alt+→ 前进 */
     gtk_widget_add_accelerator(bm_btn, "clicked", accel, GDK_KEY_d, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);      /* Ctrl+D 收藏 */
     /* Ctrl+R 刷新（图标按钮重新打开当前地址） */
-    GtkWidget *b_reload = icon_btn(QY_ICON_REFRESH, 18, TR("刷新"));
+    GtkWidget *b_reload = qy_icon_button(QY_ICON_REFRESH, 18, TR("刷新"), NULL);
     g_signal_connect(b_reload, "clicked", G_CALLBACK(on_entry_activate), NULL);
     gtk_widget_add_accelerator(b_reload, "clicked", accel, GDK_KEY_r, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE);
     gtk_box_pack_start(GTK_BOX(bar), b_reload, FALSE, FALSE, 0);

@@ -142,7 +142,7 @@ static gboolean tick(gpointer data) {
     time_t t = time(NULL);
     struct tm tm_;
     localtime_r(&t, &tm_);
-    strftime(buf, sizeof buf, TR("%m月%d日 %H:%M:%S"), &tm_);
+    strftime(buf, sizeof buf, TR("%m月%d日 %H:%M"), &tm_);
     const char *wd[] = { TR("日"), TR("一"), TR("二"), TR("三"), TR("四"), TR("五"), TR("六") };
     char full[96];
     g_snprintf(full, sizeof full, TR("周%s %s"), wd[tm_.tm_wday], buf);
@@ -181,7 +181,8 @@ static gboolean mon_tick(gpointer data) {
         char buf[80];
         g_snprintf(buf, sizeof buf, "CPU %d%% · MEM %d%%",
                    (int)(usage * 100 + 0.5), (int)(mem * 100 + 0.5));
-        gtk_label_set_text(GTK_LABEL(data), buf);
+        gtk_label_set_text(GTK_LABEL(data), "");
+        if (mon_draw) gtk_widget_set_tooltip_text(mon_draw, buf);
         mon_cpu = usage;
         mon_mem = mem;
         if (mon_draw) gtk_widget_queue_draw(mon_draw);
@@ -284,7 +285,7 @@ static void refresh_taskbar(void) {
         add_class(b, "qy-task-pill");
         GtkWidget *hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
         gtk_container_add(GTK_CONTAINER(b), hb);
-        GdkPixbuf *pb = qy_icon_pixbuf(task_icon_id(wins[i].title), 18, NULL);
+        GdkPixbuf *pb = qy_icon_pixbuf(task_icon_id(wins[i].title), 22, NULL);
         GtkWidget *img = gtk_image_new_from_pixbuf(pb);
         g_object_unref(pb);
         gtk_box_pack_start(GTK_BOX(hb), img, FALSE, FALSE, 0);
@@ -330,7 +331,7 @@ static GtkWidget *dock_icon(AppEntry *a) {
     g_signal_connect(ic, "draw", G_CALLBACK(dock_icon_draw_cb), a);
     gtk_widget_set_halign(ic, GTK_ALIGN_CENTER);
     gtk_box_pack_start(GTK_BOX(v), ic, TRUE, TRUE, 0);
-    GtkWidget *dot = gtk_label_new("•");
+    GtkWidget *dot = gtk_label_new("");
     gtk_widget_set_halign(dot, GTK_ALIGN_CENTER);
     add_class(dot, "qy-dock-dot");
     gtk_box_pack_start(GTK_BOX(v), dot, FALSE, FALSE, 0);
@@ -599,22 +600,6 @@ static gboolean auto_desktop_rightclick(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
-/* ---------- 电源对话框 ---------- */
-static void on_power_clicked(GtkButton *b, gpointer ud) {
-    GtkWidget *dlg = gtk_dialog_new_with_buttons(
-        TR("系统"), NULL,
-        GTK_DIALOG_MODAL | GTK_DIALOG_DESTROY_WITH_PARENT,
-        TR("取消"), GTK_RESPONSE_CANCEL,
-        TR("重启"), 1,
-        TR("关机"), 2,
-        NULL);
-    add_class(dlg, "qy-dialog");
-    gint resp = gtk_dialog_run(GTK_DIALOG(dlg));
-    gtk_widget_destroy(dlg);
-    if (resp == 1) launch_cmd("busybox reboot");
-    else if (resp == 2) launch_cmd("busybox poweroff");
-}
-
 /* ---------- 壁纸绘制 ---------- */
 static gboolean desk_draw(GtkWidget *w, cairo_t *cr, gpointer ud) {
     guint width = gtk_widget_get_allocated_width(w);
@@ -724,26 +709,6 @@ static void apply_resolution(const char *mode) {
     g_free(body); g_free(full);
 }
 
-/* 分辨率菜单项激活 */
-static void on_res_activate(GtkMenuItem *mi, gpointer ud) {
-    (void)mi;
-    apply_resolution((const char *)ud);
-}
-
-/* 分辨率按钮点击：弹出可选模式菜单 */
-static void on_res_btn_clicked(GtkWidget *w, gpointer ud) {
-    static const char *modes[] = { "1280x800", "1024x768", "1920x1080", "2560x1440", NULL };
-    GtkWidget *menu = gtk_menu_new();
-    for (int i = 0; modes[i]; i++) {
-        GtkWidget *it = gtk_menu_item_new_with_label(modes[i]);
-        g_signal_connect(it, "activate", G_CALLBACK(on_res_activate), (gpointer)modes[i]);
-        gtk_menu_shell_append(GTK_MENU_SHELL(menu), it);
-    }
-    gtk_widget_show_all(menu);
-    gtk_menu_attach_to_widget(GTK_MENU(menu), w, NULL);
-    gtk_menu_popup_at_widget(GTK_MENU(menu), w, GDK_GRAVITY_SOUTH_WEST, GDK_GRAVITY_NORTH_WEST, NULL);
-}
-
 /* 自动化: QYDESKTOP_RES=1024x768 启动后自动设置分辨率 */
 static gboolean auto_res_apply(gpointer p) {
     apply_resolution((const char *)p);
@@ -784,7 +749,7 @@ static gboolean notif_tick(gpointer ud) {
             char *bar = strchr(content, '|');
             if (bar) {
                 *bar = 0;
-                gchar *title = g_strdup_printf("• %s", content);
+                gchar *title = g_strdup_printf("%s", content);
                 gtk_label_set_text(GTK_LABEL(notif_label), title);
                 gtk_widget_set_tooltip_text(notif_label, bar + 1);
                 g_free(title);
@@ -871,15 +836,6 @@ static GtkWidget *make_tray_icon_btn_cb(int icon, const char *tip, GCallback cb,
 
 static GtkWidget *make_tray_icon_btn(int icon, const char *tip, const char *cmd) {
     return make_tray_icon_btn_cb(icon, tip, G_CALLBACK(on_tray_clicked), g_strdup(cmd));
-}
-
-static GtkWidget *make_tray_btn(const char *icon, const char *tip, const char *cmd) {
-    GtkWidget *b = gtk_button_new_with_label(icon);
-    gtk_button_set_relief(GTK_BUTTON(b), GTK_RELIEF_NONE);
-    add_class(b, "qy-status-btn");
-    gtk_widget_set_tooltip_text(b, tip);
-    g_signal_connect(b, "clicked", G_CALLBACK(on_tray_clicked), g_strdup(cmd));
-    return b;
 }
 
 /* ---------- 电源菜单：关机 / 重启 / 注销 ---------- */
@@ -1005,7 +961,7 @@ static void build_bar(void) {
     tick(clock_label);
     g_timeout_add_seconds(1, tick, clock_label);
 
-    GtkWidget *mon_hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 3);
+    GtkWidget *mon_hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
     gtk_widget_set_size_request(mon_hb, 87, 8);
     mon_draw = gtk_drawing_area_new();
     gtk_widget_set_size_request(mon_draw, 87, 6);
@@ -1015,7 +971,7 @@ static void build_bar(void) {
     gtk_widget_set_tooltip_text(mon_draw, TR("系统资源"));
     gtk_box_pack_start(GTK_BOX(mon_hb), mon_draw, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(st), mon_hb, FALSE, FALSE, 6);
-    mon_label = gtk_label_new("CPU 0% · MEM 0%");
+    mon_label = gtk_label_new("");
     add_class(mon_label, "qy-mon-widget");
     gtk_box_pack_start(GTK_BOX(st), mon_label, FALSE, FALSE, 6);
     g_timeout_add_seconds(2, mon_tick, mon_label);
@@ -1030,16 +986,21 @@ static void build_bar(void) {
      * 未读徽标：GtkOverlay 叠加在铃铛图标右上角（外缘 2px） */
     GtkWidget *notif_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
     GtkWidget *bell_overlay = gtk_overlay_new();
+    /* 铃铛外包 20×20 对齐容器作为 overlay 主 child，徽标可跨到角落 */
+    GtkWidget *bell_align = gtk_alignment_new(0.5, 0.5, 0.0, 0.0);
+    gtk_widget_set_size_request(bell_align, 20, 20);
     GtkWidget *bell_da = gtk_drawing_area_new();
     gtk_widget_set_size_request(bell_da, 16, 16);
     g_signal_connect(bell_da, "draw", G_CALLBACK(bell_draw_cb), NULL);
-    gtk_container_add(GTK_CONTAINER(bell_overlay), bell_da);
+    gtk_container_add(GTK_CONTAINER(bell_align), bell_da);
+    gtk_container_add(GTK_CONTAINER(bell_overlay), bell_align);
     notif_badge = gtk_label_new(NULL);
     gtk_widget_set_halign(notif_badge, GTK_ALIGN_END);
     gtk_widget_set_valign(notif_badge, GTK_ALIGN_START);
-    gtk_widget_set_margin_end(notif_badge, 2);
-    gtk_widget_set_margin_top(notif_badge, 2);
+    gtk_widget_set_margin_end(notif_badge, 0);
+    gtk_widget_set_margin_top(notif_badge, 0);
     gtk_overlay_add_overlay(GTK_OVERLAY(bell_overlay), notif_badge);
+    gtk_overlay_set_overlay_pass_through(GTK_OVERLAY(bell_overlay), notif_badge, TRUE);
     gtk_widget_set_no_show_all(notif_badge, TRUE);  /* 初始隐藏，出现未读再显示 */
     gtk_widget_hide(notif_badge);
     gtk_container_add(GTK_CONTAINER(notif_box), bell_overlay);
@@ -1049,7 +1010,7 @@ static void build_bar(void) {
     gtk_box_pack_start(GTK_BOX(st), notif_eb, FALSE, FALSE, 0);
 
     /* 系统托盘: 网络/声音/剪贴板/截图/锁屏（cairo 线稿图标） */
-    GtkWidget *tray_hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
+    GtkWidget *tray_hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
     gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_icon_btn(TRAY_NET, TR("网络"), "qynet"), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(tray_hb), make_tray_icon_btn(TRAY_DRV, TR("驱动"), "qydriver"), FALSE, FALSE, 0);
     GtkWidget *vol_btn = make_tray_icon_btn_cb(TRAY_VOL, TR("声音"), G_CALLBACK(on_vol_btn_clicked), NULL);

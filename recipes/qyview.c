@@ -11,10 +11,7 @@
 #include <glib/gstdio.h>
 #include "qytheme.h"
 #include "qyl10n.h"
-
-static void add_class(GtkWidget *w, const char *cls) {
-    gtk_style_context_add_class(gtk_widget_get_style_context(w), cls);
-}
+#include "qyicon.h"
 
 static GdkPixbuf *pix = NULL;          /* 原始图 */
 static gchar *cur_dir = NULL;          /* 当前图所在目录 */
@@ -297,27 +294,27 @@ static void activate(GtkApplication *app, gpointer ud) {
 
     /* 底部导航栏: 上一张 / 页码 / 下一张 */
     GtkWidget *nav = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-    add_class(nav, "qy-view-nav");
+    qy_add_class(nav, "qy-view-nav");
     gtk_widget_set_margin_top(nav, 4);
     gtk_widget_set_margin_bottom(nav, 4);
-    GtkWidget *b_prev = gtk_button_new_with_label("< 上一张");
-    add_class(b_prev, "qy-view-nav-btn");
+    GtkWidget *b_prev = qy_icon_button(QY_ICON_BACK, 18, TR("上一张"), NULL);
+    qy_add_class(b_prev, "qy-view-nav-btn");
     page_label = gtk_label_new("1 / 1");
-    add_class(page_label, "qy-view-nav-label");
-    GtkWidget *b_next = gtk_button_new_with_label("下一张 >");
-    add_class(b_next, "qy-view-nav-btn");
+    qy_add_class(page_label, "qy-view-nav-label");
+    GtkWidget *b_next = qy_icon_button(QY_ICON_FORWARD, 18, TR("下一张"), NULL);
+    qy_add_class(b_next, "qy-view-nav-btn");
     GtkWidget *b_fit = gtk_button_new_with_label(TR("适应窗口"));
-    add_class(b_fit, "qy-view-nav-btn");
+    qy_add_class(b_fit, "qy-view-nav-btn");
     GtkWidget *b_rot = gtk_button_new_with_label(TR("旋转"));
-    add_class(b_rot, "qy-view-nav-btn");
+    qy_add_class(b_rot, "qy-view-nav-btn");
     GtkWidget *b_save = gtk_button_new_with_label(TR("保存"));
-    add_class(b_save, "qy-view-nav-btn");
+    qy_add_class(b_save, "qy-view-nav-btn");
     save_status = gtk_label_new("");
-    add_class(save_status, "qy-view-nav-label");
+    qy_add_class(save_status, "qy-view-nav-label");
     image_info = gtk_label_new("");
-    add_class(image_info, "qy-view-nav-label");
+    qy_add_class(image_info, "qy-view-nav-label");
     zoom_label = gtk_label_new("");
-    add_class(zoom_label, "qy-view-nav-label");
+    qy_add_class(zoom_label, "qy-view-nav-label");
     gtk_box_pack_start(GTK_BOX(nav), b_prev, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(nav), b_save, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(nav), save_status, FALSE, FALSE, 0);

@@ -2361,3 +2361,13 @@ ngs-about-v2.png`。
 - **锁屏细节**：`#qylock-clock` 96px/200/95% 白、`#qylock-date` 16px/60% 白、`#qylock-pass` 320×44 r10 半透明深底白字（placeholder 60% 白）；壁纸模糊留待代码层背景图层
 - **通知未读点**：GtkOverlay 铃铛右上角 6px 橙点（>9 显示数字徽标），点击已读隐藏；样式 .qy-notif-dot/.qy-notif-badge
 - 16 个应用编译 rc=0；构建产物 `qydesktop 0.1.0-227`
+
+### UI 改版第 8 轮：53 图标+icon_btn抽公共+CSS修复+应用字符归零（v0.1.0-228，2026-10 实测）
+
+- **qyicon 41→53 图标**：新增 PLAY/PAUSE/STOP/PREV/NEXT/BOOKMARK/LIST/CALC/SAVE/ROTATE/FIT/OPEN（含书签/列表/计算器/保存/旋转/适应窗口）
+- **公共组件**：`qy_icon_button()`（统一 28×28 图标按钮 `.qy-icon-btn`）+ `qy_window_setup()`（默认/最小尺寸+居中）
+- **CSS 修复**：`.qy-active-title` 后多余 `}`（557 行）删除；补 `.qy-settings-curlang/.qy-dim/.qy-settings-row`；`.qy-bar` 中性底边；`.qy-logo-btn` 橙色下划线；`.qy-dock-dot` 14×3px 橙条 + `.qy-dock-active`；按钮 active 统一（主钮加深/图标钮 0.16/任务 pill 橙 0.30）
+- **应用接入**：qybrowser（starred→BOOKMARK/LIST）、qyappmenu（symbolic→CLOSE/SETTINGS/POWER）、qyfiles/qysearch/qyview/qyedit/qyusers/qycalc 全改 qyicon；删除 icon_btn/add_class 本地副本（统一 qy_add_class/qy_icon_button）
+- **qydesktop**：删 3 个死函数（on_power_clicked/on_res_btn_clicked/make_tray_btn）、时钟去秒、资源文本改 tooltip、间距 2→4、通知徽标跨角（20×20 alignment + pass_through）、任务 pill 图标 22px
+- **审计**：mo.py → 修复；qyl10n 死翻译清理；`[\x{2190}-\x{2BFF}]` 仅注释、`[\x{2600}-\x{27BF}]` 零命中
+- 18 应用编译 rc=0（qybrowser 宿主 -lcurl 需 OpenSSL 3.2，真实构建正常）；构建产物 `qydesktop 0.1.0-228`

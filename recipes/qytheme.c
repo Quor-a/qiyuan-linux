@@ -3,6 +3,7 @@
  * 并读取 /etc/qytheme.conf 的 accent= 加载强调色覆盖 CSS。
  * 提供便捷 CSS 类添加函数。
  */
+#include "qyicon.h"
 #include "qytheme.h"
 #include <stdio.h>
 #include <string.h>
@@ -72,4 +73,25 @@ GtkWidget *qy_make_titlebar(GtkWindow *win, const char *title) {
     gtk_window_set_titlebar(win, hb);
     g_printerr("QYTHEMEDBG: titlebar=%s\n", title ? title : "");
     return hb;
+}
+
+/* 图标按钮：无边框，内嵌 qy_icon_pixbuf 线稿图标，可选 tooltip 与 CSS 类。
+ * cls 为空时使用主题默认类 qy-icon-btn（见 qytheme.css）。 */
+GtkWidget *qy_icon_button(QyIconId id, int px, const char *tip, const char *cls) {
+    GtkWidget *btn = gtk_button_new();
+    gtk_button_set_relief(GTK_BUTTON(btn), GTK_RELIEF_NONE);
+    qy_add_class(btn, cls ? cls : "qy-icon-btn");
+    gtk_container_add(GTK_CONTAINER(btn),
+                      gtk_image_new_from_pixbuf(qy_icon_pixbuf(id, px, NULL)));
+    if (tip && tip[0])
+        gtk_widget_set_tooltip_text(btn, tip);
+    return btn;
+}
+
+/* 窗口初始化：默认尺寸 + 最小尺寸，center 为 TRUE 时窗口居中显示。 */
+void qy_window_setup(GtkWindow *win, int w, int h, int min_w, int min_h, gboolean center) {
+    gtk_window_set_default_size(win, w, h);
+    gtk_widget_set_size_request(GTK_WIDGET(win), min_w, min_h);
+    if (center)
+        gtk_window_set_position(win, GTK_WIN_POS_CENTER);
 }

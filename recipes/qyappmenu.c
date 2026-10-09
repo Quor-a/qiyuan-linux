@@ -1,6 +1,7 @@
 /* qyappmenu - 启元开始菜单 (ArcMenu 风格: 搜索+固定网格+常用列表+用户区) */
 #include "qyl10n.h"
 #include "qyicon.h"
+#include "qytheme.h"
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 #include <string.h>
@@ -393,8 +394,7 @@ int main(int argc, char **argv) {
     g_signal_connect(search_entry, "search-changed", G_CALLBACK(on_search_changed), NULL);
     g_signal_connect(search_entry, "activate", G_CALLBACK(on_search_activate), NULL);
     gtk_box_pack_start(GTK_BOX(search_row), search_entry, TRUE, TRUE, 0);
-    GtkWidget *close_btn = gtk_button_new_from_icon_name("window-close-symbolic", GTK_ICON_SIZE_MENU);
-    gtk_button_set_relief(GTK_BUTTON(close_btn), GTK_RELIEF_NONE);
+    GtkWidget *close_btn = qy_icon_button(QY_ICON_CLOSE, 16, NULL, NULL);
     add_class(close_btn, "qy-appmenu-close");
     g_signal_connect(close_btn, "clicked", G_CALLBACK(on_close_clicked), NULL);
     gtk_box_pack_start(GTK_BOX(search_row), close_btn, FALSE, FALSE, 0);
@@ -422,16 +422,14 @@ int main(int argc, char **argv) {
     /* 4. 底部用户区 */
     gtk_box_pack_start(GTK_BOX(vbox), gtk_separator_new(GTK_ORIENTATION_HORIZONTAL), FALSE, FALSE, 2);
     GtkWidget *bottom = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-    GtkWidget *user = gtk_label_new("· root");
+    GtkWidget *user = gtk_label_new("root");
     gtk_widget_set_halign(user, GTK_ALIGN_START);
     add_class(user, "qy-appmenu-user");
     gtk_box_pack_start(GTK_BOX(bottom), user, TRUE, TRUE, 0);
-    GtkWidget *set_btn = gtk_button_new_from_icon_name("emblem-system-symbolic", GTK_ICON_SIZE_MENU);
-    gtk_button_set_relief(GTK_BUTTON(set_btn), GTK_RELIEF_NONE);
+    GtkWidget *set_btn = qy_icon_button(QY_ICON_SETTINGS, 18, TR("设置"), NULL);
     g_signal_connect(set_btn, "clicked", G_CALLBACK(on_settings_btn), NULL);
     gtk_box_pack_start(GTK_BOX(bottom), set_btn, FALSE, FALSE, 0);
-    GtkWidget *pwr_btn = gtk_button_new_from_icon_name("system-shutdown-symbolic", GTK_ICON_SIZE_MENU);
-    gtk_button_set_relief(GTK_BUTTON(pwr_btn), GTK_RELIEF_NONE);
+    GtkWidget *pwr_btn = qy_icon_button(QY_ICON_POWER, 18, TR("电源"), NULL);
     g_signal_connect(pwr_btn, "clicked", G_CALLBACK(on_power), NULL);
     gtk_box_pack_start(GTK_BOX(bottom), pwr_btn, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), bottom, FALSE, FALSE, 0);

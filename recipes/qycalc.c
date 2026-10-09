@@ -189,16 +189,6 @@ static gboolean auto_key_input(gpointer p) {
 }
 
 /* ---------- 按钮网格 ---------- */
-/* 图标按钮助手：无边框纯图标按钮，接入统一 qyicon 线稿库 */
-static GtkWidget *icon_btn(QyIconId id, int px, const char *tip) {
-    GtkWidget *b = gtk_button_new();
-    gtk_button_set_relief(GTK_BUTTON(b), GTK_RELIEF_NONE);
-    GtkWidget *img = gtk_image_new_from_pixbuf(qy_icon_pixbuf(id, px, NULL));
-    gtk_container_add(GTK_CONTAINER(b), img);
-    if (tip) gtk_widget_set_tooltip_text(b, tip);
-    return b;
-}
-
 static GtkWidget *calc_button(const char *label, const char *ud, GCallback cb) {
     GtkWidget *b = gtk_button_new_with_label(label);
     qy_add_class(b, "qy-btn");
@@ -257,8 +247,7 @@ int main(int argc, char **argv) {
 
     /* 行 0: C ⌫ ( ) */
     gtk_grid_attach(GTK_GRID(grid), calc_button("C", "", G_CALLBACK(on_clear_clicked)), 0, 0, 1, 1);
-    GtkWidget *b_bs = icon_btn(QY_ICON_BACK, 18, TR("退格"));
-    qy_add_class(b_bs, "qy-btn");
+    GtkWidget *b_bs = qy_icon_button(QY_ICON_BACK, 18, TR("退格"), "qy-btn");
     g_signal_connect(b_bs, "clicked", G_CALLBACK(on_backspace_clicked), NULL);
     gtk_grid_attach(GTK_GRID(grid), b_bs, 1, 0, 1, 1);
     gtk_grid_attach(GTK_GRID(grid), calc_button("(", "(", G_CALLBACK(on_op_clicked)), 2, 0, 1, 1);

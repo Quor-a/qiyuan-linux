@@ -34,16 +34,6 @@ static GtkWidget *listbox = NULL;
 static GtkWidget *status_label = NULL;
 static GtkWidget *search_entry = NULL;
 
-/* 图标按钮助手：无边框纯图标按钮，接入统一 qyicon 线稿库 */
-static GtkWidget *icon_btn(QyIconId id, int px, const char *tip) {
-    GtkWidget *b = gtk_button_new();
-    gtk_button_set_relief(GTK_BUTTON(b), GTK_RELIEF_NONE);
-    GtkWidget *img = gtk_image_new_from_pixbuf(qy_icon_pixbuf(id, px, NULL));
-    gtk_container_add(GTK_CONTAINER(b), img);
-    if (tip) gtk_widget_set_tooltip_text(b, tip);
-    return b;
-}
-
 static void on_result_clicked(GtkWidget *w, gpointer ud);
 
 static void add_result_row(const char *icon, const char *text, const char *cmd) {
@@ -81,7 +71,7 @@ static void do_search(const char *q) {
     for (int i = 0; i < NAPPS; i++) {
         const char *name = TR(apps[i].name);
         if (strcasestr(name, q) || strcasestr(apps[i].cmd, q)) {
-            add_result_row("•", name, apps[i].cmd);
+            add_result_row("", name, apps[i].cmd);
             n++;
         }
     }
@@ -94,7 +84,7 @@ static void do_search(const char *q) {
             while ((e = readdir(d)) != NULL && fn < 25) {
                 if (e->d_name[0] == '.') continue;
                 if (strcasestr(e->d_name, q)) {
-                    add_result_row("S", e->d_name, e->d_name);
+                    add_result_row("", e->d_name, e->d_name);
                     n++; fn++;
                 }
             }
@@ -114,7 +104,7 @@ static void do_search(const char *q) {
                 if (e->d_name[0] == '.') continue;
                 if (strcasestr(e->d_name, q)) {
                     gchar *cmd = g_strdup_printf("qyfiles %s", dirs[di]);
-                    add_result_row("•", e->d_name, cmd);
+                    add_result_row("", e->d_name, cmd);
                     g_free(cmd);
                     n++; fn++;
                 }
@@ -163,7 +153,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     search_entry = gtk_entry_new();
     gtk_entry_set_placeholder_text(GTK_ENTRY(search_entry), TR("搜索应用或程序..."));
     g_signal_connect(search_entry, "changed", G_CALLBACK(on_search_changed), NULL);
-    GtkWidget *b_close = icon_btn(QY_ICON_CLOSE, 16, TR("关闭"));
+    GtkWidget *b_close = qy_icon_button(QY_ICON_CLOSE, 16, TR("关闭"), NULL);
     g_signal_connect(b_close, "clicked", G_CALLBACK(on_close), NULL);
     gtk_box_pack_start(GTK_BOX(row), lbl, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(row), search_entry, TRUE, TRUE, 0);

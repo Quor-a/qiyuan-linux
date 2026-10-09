@@ -95,13 +95,14 @@ list row button:hover {
 /* ---------- 顶栏 ---------- */
 .qy-bar {
     background-color: rgba(10, 15, 26, 0.92);
-    border-bottom: 1px solid rgba(233, 84, 32, 0.3);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
 }
 .qy-clock {
     color: #e6e9ef;
     font-weight: bold;
     letter-spacing: 0.5px;
     font-size: 13px;
+    min-width: 96px;
 }
 .qy-clock-label {
     color: #e6e9ef;
@@ -126,6 +127,25 @@ list row button:hover {
     transition: background-color 150ms ease, color 150ms ease;
 }
 .qy-status-btn:hover {
+    background-color: rgba(255, 255, 255, 0.10);
+    color: #ffffff;
+}
+.qy-status-btn:active, .qy-icon-btn:active {
+    background-color: rgba(255, 255, 255, 0.16);
+}
+
+/* ---------- 图标按钮（qy_icon_button 使用） ---------- */
+.qy-icon-btn {
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    padding: 4px;
+    min-width: 28px;
+    min-height: 28px;
+    color: #c9cdd4;
+    transition: background-color 150ms ease, color 150ms ease;
+}
+.qy-icon-btn:hover {
     background-color: rgba(255, 255, 255, 0.10);
     color: #ffffff;
 }
@@ -169,8 +189,15 @@ list row button:hover {
     box-shadow: 0 6px 16px rgba(0, 0, 0, 0.6);
 }
 .qy-dock-dot {
-    color: #E95420;
-    font-size: 8px;
+    min-width: 14px;
+    min-height: 3px;
+    border-radius: 2px;
+    background: #E95420;
+    font-size: 0;
+}
+.qy-dock-active {
+    background: rgba(255, 138, 61, 0.12);
+    box-shadow: inset 0 0 0 2px #E95420;
 }
 
 /* ---------- 图标颜色类（统一玻璃底，配色交给 cairo 线稿） ---------- */
@@ -232,6 +259,10 @@ list row button:hover {
 .qy-btn:hover {
     background-color: #ff6b3d;
     box-shadow: 0 2px 10px rgba(233, 84, 32, 0.35);
+}
+.qy-btn:active {
+    background-color: #c9441a;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.35);
 }
 /* ---------- 对话框 ---------- */
 .qy-dialog {
@@ -362,7 +393,7 @@ button:hover {
     border-color: rgba(255, 255, 255, 0.12);
 }
 button:active {
-    background-color: #e95420;
+    background-color: #263041;
 }
 button:checked {
     background-color: #e95420;
@@ -432,6 +463,9 @@ notebook tab:checked {
 .qy-task-pill-active:hover {
     background-color: rgba(255, 138, 61, 0.22);
 }
+.qy-task-pill:active {
+    background-color: rgba(255, 138, 61, 0.30);
+}
 
 /* ---------- 系统监视器 ---------- */
 .qy-mon-title {
@@ -489,8 +523,13 @@ notebook tab:checked {
 /* ---------- 开始菜单分类标题 ---------- */
 .qy-appmenu-cat {
     font-size: 12px;
-    color: #E95420;
+    font-weight: 600;
+    color: #9aa3b2;
     padding: 6px 2px 2px 2px;
+}
+.qy-appmenu-cat-first {
+    border-left: 2px solid #E95420;
+    padding-left: 8px;
 }
 
 .qy-mon-disk {
@@ -500,13 +539,6 @@ notebook tab:checked {
 }
 
 /* ---------- 任务栏窗口按钮: 图标+标题 ---------- */
-.qy-task-glyph {
-    font-size: 11px;
-    font-weight: bold;
-    color: #ffffff;
-    padding: 2px 5px;
-    border-radius: 4px;
-}
 .qy-task-label {
     font-size: 12px;
     color: #E5E7EB;
@@ -542,10 +574,9 @@ notebook tab:checked {
 .qy-logo-btn:hover {
     background-color: rgba(255, 255, 255, 0.12);
 }
-.qy-logo-text {
-    color: #ffffff;
-    font-weight: bold;
-    font-size: 13px;
+.qy-logo-btn {
+    border-bottom: 2px solid #E95420;
+    border-radius: 8px 8px 0 0;
 }
 /* ---------- 顶栏左区当前应用标题 ---------- */
 .qy-active-title {
@@ -553,7 +584,6 @@ notebook tab:checked {
     font-size: 13px;
     font-weight: bold;
     letter-spacing: 0.5px;
-}
 }
 
 /* ---------- 桌面图标: 图片查看 ---------- */
@@ -590,6 +620,23 @@ notebook tab:checked {
 }
 .qy-about-btn:hover {
     background-color: #ff6b3d;
+}
+
+/* ---------- 设置页 ---------- */
+.qy-settings-curlang {
+    background: rgba(233, 84, 32, 0.12);
+    color: #ffb4a0;
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+}
+.qy-dim {
+    color: #9aa3b2;
+    font-size: 12px;
+}
+.qy-settings-row {
+    padding: 6px 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 /* ---------- 编辑器工具栏按钮 ---------- */

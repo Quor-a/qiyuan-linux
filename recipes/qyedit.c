@@ -1,6 +1,7 @@
 /* qyedit - 启元文本编辑器 (GTK3, 打开/编辑/保存, 中文界面) */
 #include "qyl10n.h"
 #include "qytheme.h"
+#include "qyicon.h"
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 #include <string.h>
@@ -234,8 +235,8 @@ int main(int argc, char **argv) {
     GtkWidget *b_new  = gtk_button_new_with_label(TR("新建"));
     GtkWidget *b_open = gtk_button_new_with_label(TR("打开"));
     GtkWidget *b_save = gtk_button_new_with_label(TR("保存"));
-    GtkWidget *b_fbig = gtk_button_new_with_label(TR("字号 +"));
-    GtkWidget *b_fsmall = gtk_button_new_with_label(TR("字号 -"));
+    GtkWidget *b_fbig = qy_icon_button(QY_ICON_PLUS, 16, TR("加大字号"), NULL);
+    GtkWidget *b_fsmall = qy_icon_button(QY_ICON_MIN, 16, TR("减小字号"), NULL);
     qy_add_class(b_new, "qy-editor-btn");
     qy_add_class(b_open, "qy-editor-btn");
     qy_add_class(b_save, "qy-editor-btn");

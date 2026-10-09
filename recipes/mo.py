@@ -49,7 +49,7 @@ def build(ctx):
             shutil.copytree(s, t, dirs_exist_ok=True)
         elif os.path.isfile(s):
             shutil.copy2(s, t)
-    ctx.log("墨语言：build.sh（seed → moc 自举）+ 99 项测试")
+    ctx.log("墨语言：build.sh（seed -> moc 自举）+ 99 项测试")
     ctx.run("mkdir -p bin && bash build.sh all")
     # 回归：99 项测试 + 三级自举 md5 一致
     ctx.run("bash verify_bootstrap.sh | tail -1")

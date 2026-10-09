@@ -6,7 +6,7 @@
 
 name = "qydesktop"
 version = "0.1.0"
-release = 227
+release = 228
 summary = "启元桌面 shell（GTK3 单窗口 + 主题）"
 license = "MIT"
 
@@ -114,14 +114,14 @@ def build(ctx):
         "gcc qydesktop.c qyicon.c qytheme.c qyl10n.c -o qydesktop $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
         "gcc qyfiles.c qyicon.c qytheme.c qyl10n.c -o qyfiles $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
         "gcc qysettings.c qytheme.c qyl10n.c -o qysettings $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
-        "gcc qyusers.c qytheme.c qyl10n.c -o qyusers $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qyusers.c qyicon.c qytheme.c qyl10n.c -o qyusers $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
         "gcc qywelcome.c qytheme.c qyl10n.c -o qywelcome $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
         "gcc qysetup.c qytheme.c qyl10n.c -o qysetup $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
         "gcc qysudo.c -o qysudo -O2 -lcrypt && "
         "gcc qyappmenu.c qyicon.c qytheme.c qyl10n.c -o qyappmenu $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
-        "gcc qyedit.c qytheme.c qyl10n.c -o qyedit $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qyedit.c qyicon.c qytheme.c qyl10n.c -o qyedit $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
         "gcc qymon.c qytheme.c qyl10n.c -o qymon $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
-        "gcc qyview.c qytheme.c qyl10n.c -o qyview $(pkg-config --cflags --libs gtk+-3.0 gdk-pixbuf-2.0) -O2 -ljpeg -lmount && "
+        "gcc qyview.c qyicon.c qytheme.c qyl10n.c -o qyview $(pkg-config --cflags --libs gtk+-3.0 gdk-pixbuf-2.0) -O2 -ljpeg -lmount && "
         "gcc qyctl.c -o qyctl -O2 -Wall && "
         "gcc qyarc.c qytheme.c qyl10n.c -o qyarc $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
         "gcc qystore.c qytheme.c qyl10n.c -o qystore $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "

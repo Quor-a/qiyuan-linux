@@ -1,6 +1,7 @@
 /* qyfiles - 启元文件管理器 (GTK3) — v4: 目录搜索过滤 */
 #include "qyl10n.h"
 #include "qyicon.h"
+#include "qytheme.h"
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 #include <string.h>
@@ -20,8 +21,6 @@ static GSList *cut_sources = NULL; /* 剪切源列表（多选） */
 static void chdir_to(const char *path);
 static void chdir_trash(void);
 static GdkPixbuf *load_icon_for(const char *name, gboolean isdir);
-static GdkPixbuf *make_dir_icon(void);
-static GdkPixbuf *make_file_icon(double r, double g, double b);
 
 /* v2.0 主题 + 工具栏状态按钮 */
 static void load_theme(void) {
@@ -36,16 +35,6 @@ static void load_theme(void) {
 
 static void add_class(GtkWidget *w, const char *cls) {
     gtk_style_context_add_class(gtk_widget_get_style_context(w), cls);
-}
-
-/* 图标按钮助手：无边框纯图标按钮，接入统一 qyicon 线稿库 */
-static GtkWidget *icon_btn(QyIconId id, int px, const char *tip) {
-    GtkWidget *b = gtk_button_new();
-    gtk_button_set_relief(GTK_BUTTON(b), GTK_RELIEF_NONE);
-    GtkWidget *img = gtk_image_new_from_pixbuf(qy_icon_pixbuf(id, px, NULL));
-    gtk_container_add(GTK_CONTAINER(b), img);
-    if (tip) gtk_widget_set_tooltip_text(b, tip);
-    return b;
 }
 
 /* 工具栏按钮（按 普通目录 / 回收站 切换可见性） */
@@ -853,43 +842,6 @@ static void on_activated(GtkTreeView *tv, GtkTreePath *path, GtkTreeViewColumn *
 static GtkWidget *icon_view = NULL;
 static GtkWidget *stack = NULL;
 
-/* 内置绘制图标（不依赖图标主题，自包含）：直接操作 pixbuf 像素 */
-static void fill_rect(guint8 *p, int rs, int nc, int x0, int y0, int x1, int y1,
-                       guint8 r, guint8 g, guint8 b, guint8 a) {
-    for (int y = y0; y < y1; y++)
-        for (int x = x0; x < x1; x++) {
-            guint8 *px = p + y * rs + x * nc;
-            px[0] = r; px[1] = g; px[2] = b; px[3] = a;
-        }
-}
-
-/* 文件夹图标 */
-static GdkPixbuf *make_dir_icon(void) {
-    GdkPixbuf *pb = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, 48, 48);
-    gdk_pixbuf_fill(pb, 0x00000000);
-    guint8 *p = gdk_pixbuf_get_pixels(pb);
-    int rs = gdk_pixbuf_get_rowstride(pb);
-    int nc = gdk_pixbuf_get_n_channels(pb);
-    fill_rect(p, rs, nc, 4, 16, 44, 42, 242, 199, 46, 255);
-    fill_rect(p, rs, nc, 2, 8, 17, 18, 247, 217, 82, 255);
-    return pb;
-}
-
-/* 文件图标：按类型着色 */
-static GdkPixbuf *make_file_icon(double r, double g, double b) {
-    GdkPixbuf *pb = gdk_pixbuf_new(GDK_COLORSPACE_RGB, TRUE, 8, 48, 48);
-    gdk_pixbuf_fill(pb, 0x00000000);
-    guint8 *p = gdk_pixbuf_get_pixels(pb);
-    int rs = gdk_pixbuf_get_rowstride(pb);
-    int nc = gdk_pixbuf_get_n_channels(pb);
-    int rr = (int)(r * 255), gg = (int)(g * 255), bb = (int)(b * 255);
-    fill_rect(p, rs, nc, 12, 4, 36, 44, rr, gg, bb, 255);
-    fill_rect(p, rs, nc, 16, 14, 32, 17, rr * 7 / 10, gg * 7 / 10, bb * 7 / 10, 255);
-    fill_rect(p, rs, nc, 16, 22, 32, 25, rr * 7 / 10, gg * 7 / 10, bb * 7 / 10, 255);
-    fill_rect(p, rs, nc, 16, 30, 26, 33, rr * 7 / 10, gg * 7 / 10, bb * 7 / 10, 255);
-    return pb;
-}
-
 /* 按文件类型加载图标（目录=文件夹；扩展名映射颜色） */
 static QyIconId icon_id_for(const char *name, gboolean isdir) {
     if (isdir) return QY_ICON_FILES;
@@ -1022,13 +974,13 @@ static void activate(GtkApplication *app, gpointer ud) {
     g_signal_connect(path_entry, "activate", G_CALLBACK(on_path_activate), NULL);
     gtk_box_pack_start(GTK_BOX(pathbar), path_entry, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), pathbar, FALSE, FALSE, 2);
-    GtkWidget *b_ref = icon_btn(QY_ICON_REFRESH, 18, TR("刷新"));
+    GtkWidget *b_ref = qy_icon_button(QY_ICON_REFRESH, 18, TR("刷新"), NULL);
     add_class(b_ref, "qy-btn");
     g_signal_connect(b_ref, "clicked", G_CALLBACK(on_refresh), NULL);
     GtkWidget *b_home = gtk_button_new_with_label(TR("主目录"));
     add_class(b_home, "qy-btn");
     g_signal_connect(b_home, "clicked", G_CALLBACK(on_home), NULL);
-    GtkWidget *b_up = icon_btn(QY_ICON_UP, 18, TR("上级目录"));
+    GtkWidget *b_up = qy_icon_button(QY_ICON_UP, 18, TR("上级目录"), NULL);
     add_class(b_up, "qy-btn");
     g_signal_connect(b_up, "clicked", G_CALLBACK(on_up), NULL);
     b_mk = gtk_button_new_with_label(TR("新建文件夹"));

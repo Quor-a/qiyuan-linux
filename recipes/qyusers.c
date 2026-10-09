@@ -4,6 +4,7 @@
  */
 #include "qyl10n.h"
 #include "qytheme.h"
+#include "qyicon.h"
 #include <gtk/gtk.h>
 #include <stdio.h>
 #include <string.h>
@@ -229,7 +230,14 @@ static void activate(GtkApplication *app, gpointer ud) {
     GtkWidget *v = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
     gtk_container_set_border_width(GTK_CONTAINER(v), 14);
     GtkWidget *tb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
-    GtkWidget *add = gtk_button_new_with_label(TR("＋ 新建用户"));
+    GtkWidget *add = gtk_button_new();
+    qy_add_class(add, "qy-btn");
+    GtkWidget *add_hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
+    gtk_container_add(GTK_CONTAINER(add), add_hb);
+    GtkWidget *add_img = gtk_image_new_from_pixbuf(qy_icon_pixbuf(QY_ICON_PLUS, 16, NULL));
+    gtk_box_pack_start(GTK_BOX(add_hb), add_img, FALSE, FALSE, 0);
+    GtkWidget *add_lb = gtk_label_new(TR("新建用户"));
+    gtk_box_pack_start(GTK_BOX(add_hb), add_lb, FALSE, FALSE, 0);
     GtkWidget *rf = gtk_button_new_with_label(TR("刷新"));
     gtk_box_pack_start(GTK_BOX(tb), add, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(tb), rf, FALSE, FALSE, 0);

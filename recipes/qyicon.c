@@ -376,6 +376,110 @@ static void draw_grid(cairo_t *cr, double x, double y, double s) {
     cairo_stroke(cr);
 }
 
+static void draw_play(cairo_t *cr, double x, double y, double s) {
+    SET_LINE(cr);
+    cairo_move_to(cr, PX(9), PY(7.5)); cairo_line_to(cr, PX(9), PY(16.5));
+    cairo_line_to(cr, PX(16.5), PY(12)); cairo_close_path(cr);
+    cairo_stroke(cr);
+}
+
+static void draw_pause(cairo_t *cr, double x, double y, double s) {
+    SET_LINE(cr);
+    cairo_move_to(cr, PX(9.5), PY(7.5)); cairo_line_to(cr, PX(9.5), PY(16.5));
+    cairo_move_to(cr, PX(14.5), PY(7.5)); cairo_line_to(cr, PX(14.5), PY(16.5));
+    cairo_stroke(cr);
+}
+
+static void draw_stop(cairo_t *cr, double x, double y, double s) {
+    SET_LINE(cr);
+    qy_rounded_rect(cr, PX(8), PY(7.5), PX(8), PY(9), PX(1.8));
+    cairo_stroke(cr);
+}
+
+static void draw_prev(cairo_t *cr, double x, double y, double s) {
+    SET_LINE(cr);
+    cairo_move_to(cr, PX(15.5), PY(7.5)); cairo_line_to(cr, PX(15.5), PY(16.5));
+    cairo_move_to(cr, PX(9), PY(12)); cairo_line_to(cr, PX(14), PY(8.5)); cairo_line_to(cr, PX(14), PY(15.5));
+    cairo_stroke(cr);
+}
+
+static void draw_next(cairo_t *cr, double x, double y, double s) {
+    SET_LINE(cr);
+    cairo_move_to(cr, PX(8.5), PY(7.5)); cairo_line_to(cr, PX(8.5), PY(16.5));
+    cairo_move_to(cr, PX(15), PY(12)); cairo_line_to(cr, PX(10), PY(8.5)); cairo_line_to(cr, PX(10), PY(15.5));
+    cairo_stroke(cr);
+}
+
+static void draw_bookmark(cairo_t *cr, double x, double y, double s) {
+    SET_LINE(cr);
+    cairo_move_to(cr, PX(8), PY(5.5)); cairo_line_to(cr, PX(16), PY(5.5));
+    cairo_line_to(cr, PX(16), PY(18.5)); cairo_line_to(cr, PX(12), PY(15.5));
+    cairo_line_to(cr, PX(8), PY(18.5)); cairo_close_path(cr);
+    cairo_stroke(cr);
+}
+
+static void draw_list(cairo_t *cr, double x, double y, double s) {
+    SET_LINE(cr);
+    cairo_move_to(cr, PX(10), PY(6.5)); cairo_line_to(cr, PX(18), PY(6.5));
+    cairo_move_to(cr, PX(10), PY(12)); cairo_line_to(cr, PX(18), PY(12));
+    cairo_move_to(cr, PX(10), PY(17.5)); cairo_line_to(cr, PX(18), PY(17.5));
+    cairo_arc(cr, PX(7), PY(6.5), PX(1.2), 0, 2*G_PI);
+    cairo_arc(cr, PX(7), PY(12), PX(1.2), 0, 2*G_PI);
+    cairo_arc(cr, PX(7), PY(17.5), PX(1.2), 0, 2*G_PI);
+    cairo_stroke(cr);
+}
+
+static void draw_calc(cairo_t *cr, double x, double y, double s) {
+    SET_LINE(cr);
+    qy_rounded_rect(cr, PX(6), PY(4.5), PX(12), PY(15), PX(2));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(8.5), PY(8.5)); cairo_line_to(cr, PX(15.5), PY(8.5));
+    cairo_arc(cr, PX(10), PY(11.5), PX(0.9), 0, 2*G_PI);
+    cairo_arc(cr, PX(14), PY(11.5), PX(0.9), 0, 2*G_PI);
+    cairo_arc(cr, PX(10), PY(15.5), PX(0.9), 0, 2*G_PI);
+    cairo_arc(cr, PX(14), PY(15.5), PX(0.9), 0, 2*G_PI);
+    cairo_stroke(cr);
+}
+
+static void draw_save(cairo_t *cr, double x, double y, double s) {
+    SET_LINE(cr);
+    qy_rounded_rect(cr, PX(6), PY(5.5), PX(12), PY(13), PX(2));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(7.5), PY(5.5)); cairo_line_to(cr, PX(7.5), PY(10));
+    cairo_line_to(cr, PX(16.5), PY(10)); cairo_line_to(cr, PX(16.5), PY(18.5));
+    cairo_stroke(cr);
+}
+
+static void draw_rotate(cairo_t *cr, double x, double y, double s) {
+    SET_LINE(cr);
+    qy_rounded_rect(cr, PX(8.5), PY(8.5), PX(7), PY(7), PX(1.5));
+    cairo_stroke(cr);
+    cairo_arc(cr, PX(12), PY(12), PX(6.6), -0.35, 1.45);
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(18), PY(6.5)); cairo_line_to(cr, PX(18), PY(9.5));
+    cairo_line_to(cr, PX(15), PY(9.5));
+    cairo_stroke(cr);
+}
+
+static void draw_fit(cairo_t *cr, double x, double y, double s) {
+    SET_LINE(cr);
+    cairo_move_to(cr, PX(8), PY(6.5)); cairo_line_to(cr, PX(6.5), PY(6.5)); cairo_line_to(cr, PX(6.5), PY(8));
+    cairo_move_to(cr, PX(16), PY(6.5)); cairo_line_to(cr, PX(17.5), PY(6.5)); cairo_line_to(cr, PX(17.5), PY(8));
+    cairo_move_to(cr, PX(8), PY(17.5)); cairo_line_to(cr, PX(6.5), PY(17.5)); cairo_line_to(cr, PX(6.5), PY(16));
+    cairo_move_to(cr, PX(16), PY(17.5)); cairo_line_to(cr, PX(17.5), PY(17.5)); cairo_line_to(cr, PX(17.5), PY(16));
+    qy_rounded_rect(cr, PX(10.8), PY(10.8), PX(2.4), PY(2.4), PX(0.4));
+    cairo_stroke(cr);
+}
+
+static void draw_open(cairo_t *cr, double x, double y, double s) {
+    SET_LINE(cr);
+    qy_rounded_rect(cr, PX(5.5), PY(10), PX(13), PY(8.5), PX(1.5));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(8), PY(10)); cairo_line_to(cr, PX(8), PY(7.5));
+    cairo_line_to(cr, PX(13), PY(7.5)); cairo_line_to(cr, PX(14.5), PY(10));
+    cairo_stroke(cr);
+}
+
 #undef SET_LINE
 
 /* ---------- 函数表 ---------- */
@@ -391,6 +495,10 @@ static void (* const drawers[QY_ICON_COUNT])(cairo_t *, double, double, double) 
     draw_close, draw_min, draw_max, draw_plus,
     draw_volume, draw_power,
     draw_grid,
+    draw_play, draw_pause, draw_stop,
+    draw_prev, draw_next, draw_bookmark,
+    draw_list, draw_calc, draw_save,
+    draw_rotate, draw_fit, draw_open,
 };
 
 /* ---------- 统一分发器 ---------- */
