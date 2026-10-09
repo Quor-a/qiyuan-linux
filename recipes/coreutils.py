@@ -29,7 +29,7 @@ compression = "gz"
 
 
 def build(ctx):
-    ctx.run("./configure --prefix=/usr --without-selinux --enable-no-install-program=kill,uptime")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --without-selinux --enable-no-install-program=kill,uptime")
     ctx.run("make")
 
 

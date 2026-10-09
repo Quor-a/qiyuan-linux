@@ -29,7 +29,7 @@ compression = "gz"
 
 
 def build(ctx):
-    ctx.run("./configure --prefix=/usr --disable-static --disable-gtk3 --disable-qt5 --disable-mono --disable-python")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --disable-static --disable-gtk3 --disable-qt5 --disable-mono --disable-python")
     ctx.run("make")
 
 

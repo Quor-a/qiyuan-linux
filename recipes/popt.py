@@ -22,7 +22,7 @@ def fetch(ctx):
 
 
 def build(ctx):
-    ctx.run("./configure --prefix=/usr --disable-static")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --disable-static")
     ctx.run("make -j2")
 
 

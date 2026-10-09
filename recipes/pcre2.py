@@ -29,7 +29,7 @@ compression = "gz"
 
 
 def build(ctx):
-    ctx.run("./configure --prefix=/usr --enable-pcre2-16 --enable-pcre2-32 --disable-static")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --enable-pcre2-16 --enable-pcre2-32 --disable-static")
     ctx.run("make")
 
 

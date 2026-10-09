@@ -29,7 +29,7 @@ compression = "gz"
 
 
 def build(ctx):
-    ctx.run("./configure --prefix=/usr --with-pkg-config-dir=/usr/lib/pkgconfig")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --with-pkg-config-dir=/usr/lib/pkgconfig")
     ctx.run("make")
 
 

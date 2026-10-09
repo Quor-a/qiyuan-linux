@@ -31,7 +31,7 @@ compression = "gz"
 def build(ctx):
     # gawk 会自动检测并链接 libtinfo（termcap 接口）。sysroot 的 widec ncurses
     # 提供的是 libtinfow，直接指给 configure，避免运行期找不到 libtinfo.so.6
-    ctx.run("./configure --prefix=/usr --with-libtinfo=-lncursesw")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --with-libtinfo=-lncursesw")
     ctx.run("make")
 
 

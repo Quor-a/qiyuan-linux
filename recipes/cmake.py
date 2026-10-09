@@ -25,7 +25,7 @@ compression = "gz"
 
 
 def build(ctx):
-    ctx.run("./configure --prefix=/usr --system-curl --system-expat --system-zlib --no-system-jsoncpp --no-system-librhash")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --system-curl --system-expat --system-zlib --no-system-jsoncpp --no-system-librhash")
     ctx.run("make")
 
 

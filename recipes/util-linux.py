@@ -29,7 +29,7 @@ compression = "gz"
 
 
 def build(ctx):
-    ctx.run("./configure --prefix=/usr --disable-static --enable-usrdir-path --without-systemd --without-systemdsystemunitdir --disable-liblastlog2 --without-nvme --disable-schedutils --without-python --disable-makeinstall-chown")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --disable-static --enable-usrdir-path --without-systemd --without-systemdsystemunitdir --disable-liblastlog2 --without-nvme --disable-schedutils --without-python --disable-makeinstall-chown")
     ctx.run("make")
 
 

@@ -211,6 +211,13 @@ class CrossEnv:
         e["CXX_FOR_BUILD"] = "c++"
         e["AR_FOR_BUILD"] = "ar"
         e["LD_FOR_BUILD"] = "ld"
+        # GNU install -s 会调宿主 strip，剥 aarch64 二进制直接报
+        # "Unable to recognise the format"。strip-program 指到目标 strip。
+        e["STRIPPROG"] = pre + "strip"
+        # 裸 strip 也要是目标的（ncurses 等 make install 用 install -s，
+        # 内部写死调 PATH 里的 strip）。shim 目录前置到 PATH。
+        e["PATH"] = "/usr/local/qycross/shim:" + os.environ.get(
+            "PATH", "/usr/local/bin:/usr/bin:/bin")
 
         if self.sysroot:
             e["SYSROOT"] = str(self.sysroot)

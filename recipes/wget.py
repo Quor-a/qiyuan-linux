@@ -22,7 +22,7 @@ def fetch(ctx):
 
 
 def build(ctx):
-    ctx.run("./configure --prefix=/usr --sysconfdir=/etc --with-ssl=openssl --disable-nls")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --sysconfdir=/etc --with-ssl=openssl --disable-nls")
     ctx.run("make -j2")
 
 

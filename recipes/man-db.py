@@ -29,7 +29,7 @@ compression = "gz"
 
 
 def build(ctx):
-    ctx.run("./configure --prefix=/usr --disable-setuid --disable-cache-owner")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --disable-setuid --disable-cache-owner")
     # 预渲染手册 man_db.cat 需要宿主 groff 宏包（目标系统不需要），
     # 直接把它改成 no-op 目标避免 make 失败
     ctx.run("sed -i 's|^man_db.cat:|man_db.cat: DISABLED\nDISABLED:|' manual/Makefile 2>/dev/null || true")

@@ -29,7 +29,7 @@ compression = "gz"
 
 
 def build(ctx):
-    ctx.run("./configure --prefix=/usr --with-rcdir=/tmp/cupsinit --disable-systemd --with-dbusdir=/usr/share/dbus-1")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --with-rcdir=/tmp/cupsinit --disable-systemd --with-dbusdir=/usr/share/dbus-1")
     ctx.run("make")
 
 

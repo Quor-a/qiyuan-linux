@@ -22,7 +22,7 @@ compression = "xz"
 
 
 def build(ctx):
-    ctx.run("./configure --prefix=/usr")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr")
     ctx.run("make")
 
 

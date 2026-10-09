@@ -31,7 +31,7 @@ compression = "gz"
 
 
 def build(ctx):
-    ctx.run("./configure --prefix=/usr --with-shared --without-debug --enable-widec --with-cxx-shared --with-termlib")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --with-shared --without-debug --enable-widec --with-cxx-shared --with-termlib")
     ctx.run("make")
 
 

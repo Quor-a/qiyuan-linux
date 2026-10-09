@@ -31,7 +31,7 @@ compression = "gz"
 def build(ctx):
     # GitHub tag 源码无预生成 configure，须先 autoreconf
     ctx.run("autoreconf -f -i -s")
-    ctx.run("./configure --prefix=/usr --disable-static")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --disable-static")
     ctx.run("make")
 
 

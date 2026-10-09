@@ -29,7 +29,7 @@ compression = "gz"
 
 
 def build(ctx):
-    ctx.run("./configure --prefix=/usr --sysconfdir=/etc/chrony --with-user=chrony --with-hwclockfile=/etc/adjtime")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --sysconfdir=/etc/chrony --with-user=chrony --with-hwclockfile=/etc/adjtime")
     ctx.run("make")
 
 

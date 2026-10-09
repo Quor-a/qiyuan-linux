@@ -26,7 +26,7 @@ compression = "gz"
 
 
 def build(ctx):
-    ctx.run("./configure --prefix=/usr --without-bash-malloc --with-installed-readline")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --without-bash-malloc --with-installed-readline")
     ctx.run("make")
 
 

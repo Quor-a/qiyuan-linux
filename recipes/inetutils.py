@@ -29,7 +29,7 @@ compression = "gz"
 
 
 def build(ctx):
-    ctx.run("./configure --prefix=/usr --disable-talk --disable-ftp --disable-ftpd --disable-servers")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --disable-talk --disable-ftp --disable-ftpd --disable-servers")
     ctx.run("make")
 
 

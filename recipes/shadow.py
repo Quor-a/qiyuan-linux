@@ -31,7 +31,7 @@ compression = "gz"
 def build(ctx):
     # readpassphrase 来自 libbsd（宿主专属交互密码输入），目标系统用
     # shadow 自带的实现即可
-    ctx.run("./configure --prefix=/usr --disable-static --with-group-name-max-length=32 --without-libbsd")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --disable-static --with-group-name-max-length=32 --without-libbsd")
     ctx.run("make")
 
 

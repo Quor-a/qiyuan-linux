@@ -29,7 +29,7 @@ compression = "gz"
 
 
 def build(ctx):
-    ctx.run("./configure --prefix=/usr --disable-static --docdir=/usr/share/doc/xz")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --disable-static --docdir=/usr/share/doc/xz")
     ctx.run("make")
 
 

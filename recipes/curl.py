@@ -29,7 +29,7 @@ compression = "gz"
 
 
 def build(ctx):
-    ctx.run("./configure --prefix=/usr --disable-static --with-openssl --with-zlib --with-zstd --enable-threaded-resolver --without-libpsl")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --disable-static --with-openssl --with-zlib --with-zstd --enable-threaded-resolver --without-libpsl")
     ctx.run("make")
 
 

@@ -26,7 +26,7 @@ compression = "xz"
 
 
 def build(ctx):
-    ctx.run("./configure --prefix=/usr --without-npm")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --without-npm")
     ctx.run("make -j1")     # 并行构建 node 容易 OOM，串行更稳
 
 

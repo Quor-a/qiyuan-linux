@@ -25,7 +25,7 @@ compression = "gz"
 def build(ctx):
     # github tarball 无预生成 configure，需要 autoreconf
     ctx.run("./autogen.sh --prefix=/usr")
-    ctx.run("./configure --prefix=/usr --disable-static")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --disable-static")
     ctx.run("make")
 
 

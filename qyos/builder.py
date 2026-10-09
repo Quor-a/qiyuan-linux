@@ -221,6 +221,9 @@ class Builder:
         self.patches = PM.load_patches(self.root, self.root / "recipes")
         # 构建依赖的安装根（自举前指向 sysroot，自举后就是自建系统）
         self.sysroot = self.root / "var" / "sysroot"
+        # 交叉编译的目标 sysroot：glibc/头文件来自目标架构工具链，
+        # 不能用 x86_64 的 var/sysroot（头文件会混进 stubs-32 之类错架构内容）。
+        self.target_sysroot = self.root / "var" / "sysroot-target"
         self.repo_dir = Path(repo_dir) if repo_dir else self.root / "var" / "repo"
         self.pubkey = Path(pubkey) if pubkey else None
 
@@ -289,9 +292,9 @@ class Builder:
         ctx = BuildContext(rec, {"srcdir": srcdir, "builddir": builddir,
                                  "destdir": destdir,
                                  "pkgdir": self.paths["pkgs"],
-                                 "sysroot_path": self.sysroot},
+                                 "sysroot_path": self.target_sysroot},
                            self.sandbox, self.log, cross=self.cross)
-        ctx.sysroot = self.sysroot
+        ctx.sysroot = self.target_sysroot
 
         t0 = util.timer()
         try:
@@ -377,6 +380,8 @@ class Builder:
         """
         if not rec.makedepends:
             return
+        # 交叉编译时头文件/库都来自目标 sysroot，不能用 x86_64 的
+        _sr = self.target_sysroot if self.cross is not None else self.sysroot
         from . import pkgmgr as PM
         from . import repo as R
         idx_path = self.repo_dir / self.arch / "index.json"
@@ -388,7 +393,7 @@ class Builder:
         if pub is None:
             cand = self.repo_dir / "keys" / "qiyuan.pub"
             pub = cand if cand.exists() else None
-        mgr = PM.Manager(self.sysroot, self.repo_dir, pub, allow_unsigned=True)
+        mgr = PM.Manager(_sr, self.repo_dir, pub, allow_unsigned=True)
         installed = mgr.db.installed()
 
         # 尚未构建出来的重包（gcc / glibc 之类）由宿主提供。
@@ -414,8 +419,8 @@ class Builder:
         import re as _re
         import os as _os
         # 用 os.walk 替代 rglob：跳过挂载的 /proc，避免扫描 map_files 触发权限拒绝
-        for _dp, _dns, _fns in _os.walk(self.sysroot):
-            if _dp == str(self.sysroot) and "proc" in _dns:
+        for _dp, _dns, _fns in _os.walk(_sr):
+            if _dp == str(_sr) and "proc" in _dns:
                 _dns.remove("proc")
             for _fn in _fns:
                 if not _fn.endswith(".la"):
@@ -423,16 +428,16 @@ class Builder:
                 la = Path(_dp) / _fn
                 try:
                     txt = la.read_text()
-                    new = txt.replace("='/usr/lib/", f"='{self.sysroot}/usr/lib/")
-                    new = new.replace(" '/usr/lib/", f" {self.sysroot}/usr/lib/").replace(" /usr/lib/lib", f" {self.sysroot}/usr/lib/lib")
+                    new = txt.replace("='/usr/lib/", f"='{_sr}/usr/lib/")
+                    new = new.replace(" '/usr/lib/", f" {_sr}/usr/lib/").replace(" /usr/lib/lib", f" {_sr}/usr/lib/lib")
                     if new != txt:
                         la.write_text(new)
                 except Exception:
                     pass
 
 
-        inc = self.sysroot / "usr" / "include"
-        lib = self.sysroot / "usr" / "lib"
+        inc = _sr / "usr" / "include"
+        lib = _sr / "usr" / "lib"
         if inc.exists():
             ctx.env("CPATH", f"{inc}")
             ctx.env("CFLAGS", f"{sandboxmod.BASE_CFLAGS} -I{inc}")
@@ -440,7 +445,7 @@ class Builder:
         # gobject-introspection 的 giscanner 模块装入 sysroot 后，
         # 构建期工具必须能 import 到它，否则所有带 introspection 的包全挂
         import platform as _pf3
-        gi_pp = self.sysroot / "usr" / "lib" / f"{_pf3.machine()}-linux-gnu" / "gobject-introspection"
+        gi_pp = _sr / "usr" / "lib" / f"{_pf3.machine()}-linux-gnu" / "gobject-introspection"
         if gi_pp.exists():
             ctx.env("PYTHONPATH", f"{gi_pp}")
             # PATH 禁止全局注入：sysroot gcc 排前位会混宿主 libc 头，
@@ -448,7 +453,7 @@ class Builder:
             # glib 等需要 sysroot 工具的配方自己在命令里加 export PATH 前缀。
         if lib.exists():
             import platform as _pf2
-            libroot = self.sysroot / "lib"
+            libroot = _sr / "lib"
             mlib = lib / (_pf2.machine() + "-linux-gnu")
             rl = ":".join(str(p) for p in (lib, libroot, mlib) if p.exists())
             ctx.env("LIBRARY_PATH", ":".join(str(p) for p in (lib, libroot, mlib) if p.exists()))

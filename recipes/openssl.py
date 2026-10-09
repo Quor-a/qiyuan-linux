@@ -29,9 +29,18 @@ compression = "gz"
 
 
 def build(ctx):
-    ctx.run("./config --prefix=/usr --openssldir=/etc/ssl --libdir=lib shared zlib-dynamic")
-    ctx.run("make")
+    # openssl 的 ./config 只看 uname（会猜成 linux-x86_64）；
+    # 交叉时必须显式 --target=linux-aarch64 且 CC 只给一次
+    # （它内部还会把 CROSS_COMPILE 拼到 CC 前面，重复前缀 = 找不到命令）。
+    if ctx.configure_args():
+        ctx.run("./Configure linux-aarch64 --prefix=/usr "
+                "--openssldir=/etc/ssl --libdir=lib shared zlib-dynamic "
+                "CC=aarch64-qiyuan-linux-gnu-gcc")
+    else:
+        ctx.run("./config --prefix=/usr --openssldir=/etc/ssl "
+                "--libdir=lib shared zlib-dynamic")
+    ctx.run("make CROSS_COMPILE=")
 
 
 def package(ctx):
-    ctx.run("make DESTDIR={} install_sw".format(ctx.destdir))
+    ctx.run("make DESTDIR={} CROSS_COMPILE= install_sw".format(ctx.destdir))

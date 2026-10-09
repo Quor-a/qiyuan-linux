@@ -26,7 +26,7 @@ compression = "gz"
 
 
 def build(ctx):
-    ctx.run("./configure --prefix=/usr --docdir=/usr/share/doc/bison")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --docdir=/usr/share/doc/bison")
     ctx.run("make")
 
 

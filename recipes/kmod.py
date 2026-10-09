@@ -36,7 +36,7 @@ def build(ctx):
     ctx.run("find . -xtype l -delete")
     ctx.run("mkdir -p m4 libkmod/docs && : > m4/gtk-doc.m4 && : > libkmod/docs/gtk-doc.make")
     ctx.run("autoreconf -f -i")
-    ctx.run("./configure --prefix=/usr --with-zstd --with-xz --with-zlib --with-openssl --disable-manpages --disable-gtk-doc")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --with-zstd --with-xz --with-zlib --with-openssl --disable-manpages --disable-gtk-doc")
     ctx.run("make")
 
 

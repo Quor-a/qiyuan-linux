@@ -29,6 +29,8 @@ compression = "gz"
 
 
 def build(ctx):
+    # zlib 的 configure 是自己写的，不认 autotools 的 --build/--host，
+    # 交叉编译靠环境里的 CC（CrossEnv 已注入），别塞 configure_args。
     ctx.run("./configure --prefix=/usr")
     ctx.run("make")
 

@@ -29,7 +29,7 @@ compression = "gz"
 
 
 def build(ctx):
-    ctx.run("./configure --prefix=/usr --sysconfdir=/etc --enable-json --disable-java --disable-java-modules")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --sysconfdir=/etc --enable-json --disable-java --disable-java-modules")
     ctx.run("make")
 
 

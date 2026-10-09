@@ -22,7 +22,7 @@ def fetch(ctx):
 
 
 def build(ctx):
-    ctx.run("./configure --prefix=/usr --disable-md2man --disable-lz4 --disable-zstd --disable-xxhash")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --disable-md2man --disable-lz4 --disable-zstd --disable-xxhash")
     ctx.run("make -j2")
 
 
