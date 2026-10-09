@@ -282,6 +282,8 @@ class Manager:
         for f in meta.files:
             if f.type == "dir":
                 continue   # 目录由多个包共享，不算冲突
+            if f.type == "symlink" and f.path in ("bin", "usr/sbin", "sbin", "lib", "lib64", "usr/lib"):
+                continue   # FHS 合并布局符号链（/bin→/usr/bin 等）多包共享
             owner = self.db.owner_of(f.path)
             if owner and owner != meta.name:
                 if f.path.endswith("share/info/dir"):

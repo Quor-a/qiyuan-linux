@@ -98,7 +98,22 @@ daemon:x:6:
 sys:x:3:
 tty:x:5:
 wheel:x:10:
-nobody:x:65534:
+kmem:x:15:
+disk:x:6:
+floppy:x:11:
+uucp:x:14:
+dialout:x:20:
+audio:x:29:
+video:x:44:
+cdrom:x:24:
+input:x:104:
+render:x:105:
+seat:x:106:
+kvm:x:108:
+lp:x:109:
+tape:x:110:
+sgx:x:111:
+nogroup:x:65534:
 """
 
 HOSTS = """127.0.0.1  localhost
