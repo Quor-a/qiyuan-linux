@@ -2302,3 +2302,13 @@ ngs-about-v2.png`。
 - 截图：docs/screenshots/ui-v3-tray.png（深色玻璃拟态顶栏 + 托盘线稿图标）
 
 构建产物：`qydesktop 0.1.0-222`。
+
+### UI 改版第 3 轮：托盘 hover 高亮 + 锁屏/时钟字距（v0.1.0-223，2026-10 实测）
+
+- **托盘 cairo 图标 hover 高亮**：enter/leave 切换绘制颜色（#c9cdd4 → 纯白），tray_hover_cb 驱动重绘
+- **锁屏字距**：#qylock-clock letter-spacing 2px、#qylock-date 4px，强化层级
+- **顶栏时钟字距**：.qy-clock letter-spacing 0.5px、颜色统一 #e6e9ef
+- 实测：qydesktop 编译 rc=0
+- 截图：docs/screenshots/ui-v3-notif-bell.png（cairo 铃铛托盘）
+
+构建产物：`qydesktop 0.1.0-223`。

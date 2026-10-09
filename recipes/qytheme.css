@@ -60,10 +60,12 @@ list row button:hover {
 #qylock-clock {
     font-size: 96px;
     font-weight: bold;
-    color: #f5f6f7;
+    letter-spacing: 2px;
+    color: #e6e9ef;
 }
 #qylock-date {
     font-size: 26px;
+    letter-spacing: 4px;
     color: rgba(255, 255, 255, 0.65);
 }
 
@@ -89,8 +91,9 @@ list row button:hover {
     background-color: rgba(233, 84, 32, 0.45);
 }
 .qy-clock {
-    color: #f5f6f7;
+    color: #e6e9ef;
     font-weight: bold;
+    letter-spacing: 0.5px;
     font-size: 13px;
 }
 .qy-status {

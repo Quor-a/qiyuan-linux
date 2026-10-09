@@ -758,7 +758,9 @@ static gboolean tray_draw_cb(GtkWidget *w, cairo_t *cr, gpointer ud) {
     int icon = GPOINTER_TO_INT(ud);
     double cx = gtk_widget_get_allocated_width(w) / 2.0;
     double cy = gtk_widget_get_allocated_height(w) / 2.0;
-    cairo_set_source_rgb(cr, 0.79, 0.80, 0.83);   /* #c9cdd4 与 .qy-status-btn 一致 */
+    gboolean hover = GPOINTER_TO_INT(g_object_get_data(G_OBJECT(w), "hover"));
+    if (hover) cairo_set_source_rgb(cr, 1.0, 1.0, 1.0);
+    else cairo_set_source_rgb(cr, 0.79, 0.80, 0.83);   /* #c9cdd4 与 .qy-status-btn 一致 */
     cairo_set_line_width(cr, 1.6);
     cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
     cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);
@@ -838,6 +840,14 @@ static gboolean bell_draw_cb(GtkWidget *w, cairo_t *cr, gpointer ud) {
     return FALSE;
 }
 
+/* 托盘图标 hover 高亮 */
+static gboolean tray_hover_cb(GtkWidget *b, GdkEventCrossing *ev, gpointer da) {
+    (void)b;
+    g_object_set_data(G_OBJECT(da), "hover", GINT_TO_POINTER(ev->type == GDK_ENTER_NOTIFY ? 1 : 0));
+    gtk_widget_queue_draw(GTK_WIDGET(da));
+    return FALSE;
+}
+
 static GtkWidget *make_tray_icon_btn_cb(int icon, const char *tip, GCallback cb, gpointer data) {
     GtkWidget *b = gtk_button_new();
     gtk_button_set_relief(GTK_BUTTON(b), GTK_RELIEF_NONE);
@@ -846,6 +856,8 @@ static GtkWidget *make_tray_icon_btn_cb(int icon, const char *tip, GCallback cb,
     gtk_widget_set_size_request(da, 22, 22);
     g_signal_connect(da, "draw", G_CALLBACK(tray_draw_cb), GINT_TO_POINTER(icon));
     gtk_container_add(GTK_CONTAINER(b), da);
+    g_signal_connect(b, "enter-notify-event", G_CALLBACK(tray_hover_cb), da);
+    g_signal_connect(b, "leave-notify-event", G_CALLBACK(tray_hover_cb), da);
     gtk_widget_set_tooltip_text(b, tip);
     g_signal_connect(b, "clicked", cb, data);
     return b;
