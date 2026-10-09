@@ -17,7 +17,7 @@ void qy_load_theme(void) {
     }
     g_object_unref(p);
 
-    /* 强调色: /etc/qytheme.conf accent=orange|purple|blue|green */
+    /* 强调色: /etc/qytheme.conf accent=orange|blue|green（禁紫，锁橙默认） */
     char accent[32] = "orange";
     gchar *content = NULL;
     if (g_file_get_contents("/etc/qytheme.conf", &content, NULL, NULL)) {
@@ -36,8 +36,7 @@ void qy_load_theme(void) {
         g_free(content);
     }
     const char *color = "#E95420";  /* orange */
-    if (!strcmp(accent, "purple")) color = "#77216F";
-    else if (!strcmp(accent, "blue")) color = "#1E90FF";
+    if (!strcmp(accent, "blue")) color = "#1E90FF";
     else if (!strcmp(accent, "green")) color = "#2E9E44";
 
     /* 覆盖 CSS: 主按钮 / 标题 / 进度条 */

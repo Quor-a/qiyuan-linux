@@ -16,28 +16,28 @@ typedef struct {
 
 /* 统一图标主题色板 (v1.7): 每应用固定主色 */
 static AppEntry apps[] = {
-    { "系统设置",   "⚙",  "#6b7280", "qysettings",      0, "系统" },
+    { "系统设置",   "set",  "#6b7280", "qysettings",      0, "系统" },
     { "系统监视",   "▦", "#f59e0b", "qymon",           0, "系统" },
     { "系统安装",   "⬇", "#f97316", "qysetup",         0, "系统" },
-    { "用户管理",   "☻", "#0ea5e9", "qyusers",         0, "系统" },
+    { "用户管理",   "usr", "#0ea5e9", "qyusers",         0, "系统" },
     { "网络管理",   "⇄", "#22c55e", "qynet",           0, "系统" },
     { "文件管理器", "▤", "#3b82f6", "qyfiles",         0, "文件" },
     { "图片查看",   "▣", "#14B8A6", "qyview",          0, "文件" },
     { "压缩管理",   "▣", "#ef4444", "qyarc",           0, "文件" },
-    { "回收站",     "✗", "#6b7280", "qyfiles --trash", 0, "文件" },
+    { "回收站",     "del", "#6b7280", "qyfiles --trash", 0, "文件" },
     { "终端",       ">_", "#334155", "weston-terminal", 0, "工具" },
-    { "文本编辑",   "✎", "#10b981", "qyedit",          0, "工具" },
+    { "文本编辑",   "edt", "#10b981", "qyedit",          0, "工具" },
     { "软件中心",   "▦", "#0a7ea4", "qystore",         0, "工具" },
     { "浏览器",     "◎", "#60a5fa", "qybrowser",       0, "工具" },
     { "截图工具",   "◉", "#f472b6", "qyshot",          0, "工具" },
     { "剪贴板",     "≡", "#f59e0b", "qyclip",          0, "工具" },
     { "锁屏",       "◈", "#94a3b8", "qylock",          0, "系统" },
     { "全局搜索",   "◯", "#22d3ee", "qysearch",        0, "系统" },
-    { "音乐播放器", "♪", "#ec4899", "qymedia",         0, "娱乐" },
+    { "音乐播放器", "mus", "#ec4899", "qymedia",         0, "娱乐" },
     { "窗口切换器", "⇥", "#333B49", "qyswitcher",     0, "系统" },
     { "驱动管理器", "■", "#64748b", "qydriver",       0, "系统" },
     { "Git 工具",   "⎇", "#f97316", "qygit",           0, "工具" },
-    { "欢迎",       "✦", "#22c55e", "qywelcome",      0, "系统" },
+    { "欢迎",       "wel", "#22c55e", "qywelcome",      0, "系统" },
 };
 #define NAPPS ((int)(sizeof apps / sizeof apps[0]))
 
@@ -158,9 +158,8 @@ static gboolean icon_draw_cb(GtkWidget *w, cairo_t *cr, gpointer ud) {
     double radius = 12.0 * size / 56.0;
     qy_icon_tile(cr, app_icon_id(a), x, y, size, radius, NULL, NULL);
     /* 左上 4px 主色圆点（保留应用辨识色，不铺满） */
-    GdkRGBA c;
-    gdk_rgba_parse(&c, a->color);
-    cairo_set_source_rgba(cr, c.red, c.green, c.blue, 0.92);
+    /* 统一强调橙 #E95420（根除彩虹点） */
+    cairo_set_source_rgba(cr, 0.914, 0.329, 0.125, 0.92);
     cairo_arc(cr, x + size * 0.18, y + size * 0.18, size * 0.075, 0, 2 * G_PI);
     cairo_fill(cr);
     return FALSE;
@@ -396,7 +395,7 @@ int main(int argc, char **argv) {
     g_signal_connect(search_entry, "search-changed", G_CALLBACK(on_search_changed), NULL);
     g_signal_connect(search_entry, "activate", G_CALLBACK(on_search_activate), NULL);
     gtk_box_pack_start(GTK_BOX(search_row), search_entry, TRUE, TRUE, 0);
-    GtkWidget *close_btn = gtk_button_new_with_label("✕");
+    GtkWidget *close_btn = gtk_button_new_from_icon_name("window-close-symbolic", GTK_ICON_SIZE_MENU);
     gtk_button_set_relief(GTK_BUTTON(close_btn), GTK_RELIEF_NONE);
     add_class(close_btn, "qy-appmenu-close");
     g_signal_connect(close_btn, "clicked", G_CALLBACK(on_close_clicked), NULL);
@@ -429,11 +428,11 @@ int main(int argc, char **argv) {
     gtk_widget_set_halign(user, GTK_ALIGN_START);
     add_class(user, "qy-appmenu-user");
     gtk_box_pack_start(GTK_BOX(bottom), user, TRUE, TRUE, 0);
-    GtkWidget *set_btn = gtk_button_new_with_label("⚙");
+    GtkWidget *set_btn = gtk_button_new_from_icon_name("emblem-system-symbolic", GTK_ICON_SIZE_MENU);
     gtk_button_set_relief(GTK_BUTTON(set_btn), GTK_RELIEF_NONE);
     g_signal_connect(set_btn, "clicked", G_CALLBACK(on_settings_btn), NULL);
     gtk_box_pack_start(GTK_BOX(bottom), set_btn, FALSE, FALSE, 0);
-    GtkWidget *pwr_btn = gtk_button_new_with_label("⏻");
+    GtkWidget *pwr_btn = gtk_button_new_from_icon_name("system-shutdown-symbolic", GTK_ICON_SIZE_MENU);
     gtk_button_set_relief(GTK_BUTTON(pwr_btn), GTK_RELIEF_NONE);
     g_signal_connect(pwr_btn, "clicked", G_CALLBACK(on_power), NULL);
     gtk_box_pack_start(GTK_BOX(bottom), pwr_btn, FALSE, FALSE, 0);

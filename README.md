@@ -2325,3 +2325,16 @@ ngs-about-v2.png`。
 - 实测：qyappmenu/qydesktop 编译 rc=0
 
 构建产物：`qydesktop 0.1.0-224`。
+
+### UI 改版第 5 轮：顶栏三段非对称 + 任务 pill + 全库去字符图标 + 壁纸锁橙（v0.1.0-225，2026-10 实测）
+
+群聊二轮共识落地（4 专家审查 224 后定稿）：
+- **顶栏三段非对称重构**：BAR_H 30→40；左区固定 240px（品牌 logo 玻璃 tile 32×32 + 当前应用标题联动）；中区任务栏弹性占中靠左；右区时钟并入状态区最左，删除重复分辨率/电源文本按钮
+- **任务 pill 化**：`.qy-task-pill`（高 28 圆角 14 间距 6、玻璃底）、`.qy-task-pill-active`（`box-shadow: inset 0 0 0 2px @qy_accent` + `@qy_accent_soft` 内描边，无布局抖动）；任务按钮图标改用 `qy_icon_pixbuf`（18px 线稿）
+- **全库根除 unicode 字符图标**：✕→window-close-symbolic、⚙→emblem-system-symbolic、⏻→system-shutdown-symbolic、☆→starred-symbolic、♪→文本标题、桌面/Dock 图标改 cairo 线稿（枚举 QyIconId）；✓→√；审计硬性 grep `[\x{2600}-\x{27BF}]` 零命中
+- **qyfiles 接入 qyicon**：`icon_id_for()` 扩展名映射（目录/图片/音频/视频/压缩/文本/PDF/通用），`load_icon_for()` 返回 `qy_icon_pixbuf(48)`；qyfiles 编译命令加入 qyicon.c；qyicon 新增 VIDEO/DOC/FILE 三图标（共 26 个）
+- **根除紫色**：qytheme.c 移除 purple 强调色分支（禁紫）；壁纸删除 6 处紫色柔光斑、渐变改深蓝底+橙光；qy_ok/.qy-dock-dot 锁橙（去第三色系）
+- **圆点统一**：appmenu 图标左上主色圆点改为统一强调橙 #E95420（彩虹点收敛）
+- 编译：qydesktop/qyappmenu/qyfiles/qystore/qywelcome/qydriver/qyarc 全部 rc=0
+
+构建产物：`qydesktop 0.1.0-225`。

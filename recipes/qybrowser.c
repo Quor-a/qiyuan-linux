@@ -488,10 +488,10 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_entry_set_placeholder_text(GTK_ENTRY(url_entry), "https://...");
     GtkWidget *btn = gtk_button_new_with_label(TR("打开"));
     qy_add_class(btn, "qy-btn");
-    GtkWidget *bm_btn = gtk_button_new_with_label("☆");
+    GtkWidget *bm_btn = gtk_button_new_from_icon_name("starred-symbolic", GTK_ICON_SIZE_MENU);
     gtk_widget_set_tooltip_text(bm_btn, TR("收藏"));
     g_signal_connect(bm_btn, "clicked", G_CALLBACK(on_bookmark), NULL);
-    GtkWidget *bm_list_btn = gtk_button_new_with_label("☆");
+    GtkWidget *bm_list_btn = gtk_button_new_from_icon_name("starred-symbolic", GTK_ICON_SIZE_MENU);
     gtk_widget_set_tooltip_text(bm_list_btn, TR("书签列表"));
     g_signal_connect(bm_list_btn, "clicked", G_CALLBACK(on_show_bookmarks), NULL);
     GtkWidget *btn2 = gtk_button_new_with_label(TR("清空"));

@@ -83,7 +83,7 @@ static void do_search(const char *q) {
             while ((e = readdir(d)) != NULL && fn < 25) {
                 if (e->d_name[0] == '.') continue;
                 if (strcasestr(e->d_name, q)) {
-                    add_result_row("⚙", e->d_name, e->d_name);
+                    add_result_row("S", e->d_name, e->d_name);
                     n++; fn++;
                 }
             }
@@ -152,7 +152,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     search_entry = gtk_entry_new();
     gtk_entry_set_placeholder_text(GTK_ENTRY(search_entry), TR("搜索应用或程序..."));
     g_signal_connect(search_entry, "changed", G_CALLBACK(on_search_changed), NULL);
-    GtkWidget *b_close = gtk_button_new_with_label("✕");
+    GtkWidget *b_close = gtk_button_new_from_icon_name("window-close-symbolic", GTK_ICON_SIZE_MENU);
     g_signal_connect(b_close, "clicked", G_CALLBACK(on_close), NULL);
     gtk_box_pack_start(GTK_BOX(row), lbl, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(row), search_entry, TRUE, TRUE, 0);

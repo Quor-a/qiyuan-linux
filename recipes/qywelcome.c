@@ -190,7 +190,7 @@ static void on_finish_clicked(GtkButton *b, gpointer ud) {
     /* 标记完成 */
     f = fopen("/etc/.qywelcomed", "w");
     if (f) { fprintf(f, "1\n"); fclose(f); }
-    set_status(TR("✓ 配置完成！重启或直接使用。"));
+    set_status(TR("√ 配置完成！重启或直接使用。"));
     gtk_button_set_label(b, TR("已完成"));
     gtk_widget_set_sensitive(GTK_WIDGET(b), FALSE);
 }

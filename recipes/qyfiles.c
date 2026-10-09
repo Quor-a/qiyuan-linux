@@ -1,5 +1,6 @@
 /* qyfiles - 启元文件管理器 (GTK3) — v4: 目录搜索过滤 */
 #include "qyl10n.h"
+#include "qyicon.h"
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 #include <string.h>
@@ -743,7 +744,7 @@ static void chdir_trash(void) {
             gchar *ti = g_strdup_printf("%s/%s.trashinfo", info, name);
             char orig[4096];
             GtkTreeIter it;
-            GdkPixbuf *pb = make_file_icon(0.72, 0.72, 0.78);
+            GdkPixbuf *pb = qy_icon_pixbuf(QY_ICON_TRASH, 48, NULL);
             gtk_list_store_append(store, &it);
             if (read_trashinfo(ti, orig, sizeof orig)) {
                 gtk_list_store_set(store, &it, 0, orig, 1, name, 2, TR("—"), 3, pb, -1);
@@ -880,28 +881,40 @@ static GdkPixbuf *make_file_icon(double r, double g, double b) {
 }
 
 /* 按文件类型加载图标（目录=文件夹；扩展名映射颜色） */
-static GdkPixbuf *load_icon_for(const char *name, gboolean isdir) {
-    if (isdir) return make_dir_icon();
+static QyIconId icon_id_for(const char *name, gboolean isdir) {
+    if (isdir) return QY_ICON_FILES;
     const char *dot = strrchr(name, '.');
     if (dot) {
         if (!g_ascii_strcasecmp(dot, ".png") || !g_ascii_strcasecmp(dot, ".jpg")
             || !g_ascii_strcasecmp(dot, ".jpeg") || !g_ascii_strcasecmp(dot, ".webp")
             || !g_ascii_strcasecmp(dot, ".gif") || !g_ascii_strcasecmp(dot, ".bmp"))
-            return make_file_icon(0.45, 0.75, 0.45);
+            return QY_ICON_IMAGE;
         if (!g_ascii_strcasecmp(dot, ".mp3") || !g_ascii_strcasecmp(dot, ".wav")
             || !g_ascii_strcasecmp(dot, ".flac") || !g_ascii_strcasecmp(dot, ".ogg"))
-            return make_file_icon(0.45, 0.60, 0.85);
+            return QY_ICON_MUSIC;
         if (!g_ascii_strcasecmp(dot, ".mp4") || !g_ascii_strcasecmp(dot, ".mkv")
             || !g_ascii_strcasecmp(dot, ".avi") || !g_ascii_strcasecmp(dot, ".webm"))
-            return make_file_icon(0.75, 0.50, 0.80);
-        if (!g_ascii_strcasecmp(dot, ".c") || !g_ascii_strcasecmp(dot, ".h")
+            return QY_ICON_VIDEO;
+        if (!g_ascii_strcasecmp(dot, ".zip") || !g_ascii_strcasecmp(dot, ".tar")
+            || !g_ascii_strcasecmp(dot, ".gz") || !g_ascii_strcasecmp(dot, ".bz2")
+            || !g_ascii_strcasecmp(dot, ".xz") || !g_ascii_strcasecmp(dot, ".7z")
+            || !g_ascii_strcasecmp(dot, ".rar"))
+            return QY_ICON_ARCHIVE;
+        if (!g_ascii_strcasecmp(dot, ".txt") || !g_ascii_strcasecmp(dot, ".md")
+            || !g_ascii_strcasecmp(dot, ".c") || !g_ascii_strcasecmp(dot, ".h")
             || !g_ascii_strcasecmp(dot, ".py") || !g_ascii_strcasecmp(dot, ".sh")
-            || !g_ascii_strcasecmp(dot, ".js"))
-            return make_file_icon(0.55, 0.55, 0.68);
+            || !g_ascii_strcasecmp(dot, ".js") || !g_ascii_strcasecmp(dot, ".ini")
+            || !g_ascii_strcasecmp(dot, ".conf") || !g_ascii_strcasecmp(dot, ".desktop")
+            || !g_ascii_strcasecmp(dot, ".log"))
+            return QY_ICON_EDIT;
         if (!g_ascii_strcasecmp(dot, ".pdf"))
-            return make_file_icon(0.90, 0.45, 0.45);
+            return QY_ICON_DOC;
     }
-    return make_file_icon(0.90, 0.90, 0.95);
+    return QY_ICON_FILE;
+}
+
+static GdkPixbuf *load_icon_for(const char *name, gboolean isdir) {
+    return qy_icon_pixbuf(icon_id_for(name, isdir), 48, NULL);
 }
 
 /* 图标视图双击/回车打开 */

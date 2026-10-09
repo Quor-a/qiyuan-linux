@@ -33,6 +33,9 @@ typedef enum {
     QY_ICON_SETUP,     /* 系统安装 */
     QY_ICON_USERS,     /* 用户管理 */
     QY_ICON_NETWORK,   /* 网络管理 */
+    QY_ICON_VIDEO,     /* 视频 */
+    QY_ICON_DOC,       /* PDF/文档 */
+    QY_ICON_FILE,      /* 通用文件 */
     QY_ICON_COUNT
 } QyIconId;
 

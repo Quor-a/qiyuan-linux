@@ -98,7 +98,7 @@ static void refresh_driver_cats(void) {
     GString *s = g_string_new(TR("驱动类别: "));
     for (int i = 0; i < NDRV; i++) {
         int ok = cat_supported(i);
-        g_string_append_printf(s, "%s %s  ", drv_cats[i].name, ok ? "✓" : "-");
+        g_string_append_printf(s, "%s %s  ", drv_cats[i].name, ok ? "√" : "-");
     }
     gchar *txt = g_string_free(s, FALSE);
     gtk_label_set_text(GTK_LABEL(cat_label), txt);

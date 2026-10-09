@@ -267,6 +267,34 @@ static void draw_network(cairo_t *cr, double x, double y, double s) {
     cairo_stroke(cr);
 }
 
+static void draw_video(cairo_t *cr, double x, double y, double s) {
+    qy_rounded_rect(cr, PX(4.8), PY(6.5), PX(14.4), PY(11), PX(2));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(10.5), PY(9.5)); cairo_line_to(cr, PX(15), PY(12)); cairo_line_to(cr, PX(10.5), PY(14.5));
+    cairo_close_path(cr);
+    cairo_stroke(cr);
+}
+
+static void draw_doc(cairo_t *cr, double x, double y, double s) {
+    qy_rounded_rect(cr, PX(6.5), PY(4.5), PX(11), PY(15), PX(2));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(9), PY(9)); cairo_line_to(cr, PX(15), PY(9));
+    cairo_move_to(cr, PX(9), PY(12)); cairo_line_to(cr, PX(15), PY(12));
+    cairo_move_to(cr, PX(9), PY(15)); cairo_line_to(cr, PX(13), PY(15));
+    cairo_stroke(cr);
+}
+
+static void draw_file(cairo_t *cr, double x, double y, double s) {
+    qy_rounded_rect(cr, PX(6.5), PY(4.5), PX(11), PY(15), PX(2));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(14.5), PY(4.5)); cairo_line_to(cr, PX(17.5), PY(7.5));
+    cairo_line_to(cr, PX(14.5), PY(7.5));
+    cairo_close_path(cr);
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(9.5), PY(11.5)); cairo_line_to(cr, PX(15), PY(11.5));
+    cairo_stroke(cr);
+}
+
 #undef SET_LINE
 
 /* ---------- 函数表 ---------- */
@@ -276,6 +304,7 @@ static void (* const drawers[QY_ICON_COUNT])(cairo_t *, double, double, double) 
     draw_lock, draw_search, draw_music, draw_switcher, draw_driver,
     draw_git, draw_welcome, draw_home, draw_settings, draw_monitor,
     draw_setup, draw_users, draw_network,
+    draw_video, draw_doc, draw_file,
 };
 
 /* ---------- 统一分发器 ---------- */

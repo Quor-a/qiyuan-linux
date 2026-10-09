@@ -52,7 +52,7 @@ static const char *arc_type(const char *path)
     return "";
 }
 
-/* ★ g_spawn_command_line_sync 不是 shell：它用 g_shell_parse_argv 分词，
+/* * g_spawn_command_line_sync 不是 shell：它用 g_shell_parse_argv 分词，
  *   管道、重定向、|| 都会被当成普通参数 → 必须显式经 /bin/sh -c 执行。 */
 static gboolean run_shell_sync(const char *cmd, gchar **stdout_out, gboolean capture)
 {

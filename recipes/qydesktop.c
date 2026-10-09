@@ -11,7 +11,7 @@
  *   │Dock│ 壁纸 + 桌面图标          │
  *   │  ▤ │                          │
  *   │ >_ │                          │
- *   │ ⚙  │                          │
+ *   │ 设置 │                          │
  *   │ ▦  │                          │
  *   │ ── │                          │
  *   │ ⊞  │                          │
@@ -39,7 +39,7 @@
 
 #define SCREEN_W  1280
 #define SCREEN_H  800
-#define BAR_H     30
+#define BAR_H     40
 #define DOCK_W    66
 
 /* ---------- 应用注册表 ---------- */
@@ -56,14 +56,15 @@ typedef struct {
 static AppEntry apps[] = {
     { "文件",   "▤", "c-files",    "qyfiles",          "qyfiles",      0, NULL },
     { "终端",   ">_", "c-term",     "weston-terminal",  "weston-termi", 0, NULL },
-    { "设置",   "⚙", "c-settings", "qysettings",       "qysettings",   0, NULL },
+    { "设置",   "set", "c-settings", "qysettings",       "qysettings",   0, NULL },
     { "软件中心", "▦", "c-store",    "qystore",          "qystore",      0, NULL },
     { "监视",   "▦", "c-mon",     "qymon",             "qymon",        0, NULL },
-    { "回收站", "✗", "c-trash",   "qyfiles --trash",   "qyfiles",      0, NULL },
+    { "回收站", "del", "c-trash",   "qyfiles --trash",   "qyfiles",      0, NULL },
 };
 #define NAPPS ((int)(sizeof apps / sizeof apps[0]))
 
 static GtkWidget *taskbar_box   = NULL;
+static GtkWidget *active_title  = NULL;
 static guint     active_id     = 0;   /* 最近点击的任务栏窗口（本地高亮反馈） */
 static long      active_until  = 0;   /* 高亮截止时间戳 */
 static GtkWidget *clock_label  = NULL;
@@ -235,19 +236,19 @@ static void on_task_clicked(GtkButton *btn, gpointer ud) {
     if (f) { fprintf(f, "%u", id); fclose(f); }
 }
 
-/* 按窗口标题关键词映射图标字符 + 主题色类 */
-static void task_glyph(const char *title, const char **glyph, const char **cls) {
-    if (strstr(title, "文件") || strstr(title, "主文件夹")) { *glyph = "▤"; *cls = "c-files"; return; }
-    if (strstr(title, "终端"))     { *glyph = ">_"; *cls = "c-term"; return; }
-    if (strstr(title, "设置"))     { *glyph = "⚙"; *cls = "c-settings"; return; }
-    if (strstr(title, "监视"))     { *glyph = "▦"; *cls = "c-mon"; return; }
-    if (strstr(title, "软件中心")) { *glyph = "▦"; *cls = "c-store"; return; }
-    if (strstr(title, "回收站"))   { *glyph = "✗"; *cls = "c-trash"; return; }
-    if (strstr(title, "文本") || strstr(title, "编辑器")) { *glyph = "✎"; *cls = "c-grid"; return; }
-    if (strstr(title, "图片") || strstr(title, "图像") || strstr(title, "查看")) { *glyph = "▣"; *cls = "c-view"; return; }
-    if (strstr(title, "压缩"))     { *glyph = "▣"; *cls = "c-grid"; return; }
-    if (strstr(title, "Terminal") || strstr(title, "erminal")) { *glyph = ">_"; *cls = "c-term"; return; }
-    *glyph = "▣"; *cls = "c-grid";
+/* 按窗口标题映射统一图标 id（任务 pill 图标） */
+static QyIconId task_icon_id(const char *title) {
+    if (strstr(title, "文件") || strstr(title, "主文件夹")) return QY_ICON_FILES;
+    if (strstr(title, "终端") || strstr(title, "Terminal")) return QY_ICON_TERM;
+    if (strstr(title, "设置"))     return QY_ICON_SETTINGS;
+    if (strstr(title, "监视"))     return QY_ICON_MONITOR;
+    if (strstr(title, "软件中心")) return QY_ICON_STORE;
+    if (strstr(title, "回收站"))   return QY_ICON_TRASH;
+    if (strstr(title, "文本") || strstr(title, "编辑器")) return QY_ICON_EDIT;
+    if (strstr(title, "图片") || strstr(title, "图像") || strstr(title, "查看")) return QY_ICON_IMAGE;
+    if (strstr(title, "压缩"))     return QY_ICON_ARCHIVE;
+    if (strstr(title, "浏览器"))   return QY_ICON_BROWSER;
+    return QY_ICON_FILE;
 }
 
 static guint read_focus(void) {
@@ -270,28 +271,32 @@ static void refresh_taskbar(void) {
     int n = taskbar_parse(wins, 16);
     guint focus = read_focus();
     long now = time(NULL);
+    if (active_title) {
+        const char *t = "";
+        for (int i = 0; i < n; i++)
+            if (wins[i].id == focus) t = wins[i].title;
+        gtk_label_set_text(GTK_LABEL(active_title), t);
+    }
     for (int i = 0; i < n; i++) {
         GtkWidget *b = gtk_button_new();
         gtk_button_set_relief(GTK_BUTTON(b), GTK_RELIEF_NONE);
-        add_class(b, "qy-bar-btn");
-        GtkWidget *hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
+        add_class(b, "qy-task-pill");
+        GtkWidget *hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
         gtk_container_add(GTK_CONTAINER(b), hb);
-        const char *glyph, *cls;
-        task_glyph(wins[i].title, &glyph, &cls);
-        GtkWidget *gl = gtk_label_new(glyph);
-        add_class(gl, "qy-task-glyph");
-        add_class(gl, cls);
-        gtk_box_pack_start(GTK_BOX(hb), gl, FALSE, FALSE, 0);
+        GdkPixbuf *pb = qy_icon_pixbuf(task_icon_id(wins[i].title), 18, NULL);
+        GtkWidget *img = gtk_image_new_from_pixbuf(pb);
+        g_object_unref(pb);
+        gtk_box_pack_start(GTK_BOX(hb), img, FALSE, FALSE, 0);
         GtkWidget *tl = gtk_label_new(wins[i].title);
         add_class(tl, "qy-task-label");
         gtk_box_pack_start(GTK_BOX(hb), tl, FALSE, FALSE, 0);
         gtk_widget_set_tooltip_text(b, wins[i].title);
         if ((wins[i].id == active_id && now < active_until) ||
             wins[i].id == focus)
-            add_class(b, "qy-bar-btn-active");
+            add_class(b, "qy-task-pill-active");
         g_signal_connect(b, "clicked", G_CALLBACK(on_task_clicked),
                          GUINT_TO_POINTER(wins[i].id));
-        gtk_box_pack_start(GTK_BOX(taskbar_box), b, FALSE, FALSE, 2);
+        gtk_box_pack_start(GTK_BOX(taskbar_box), b, FALSE, FALSE, 6);
         gtk_widget_show_all(b);
     }
 }
@@ -301,14 +306,27 @@ static gboolean taskbar_tick(gpointer ud) { refresh_taskbar(); return G_SOURCE_C
 /* ---------- Dock ---------- */
 static void dock_click(GtkButton *btn, gpointer ud) { launch_cmd(((AppEntry *)ud)->cmdline); }
 
+/* Dock 图标：cairo 线稿（与桌面/任务栏同源） */
+static gboolean dock_icon_draw_cb(GtkWidget *w, cairo_t *cr, gpointer ud) {
+    AppEntry *a = (AppEntry *)ud;
+    GtkAllocation al;
+    gtk_widget_get_allocation(w, &al);
+    double size = al.width < al.height ? al.width : al.height;
+    double x = (al.width - size) / 2.0;
+    double y = (al.height - size) / 2.0;
+    qy_icon_draw(cr, task_icon_id(a->name), x, y, size, FALSE, NULL);
+    return FALSE;
+}
+
 static GtkWidget *dock_icon(AppEntry *a) {
     GtkWidget *btn = gtk_button_new();
     gtk_button_set_relief(GTK_BUTTON(btn), GTK_RELIEF_NONE);
     add_class(btn, "qy-dock-icon");
-    add_class(btn, a->css);
     GtkWidget *v = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_container_add(GTK_CONTAINER(btn), v);
-    GtkWidget *ic = gtk_label_new(a->glyph);
+    GtkWidget *ic = gtk_drawing_area_new();
+    gtk_widget_set_size_request(ic, 26, 26);
+    g_signal_connect(ic, "draw", G_CALLBACK(dock_icon_draw_cb), a);
     gtk_widget_set_halign(ic, GTK_ALIGN_CENTER);
     gtk_box_pack_start(GTK_BOX(v), ic, TRUE, TRUE, 0);
     GtkWidget *dot = gtk_label_new("●");
@@ -333,16 +351,6 @@ static gboolean dock_tick(gpointer ud) {
 
 /* ---------- 桌面图标 ---------- */
 /* 字符 glyph → 统一图标 id（桌面图标接入点） */
-static QyIconId glyph_icon_id(const char *glyph) {
-    if (!glyph) return QY_ICON_FILES;
-    if (strcmp(glyph, "✗") == 0) return QY_ICON_TRASH;
-    if (strcmp(glyph, "⚙") == 0) return QY_ICON_SETTINGS;
-    if (strcmp(glyph, "▣") == 0) return QY_ICON_HOME;
-    if (strcmp(glyph, "▦") == 0) return QY_ICON_STORE;
-    if (strcmp(glyph, ">_") == 0) return QY_ICON_TERM;
-    return QY_ICON_FILES;
-}
-
 static gboolean desktop_icon_draw_cb(GtkWidget *w, cairo_t *cr, gpointer ud) {
     QyIconId id = (QyIconId)GPOINTER_TO_INT(ud);
     GtkAllocation al;
@@ -358,7 +366,7 @@ static void desktop_icon_click(GtkButton *btn, gpointer ud) {
     launch_cmd((const char *)ud);
 }
 
-static GtkWidget *desktop_icon(const char *glyph, const char *css,
+static GtkWidget *desktop_icon(QyIconId iid, const char *css,
                                const char *label, const char *cmdline) {
     GtkWidget *btn = gtk_button_new();
     gtk_button_set_relief(GTK_BUTTON(btn), GTK_RELIEF_NONE);
@@ -374,7 +382,7 @@ static GtkWidget *desktop_icon(const char *glyph, const char *css,
     gtk_widget_set_size_request(circle, 44, 44);
     GtkWidget *da = gtk_drawing_area_new();
     g_signal_connect(da, "draw", G_CALLBACK(desktop_icon_draw_cb),
-                     GINT_TO_POINTER(glyph_icon_id(glyph)));
+                     GINT_TO_POINTER(iid));
     gtk_container_add(GTK_CONTAINER(circle), da);
 
     GtkWidget *lb = gtk_label_new(label);
@@ -398,7 +406,7 @@ static GdkPixbuf *gen_wallpaper(guint seed) {
     /* 基底垂直渐变 */
     cairo_pattern_t *pat = cairo_pattern_create_linear(0, 0, 0, h);
     cairo_pattern_add_color_stop_rgb(pat, 0, 0.045 + (seed % 2) * 0.015, 0.058, 0.13);
-    cairo_pattern_add_color_stop_rgb(pat, 1, 0.12 + (seed % 3) * 0.02, 0.055 + (seed % 2) * 0.02, 0.155);
+    cairo_pattern_add_color_stop_rgb(pat, 1, 0.05 + (seed % 3) * 0.015, 0.09 + (seed % 2) * 0.02, 0.17);
     cairo_set_source(cr, pat);
     cairo_paint(cr);
     cairo_pattern_destroy(pat);
@@ -410,18 +418,6 @@ static GdkPixbuf *gen_wallpaper(guint seed) {
         cairo_pattern_t *rg = cairo_pattern_create_radial(cx, cy, 10, cx, cy, rad);
         cairo_pattern_add_color_stop_rgba(rg, 0, 0.91, 0.33, 0.13, 0.26);
         cairo_pattern_add_color_stop_rgba(rg, 1, 0.91, 0.33, 0.13, 0);
-        cairo_set_source(cr, rg);
-        cairo_arc(cr, cx, cy, rad, 0, 2 * G_PI);
-        cairo_fill(cr);
-        cairo_pattern_destroy(rg);
-    }
-    /* 紫色柔光圆斑 */
-    for (int i = 0; i < 6; i++) {
-        double cx = rand() % w, cy = rand() % h;
-        double rad = 50 + rand() % 200;
-        cairo_pattern_t *rg = cairo_pattern_create_radial(cx, cy, 10, cx, cy, rad);
-        cairo_pattern_add_color_stop_rgba(rg, 0, 0.47, 0.13, 0.44, 0.24);
-        cairo_pattern_add_color_stop_rgba(rg, 1, 0.47, 0.13, 0.44, 0);
         cairo_set_source(cr, rg);
         cairo_arc(cr, cx, cy, rad, 0, 2 * G_PI);
         cairo_fill(cr);
@@ -632,7 +628,7 @@ static gboolean desk_draw(GtkWidget *w, cairo_t *cr, gpointer ud) {
     } else {
         cairo_pattern_t *pat = cairo_pattern_create_linear(0, 0, 0, height);
         cairo_pattern_add_color_stop_rgb(pat, 0, 0.04, 0.06, 0.12);
-        cairo_pattern_add_color_stop_rgb(pat, 1, 0.11, 0.07, 0.14);
+        cairo_pattern_add_color_stop_rgb(pat, 1, 0.06, 0.09, 0.16);
         cairo_set_source(cr, pat);
         cairo_paint(cr);
         cairo_pattern_destroy(pat);
@@ -970,6 +966,18 @@ static gboolean auto_set_volume(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* 品牌 logo：玻璃 tile + 启元星线稿（cairo，禁字符） */
+static gboolean app_logo_draw_cb(GtkWidget *w, cairo_t *cr, gpointer ud) {
+    (void)ud;
+    GtkAllocation al;
+    gtk_widget_get_allocation(w, &al);
+    double size = al.width < al.height ? al.width : al.height;
+    double x = (al.width - size) / 2.0;
+    double y = (al.height - size) / 2.0;
+    qy_icon_tile(cr, QY_ICON_WELCOME, x, y, size, 8, NULL, NULL);
+    return FALSE;
+}
+
 static void build_bar(void) {
     GtkWidget *bar = gtk_event_box_new();
     add_class(bar, "qy-bar");
@@ -977,36 +985,40 @@ static void build_bar(void) {
     GtkWidget *hbox = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
     gtk_container_add(GTK_CONTAINER(bar), hbox);
 
-    /* 左侧应用菜单按钮（品牌 Logo） */
+    /* 左区（固定 240px）：品牌 logo 玻璃 tile + 当前应用标题 */
+    GtkWidget *left = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
+    gtk_widget_set_size_request(left, 240, -1);
     GtkWidget *app_btn = gtk_button_new();
     gtk_button_set_relief(GTK_BUTTON(app_btn), GTK_RELIEF_NONE);
     add_class(app_btn, "qy-logo-btn");
-    GtkWidget *app_hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
-    gtk_container_add(GTK_CONTAINER(app_btn), app_hb);
-    GtkWidget *app_txt = gtk_label_new("启元");
-    add_class(app_txt, "qy-logo-text");
-    gtk_box_pack_start(GTK_BOX(app_hb), app_txt, FALSE, FALSE, 0);
+    gtk_widget_set_size_request(app_btn, 32, 32);
+    GtkWidget *app_da = gtk_drawing_area_new();
+    g_signal_connect(app_da, "draw", G_CALLBACK(app_logo_draw_cb), NULL);
+    gtk_container_add(GTK_CONTAINER(app_btn), app_da);
     g_signal_connect(app_btn, "clicked", G_CALLBACK(on_appmenu_clicked), NULL);
     gtk_widget_set_tooltip_text(app_btn, TR("显示应用"));
-    gtk_box_pack_start(GTK_BOX(hbox), app_btn, FALSE, FALSE, 6);
+    gtk_box_pack_start(GTK_BOX(left), app_btn, FALSE, FALSE, 0);
+    active_title = gtk_label_new(NULL);
+    add_class(active_title, "qy-active-title");
+    gtk_box_pack_start(GTK_BOX(left), active_title, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(hbox), left, FALSE, FALSE, 8);
 
-    /* 窗口任务栏（中部靠左） */
-    taskbar_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
-    gtk_box_pack_start(GTK_BOX(hbox), taskbar_box, FALSE, FALSE, 8);
+    /* 窗口任务栏（弹性占中靠左，pill 按钮） */
+    taskbar_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+    gtk_box_pack_start(GTK_BOX(hbox), taskbar_box, TRUE, TRUE, 0);
 
-    /* 居中时钟（点击弹出日历） */
+    /* 右区（状态）：时钟并入最左，资源监视 + 通知 + 托盘 */
+    GtkWidget *st = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
     clock_btn = gtk_button_new();
     gtk_button_set_relief(GTK_BUTTON(clock_btn), GTK_RELIEF_NONE);
     add_class(clock_btn, "qy-clock");
     clock_label = gtk_label_new("");
     gtk_container_add(GTK_CONTAINER(clock_btn), clock_label);
-    gtk_box_set_center_widget(GTK_BOX(hbox), clock_btn);
     g_signal_connect(clock_btn, "clicked", G_CALLBACK(on_clock_clicked), NULL);
+    gtk_box_pack_start(GTK_BOX(st), clock_btn, FALSE, FALSE, 0);
     tick(clock_label);
     g_timeout_add_seconds(1, tick, clock_label);
 
-    /* 右侧状态区 */
-    GtkWidget *st = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
     GtkWidget *mon_hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 3);
     gtk_widget_set_size_request(mon_hb, 87, 8);
     mon_draw = gtk_drawing_area_new();
@@ -1021,21 +1033,6 @@ static void build_bar(void) {
     add_class(mon_label, "qy-mon-widget");
     gtk_box_pack_start(GTK_BOX(st), mon_label, FALSE, FALSE, 6);
     g_timeout_add_seconds(2, mon_tick, mon_label);
-    /* 分辨率快捷切换（写 weston.ini mode=，start-weston.sh 消费） */
-    GtkWidget *res_btn = gtk_button_new();
-    gtk_button_set_relief(GTK_BUTTON(res_btn), GTK_RELIEF_NONE);
-    add_class(res_btn, "qy-status-btn");
-    res_label = gtk_label_new("1280x800");
-    gtk_container_add(GTK_CONTAINER(res_btn), res_label);
-    g_signal_connect(res_btn, "clicked", G_CALLBACK(on_res_btn_clicked), NULL);
-    gtk_widget_set_tooltip_text(res_btn, TR("分辨率"));
-    gtk_box_pack_start(GTK_BOX(st), res_btn, FALSE, FALSE, 0);
-    GtkWidget *power = gtk_button_new_with_label("⏻");
-    gtk_button_set_relief(GTK_BUTTON(power), GTK_RELIEF_NONE);
-    add_class(power, "qy-status-btn");
-    g_signal_connect(power, "clicked", G_CALLBACK(on_power_clicked), NULL);
-    gtk_widget_set_tooltip_text(power, TR("系统"));
-    gtk_box_pack_start(GTK_BOX(st), power, FALSE, FALSE, 0);
 
     /* 通知显示（可点击查看历史） */
     GtkWidget *notif_eb = gtk_event_box_new();
@@ -1159,19 +1156,19 @@ static void build_desktop(void) {
     /* 桌面图标（左上竖排） */
     int x = 110, y = 60, dy = 110;
     gtk_fixed_put(GTK_FIXED(desktop_fixed),
-                  desktop_icon("▣", "c-home", TR("主文件夹"), "qyfiles"), x, y);
+                  desktop_icon(QY_ICON_HOME, "c-home", TR("主文件夹"), "qyfiles"), x, y);
     gtk_fixed_put(GTK_FIXED(desktop_fixed),
-                  desktop_icon("✗", "c-trash", TR("回收站"), "qyfiles --trash"), x, y + dy);
+                  desktop_icon(QY_ICON_TRASH, "c-trash", TR("回收站"), "qyfiles --trash"), x, y + dy);
     gtk_fixed_put(GTK_FIXED(desktop_fixed),
-                  desktop_icon("▦", "c-store", TR("软件中心"), "qystore"), x, y + dy * 2);
+                  desktop_icon(QY_ICON_STORE, "c-store", TR("软件中心"), "qystore"), x, y + dy * 2);
     gtk_fixed_put(GTK_FIXED(desktop_fixed),
-                  desktop_icon(">_", "c-term", TR("终端"), "weston-terminal"), x, y + dy * 3);
+                  desktop_icon(QY_ICON_TERM, "c-term", TR("终端"), "weston-terminal"), x, y + dy * 3);
     gtk_fixed_put(GTK_FIXED(desktop_fixed),
-                  desktop_icon("⚙", "c-settings", TR("设置"), "qysettings"), x, y + dy * 4);
+                  desktop_icon(QY_ICON_SETTINGS, "c-settings", TR("设置"), "qysettings"), x, y + dy * 4);
     gtk_fixed_put(GTK_FIXED(desktop_fixed),
-                  desktop_icon("▦", "c-mon", TR("系统监视"), "qymon"), x, y + dy * 5);
+                  desktop_icon(QY_ICON_MONITOR, "c-mon", TR("系统监视"), "qymon"), x, y + dy * 5);
     gtk_fixed_put(GTK_FIXED(desktop_fixed),
-                  desktop_icon("▣", "c-view", TR("图片查看"), "qyview"), x, y + dy * 6);
+                  desktop_icon(QY_ICON_IMAGE, "c-view", TR("图片查看"), "qyview"), x, y + dy * 6);
 
     gtk_widget_show_all(win);
 }
