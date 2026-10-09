@@ -2262,3 +2262,12 @@ ngs-about-v2.png`。
 - **实测**：qysettings/qyfiles 编译 rc=0
 
 构建产物：`qydesktop 0.1.0-218`。
+
+### 截图模式：窗口/区域（v0.1.0-219，2026-10 实测）
+
+针对快捷键审计"Alt+PrtSc 当前窗口截图、Shift+PrtSc 区域截图 ❌"：
+- **qyshot 支持 `--window` / `--region` 参数**：X11 下有 xdotool/import 时用 ImageMagick 窗口/区域截图；Wayland 无窗口/区域选择协议（weston 不提供），自动回退全屏并打印 `QYSHOTMODE:` 日志
+- **weston.ini 新增绑定**：`Alt+PrtSc → qyshot --window`、`Shift+PrtSc → qyshot --region`（全局快捷键 15 个）
+- **实测**：`QYSHOTMODE: --window 回退全屏（Wayland 无窗口/区域选择协议）`，退出码 0
+
+构建产物：`qydesktop 0.1.0-219`。

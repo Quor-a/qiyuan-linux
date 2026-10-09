@@ -250,7 +250,39 @@ static gboolean on_capture_wrap(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* 模式截图: --window（当前窗口）/ --region（区域选择）
+ * X11 有 import/xdotool 时用 ImageMagick；否则回退全屏截图。
+ * Wayland 无窗口/区域选择协议，回退全屏并打印提示。 */
+static int capture_mode_screenshot(const char *mode) {
+    const char *wld = g_getenv("WAYLAND_DISPLAY");
+    const char *disp = g_getenv("QYSHOT_DISPLAY");
+    if (!disp) disp = ":0";
+    const char *out = !strcmp(mode, "--window") ? "/tmp/qyshot-window.png" : "/tmp/qyshot-region.png";
+    char cmd[768];
+    const char *xdo = NULL, *imp = NULL;
+    if (!wld) {
+        xdo = g_find_program_in_path("xdotool");
+        imp = g_find_program_in_path("import");
+    }
+    if (!strcmp(mode, "--window") && xdo && imp) {
+        g_snprintf(cmd, sizeof cmd, "import -window $(%s getactivewindow) %s 2>/dev/null", xdo, out);
+    } else if (!strcmp(mode, "--region") && imp) {
+        g_snprintf(cmd, sizeof cmd, "%s %s 2>/dev/null", imp, out);
+    } else {
+        const char *bmp = !strcmp(mode, "--window") ? "/tmp/qyshot-window.bmp" : "/tmp/qyshot-region.bmp";
+        g_printerr("QYSHOTMODE: %s 回退全屏（%s）\n", mode,
+                   wld ? "Wayland 无窗口/区域选择协议" : "无 xdotool/import");
+        g_snprintf(cmd, sizeof cmd, "DISPLAY=%s /usr/bin/qyshot-capture %s 2>/dev/null", disp, bmp);
+        return system(cmd) == 0 ? 0 : 1;
+    }
+    g_printerr("QYSHOTMODE: %s -> %s\n", mode, cmd);
+    return system(cmd) == 0 ? 0 : 1;
+}
+
 int main(int argc, char **argv) {
+    if (argc > 1 && (!strcmp(argv[1], "--window") || !strcmp(argv[1], "--region"))) {
+        return capture_mode_screenshot(argv[1]);
+    }
     GtkApplication *app = gtk_application_new("com.qiyuan.shot", G_APPLICATION_NON_UNIQUE);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
     char *own_argv[2] = { argv[0], NULL };
