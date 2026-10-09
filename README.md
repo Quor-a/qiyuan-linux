@@ -2208,3 +2208,10 @@ ngs-about-v2.png`。
 - 快捷键总计：qyfiles 现在 13 个加速键（Ctrl+A 加入）
 
 构建产物：`qydesktop 0.1.0-212`。
+
+### 系统设置 Ctrl+F 聚焦搜索（v0.1.0-213，2026-10 实测）
+
+- **Ctrl+F 聚焦设置搜索框**（在 Ctrl+1~9 / Ctrl+W 基础上新增），共 11 个加速键
+- **实测**：qysettings 编译 rc=0
+
+构建产物：`qydesktop 0.1.0-213`。
