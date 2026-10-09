@@ -2291,3 +2291,14 @@ ngs-about-v2.png`。
 - 实测：qydesktop/qyappmenu 编译 rc=0
 
 构建产物：`qydesktop 0.1.0-221`。
+
+### UI 改版第 2 轮：全仓去 emoji + 通知铃铛 cairo 化（v0.1.0-222，2026-10 实测）
+
+集群专家共识落地（去 AI 感 · 禁 emoji 图标）：
+- **全仓 emoji 清零**：qyappmenu（🌐📷📋🔒🔍🎵💾👋🗑→◎◉≡◈◯♪■✦✗）、qybrowser 书签 📑→☆、qymedia 🎵→♪、qysearch 📄🔍→▤◯、qysettings 设备前缀 🖱🔌🖥→◉●▢、qydesktop 回收站/通知 🗑🔔→✗/●
+- **通知铃铛 cairo 线稿**：bell_draw_cb（钟形+底部小圆+顶部小柄），替代 🔔，通知标题保留动态显示
+- **CSS 色板令牌**：新增 @define-color qy_bg/qy_panel/qy_panel_alt/qy_border/qy_fg/qy_fg2/qy_accent/qy_accent_hover/qy_ok（v3.1）
+- 实测：qydesktop/qyappmenu/qybrowser/qymedia/qysearch/qysettings 全部编译 rc=0
+- 截图：docs/screenshots/ui-v3-tray.png（深色玻璃拟态顶栏 + 托盘线稿图标）
+
+构建产物：`qydesktop 0.1.0-222`。

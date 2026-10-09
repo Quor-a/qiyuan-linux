@@ -2576,7 +2576,7 @@ static void activate(GtkApplication *app, gpointer ud) {
                     char *p = line + 8;
                     char *nl = strchr(p, '\n');
                     if (nl) *nl = 0;
-                    gchar *txt = g_strdup_printf("🖱 %s", p);
+                    gchar *txt = g_strdup_printf("◉ %s", p);
                     GtkWidget *il = gtk_label_new(txt);
                     gtk_widget_set_halign(il, GTK_ALIGN_START);
                     gtk_box_pack_start(GTK_BOX(dev_list), il, FALSE, FALSE, 0);
@@ -2614,7 +2614,7 @@ static void activate(GtkApplication *app, gpointer ud) {
                     fclose(pf);
                 }
                 if (vendor[0] || product[0]) {
-                    gchar *txt = g_strdup_printf("🔌 %s %s (%s)", vendor,
+                    gchar *txt = g_strdup_printf("● %s %s (%s)", vendor,
                                                  product, de->d_name);
                     GtkWidget *ul = gtk_label_new(txt);
                     gtk_widget_set_halign(ul, GTK_ALIGN_START);
@@ -2910,7 +2910,7 @@ static void activate(GtkApplication *app, gpointer ud) {
             struct dirent *de;
             while ((de = readdir(btd))) {
                 if (strncmp(de->d_name, "hci", 3) == 0) {
-                    gchar *txt = g_strdup_printf("🖥 %s", de->d_name);
+                    gchar *txt = g_strdup_printf("▢ %s", de->d_name);
                     GtkWidget *bl = gtk_label_new(txt);
                     gtk_widget_set_halign(bl, GTK_ALIGN_START);
                     gtk_box_pack_start(GTK_BOX(vbt), bl, FALSE, FALSE, 0);

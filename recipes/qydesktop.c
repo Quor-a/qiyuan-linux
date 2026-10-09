@@ -58,7 +58,7 @@ static AppEntry apps[] = {
     { "设置",   "⚙", "c-settings", "qysettings",       "qysettings",   0, NULL },
     { "软件中心", "▦", "c-store",    "qystore",          "qystore",      0, NULL },
     { "监视",   "▦", "c-mon",     "qymon",             "qymon",        0, NULL },
-    { "回收站", "🗑", "c-trash",   "qyfiles --trash",   "qyfiles",      0, NULL },
+    { "回收站", "✗", "c-trash",   "qyfiles --trash",   "qyfiles",      0, NULL },
 };
 #define NAPPS ((int)(sizeof apps / sizeof apps[0]))
 
@@ -241,7 +241,7 @@ static void task_glyph(const char *title, const char **glyph, const char **cls) 
     if (strstr(title, "设置"))     { *glyph = "⚙"; *cls = "c-settings"; return; }
     if (strstr(title, "监视"))     { *glyph = "▦"; *cls = "c-mon"; return; }
     if (strstr(title, "软件中心")) { *glyph = "▦"; *cls = "c-store"; return; }
-    if (strstr(title, "回收站"))   { *glyph = "🗑"; *cls = "c-trash"; return; }
+    if (strstr(title, "回收站"))   { *glyph = "✗"; *cls = "c-trash"; return; }
     if (strstr(title, "文本") || strstr(title, "编辑器")) { *glyph = "✎"; *cls = "c-grid"; return; }
     if (strstr(title, "图片") || strstr(title, "图像") || strstr(title, "查看")) { *glyph = "▣"; *cls = "c-view"; return; }
     if (strstr(title, "压缩"))     { *glyph = "▣"; *cls = "c-grid"; return; }
@@ -719,7 +719,7 @@ static gboolean notif_tick(gpointer ud) {
             char *bar = strchr(content, '|');
             if (bar) {
                 *bar = 0;
-                gchar *title = g_strdup_printf("🔔 %s", content);
+                gchar *title = g_strdup_printf("● %s", content);
                 gtk_label_set_text(GTK_LABEL(notif_label), title);
                 gtk_widget_set_tooltip_text(notif_label, bar + 1);
                 g_free(title);
@@ -729,7 +729,7 @@ static gboolean notif_tick(gpointer ud) {
         }
         g_free(content);
     } else {
-        gtk_label_set_text(GTK_LABEL(notif_label), "🔔");
+        gtk_label_set_text(GTK_LABEL(notif_label), "");
     }
     return G_SOURCE_CONTINUE;
 }
@@ -815,6 +815,26 @@ static gboolean tray_draw_cb(GtkWidget *w, cairo_t *cr, gpointer ud) {
         break;
     }
     }
+    return FALSE;
+}
+
+/* 通知铃铛 cairo 线稿（替代 🔔 emoji） */
+static gboolean bell_draw_cb(GtkWidget *w, cairo_t *cr, gpointer ud) {
+    double cx = gtk_widget_get_allocated_width(w) / 2.0;
+    double cy = gtk_widget_get_allocated_height(w) / 2.0;
+    cairo_set_source_rgb(cr, 0.79, 0.80, 0.83);
+    cairo_set_line_width(cr, 1.6);
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+    cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);
+    cairo_move_to(cr, cx - 5, cy - 1);
+    cairo_curve_to(cr, cx - 5, cy - 5.5, cx - 3, cy - 7.5, cx, cy - 7.5);
+    cairo_curve_to(cr, cx + 3, cy - 7.5, cx + 5, cy - 5.5, cx + 5, cy - 1);
+    cairo_line_to(cr, cx + 6.2, cy + 2);
+    cairo_line_to(cr, cx - 6.2, cy + 2);
+    cairo_close_path(cr);
+    cairo_stroke(cr);
+    cairo_arc(cr, cx, cy + 5, 1.4, 0, 2 * G_PI); cairo_stroke(cr);
+    cairo_move_to(cr, cx - 1.2, cy - 7.8); cairo_line_to(cr, cx + 1.2, cy - 7.8); cairo_stroke(cr);
     return FALSE;
 }
 
@@ -986,8 +1006,15 @@ static void build_bar(void) {
     gtk_widget_add_events(notif_eb, GDK_BUTTON_PRESS_MASK);
     g_signal_connect(notif_eb, "button-press-event", G_CALLBACK(on_notif_clicked), NULL);
     gtk_widget_set_tooltip_text(notif_eb, TR("查看通知"));
-    notif_label = gtk_label_new("🔔");
-    gtk_container_add(GTK_CONTAINER(notif_eb), notif_label);
+    /* 铃铛 cairo 线稿 + 通知标题 label（有通知时显示标题） */
+    GtkWidget *notif_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 2);
+    GtkWidget *bell_da = gtk_drawing_area_new();
+    gtk_widget_set_size_request(bell_da, 16, 16);
+    g_signal_connect(bell_da, "draw", G_CALLBACK(bell_draw_cb), NULL);
+    gtk_container_add(GTK_CONTAINER(notif_box), bell_da);
+    notif_label = gtk_label_new(NULL);
+    gtk_container_add(GTK_CONTAINER(notif_box), notif_label);
+    gtk_container_add(GTK_CONTAINER(notif_eb), notif_box);
     gtk_box_pack_start(GTK_BOX(st), notif_eb, FALSE, FALSE, 0);
 
     /* 系统托盘: 网络/声音/剪贴板/截图/锁屏（cairo 线稿图标） */
@@ -1097,7 +1124,7 @@ static void build_desktop(void) {
     gtk_fixed_put(GTK_FIXED(desktop_fixed),
                   desktop_icon("▣", "c-home", TR("主文件夹"), "qyfiles"), x, y);
     gtk_fixed_put(GTK_FIXED(desktop_fixed),
-                  desktop_icon("🗑", "c-trash", TR("回收站"), "qyfiles --trash"), x, y + dy);
+                  desktop_icon("✗", "c-trash", TR("回收站"), "qyfiles --trash"), x, y + dy);
     gtk_fixed_put(GTK_FIXED(desktop_fixed),
                   desktop_icon("▦", "c-store", TR("软件中心"), "qystore"), x, y + dy * 2);
     gtk_fixed_put(GTK_FIXED(desktop_fixed),

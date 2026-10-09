@@ -1,8 +1,20 @@
-/* qytheme.css — 启元桌面主题 v3.0
- * 设计方向：暖夜深色玻璃拟态
- * 底色 #0d1117 / 面板 #141b24 / 控件 #1b2430 / 强调橙 #E95420 / 青蓝 #0A7EA4
+/* qytheme.css — 启元桌面主题 v3.1
+ * 设计方向：暖夜深色玻璃拟态（Industrial Dark）
+ * 色板令牌（GTK @define-color，供后续引用）：
+ *   qy_bg #0d1117 · qy_panel #1b2430 · qy_panel_alt #141b24
+ *   qy_border rgba(255,255,255,0.08) · qy_fg #e6e9ef · qy_fg2 #9aa3b2
+ *   qy_accent #E95420 · qy_accent_hover #ff6b3d · qy_ok #7cfc9a
  * 供 qydesktop/qyappmenu 加载: /usr/share/themes/qiyuan/gtk-3.0/gtk.css
  */
+@define-color qy_bg #0d1117;
+@define-color qy_panel #1b2430;
+@define-color qy_panel_alt #141b24;
+@define-color qy_border rgba(255,255,255,0.08);
+@define-color qy_fg #e6e9ef;
+@define-color qy_fg2 #9aa3b2;
+@define-color qy_accent #E95420;
+@define-color qy_accent_hover #ff6b3d;
+@define-color qy_ok #7cfc9a;
 
 /* 加载本主题的应用进程内，所有窗口默认深色底 */
 window {

@@ -150,7 +150,7 @@ static void build_ui(void) {
     gtk_widget_set_margin_bottom(vbox, 10);
     gtk_container_add(GTK_CONTAINER(win), vbox);
 
-    GtkWidget *title = gtk_label_new("🎵");
+    GtkWidget *title = gtk_label_new("♪");
     gtk_widget_set_halign(title, GTK_ALIGN_CENTER);
     gtk_box_pack_start(GTK_BOX(vbox), title, FALSE, FALSE, 0);
 

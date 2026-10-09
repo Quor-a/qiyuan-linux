@@ -103,7 +103,7 @@ static void do_search(const char *q) {
                 if (e->d_name[0] == '.') continue;
                 if (strcasestr(e->d_name, q)) {
                     gchar *cmd = g_strdup_printf("qyfiles %s", dirs[di]);
-                    add_result_row("📄", e->d_name, cmd);
+                    add_result_row("▤", e->d_name, cmd);
                     g_free(cmd);
                     n++; fn++;
                 }
@@ -148,7 +148,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_container_add(GTK_CONTAINER(win), vbox);
 
     GtkWidget *row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
-    GtkWidget *lbl = gtk_label_new("🔍");
+    GtkWidget *lbl = gtk_label_new("◯");
     search_entry = gtk_entry_new();
     gtk_entry_set_placeholder_text(GTK_ENTRY(search_entry), TR("搜索应用或程序..."));
     g_signal_connect(search_entry, "changed", G_CALLBACK(on_search_changed), NULL);
