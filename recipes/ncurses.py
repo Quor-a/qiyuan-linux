@@ -42,10 +42,14 @@ def package(ctx):
     pc = os.path.join(ctx.destdir, "usr", "lib", "pkgconfig")
     os.makedirs(pc, exist_ok=True)
     for name, lib in (("tinfo.pc", "tinfow"), ("termcap.pc", "tinfow"),
-                      ("ncursesw.pc", "ncursesw")):
+                      ("ncursesw.pc", "ncursesw -ltinfow")):
+        # Cflags 不写 -I：头就装在标准位置，写死反而让 pkgconf 在
+        # 交叉构建时把宿主 include 混进来（PKG_CONFIG_SYSROOT_DIR
+        # 只对 pc 里的路径生效，硬编码 /usr/include 会以 sysroot 前缀
+        # 指到错误的那棵树上）。
         with open(os.path.join(pc, name), "w") as f:
             f.write(f"Name: {name[:-3]}\nDescription: ncurses shim\n"
-                    f"Version: {version}\nLibs: -l{lib}\nCflags: -I/usr/include\n")
+                    f"Version: {version}\nLibs: -l{lib}\nCflags: \n")
     # --enable-widec 下 termlib 装出来的是 libtinfow.so.6，但大量上游（gawk、bash、
     # less 等）链接的是非 wide 的 libtinfo.so.6。ldconfig 按 SONAME 建索引，用符号
     # 链接指过去不会被收录，运行期必然报找不到库。这里复制一份并把 SONAME 改成

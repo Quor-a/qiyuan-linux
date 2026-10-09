@@ -474,22 +474,27 @@ class Builder:
         只装 `.pc` 到 `usr/share/pkgconfig`，此时 sysroot 里根本没有 `usr/lib`，
         若把这段逻辑挂在 `if lib.exists()` 里，libXau 这类包的 configure 就会
         报 `Package requirements (xproto) were not met` —— 实际 .pc 就在 sysroot 里。
+
+        交叉编译时必须用**目标** sysroot：用宿主 sysroot 会让 pkgconf 的
+        PKG_CONFIG_SYSROOT_DIR 指向 x86_64 那棵树，编出的 -I 直接指向
+        宿主 glibc 头（报 gnu/stubs-32.h 之类错架构错误）。
         """
         import platform as _pf
-        lib = self.sysroot / "usr" / "lib"
+        sr = self.target_sysroot if self.cross is not None else self.sysroot
+        lib = sr / "usr" / "lib"
         cands = [
             lib / "pkgconfig",
             lib / (_pf.machine() + "-linux-gnu") / "pkgconfig",
             lib / "pkgconfig" / "..",  # 占位保持顺序稳定
-            self.sysroot / "usr" / "share" / "pkgconfig",
-            self.sysroot / "lib" / "pkgconfig",
+            sr / "usr" / "share" / "pkgconfig",
+            sr / "lib" / "pkgconfig",
         ]
         paths = [str(p) for p in cands if p.is_dir()]
         if paths:
             existing = ctx.env_extra.get("PKG_CONFIG_PATH")
             joined = ":".join(paths + ([existing] if existing else []))
             ctx.env("PKG_CONFIG_PATH", joined)
-            ctx.env("PKG_CONFIG_SYSROOT_DIR", f"{self.sysroot}")
+            ctx.env("PKG_CONFIG_SYSROOT_DIR", f"{sr}")
 
     def _build_phase(self, rec, ctx: BuildContext) -> None:
         util.log("step", "构建阶段")

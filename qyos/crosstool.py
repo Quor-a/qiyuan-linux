@@ -39,6 +39,7 @@
 from __future__ import annotations
 
 import os
+import shutil
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -221,10 +222,15 @@ class CrossEnv:
 
         if self.sysroot:
             e["SYSROOT"] = str(self.sysroot)
-            # pkg-config 必须用目标机的。用宿主 pkg-config 会返回
-            # 构建机的库路径，编出的包链接到 x86_64 的库，
-            # 装到设备上直接"找不到共享库"
-            e["PKG_CONFIG"] = str(self.sysroot / "usr" / "bin" / "pkg-config")
+            # pkg-config 必须用目标机的库路径。宿主 pkgconf + 下面这两个
+            # 变量就够了：PKG_CONFIG_SYSROOT_DIR 让宿主 pkgconf 把
+            # -I/-L 自动加上 sysroot 前缀，PKG_CONFIG_LIBDIR 限定它
+            # 只在 sysroot 里找 .pc（顺手排除宿主库）。
+            # 不要在 sysroot 里塞 shell 包装器 —— 那是构建产物目录，
+            # 会被打包/回滚逻辑当成系统文件，清理时就消失了。
+            host_pc = shutil.which("pkgconf") or shutil.which("pkg-config")
+            if host_pc:
+                e["PKG_CONFIG"] = host_pc
             e["PKG_CONFIG_SYSROOT_DIR"] = str(self.sysroot)
             e["PKG_CONFIG_LIBDIR"] = ":".join([
                 str(self.sysroot / "usr" / "lib" / "pkgconfig"),

@@ -32,7 +32,13 @@ def build(ctx):
     # GitHub tag 源码无预生成 configure，须先 autoreconf
     ctx.run("autoreconf -f -i -s")
     ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --disable-static")
-    ctx.run("make")
+    # 交叉编译时 magic.mgc 需要本机 file 生成（上游硬性要求：
+    # "Cannot use the installed version of file to cross-compile"）。
+    # 交给 make 时以 FILE_COMPILE 指到宿主 file。
+    if ctx.cross is not None:
+        ctx.run("make FILE_COMPILE=/usr/bin/file")
+    else:
+        ctx.run("make")
 
 
 def package(ctx):

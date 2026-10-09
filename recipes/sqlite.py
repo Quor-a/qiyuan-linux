@@ -29,7 +29,9 @@ compression = "gz"
 
 
 def build(ctx):
-    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --disable-static --enable-fts5")
+    # sqlite 的 configure 是自写脚本，不认 --with-sysroot
+    args = [a for a in ctx.configure_args() if not a.startswith("--with-sysroot")]
+    ctx.run("./configure " + " ".join(args) + " --prefix=/usr --disable-static --enable-fts5")
     ctx.run("make")
 
 
