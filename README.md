@@ -2178,3 +2178,14 @@ ngs-about-v2.png`。
 - **截图**：docs/screenshots/qyview-accel.png
 
 构建产物：`qydesktop 0.1.0-209`。
+
+### 全局快捷键补充 Super 组合（v0.1.0-210，2026-10 实测）
+
+- **Super 组合键扩充到 13 个绑定**：
+  - Super 菜单 · Super+A 应用列表 · Super+S 搜索 · Super+E 文件管理器
+  - Super+T 终端 · Super+I 设置 · Super+L 锁屏 · PrtSc 截图
+  - 音量±/静音 · 亮度±
+- 组合键与 Super 单键共存（组合触发后 300ms 抑制单键）
+- **实测**：`QYSHORTCUTS: loaded=13`
+
+构建产物：`qydesktop 0.1.0-210`。
