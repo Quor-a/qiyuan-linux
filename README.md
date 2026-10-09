@@ -2035,3 +2035,13 @@ ngs-about-v2.png`。
 - **自动化日志**：`QYMEDIADBG: play /tmp/test.mp3 no decoder`（实测）与 `player=aplay`（WAV）
 
 构建产物：`qydesktop 0.1.0-195`。
+
+### 网络管理器 WiFi 热点连接（v0.1.0-196，2026-10 实测）
+
+针对排查报告"WiFi 开关只 ip link up，不连热点，仍上不了网"：
+- **新增「WiFi 连接」按钮**：弹窗输入 SSID/密码 → 生成 wpa_supplicant.conf（/tmp/qywifi.conf）→ 启动 wpa_supplicant + udhcpc
+- **开放网络支持**：密码留空时使用 `key_mgmt=NONE`
+- **自动选择 wlan 接口**：从接口列表优先取 wlan*，无则默认 wlan0
+- **自动化**：`QYNET_WIFI=SSID|密码` 实测 `QYNETWIFI: connect ssid=MyHome iface=wlan0`，conf 内容正确
+
+构建产物：`qydesktop 0.1.0-196`。

@@ -145,6 +145,84 @@ static void do_connect(GtkWidget *w, gpointer ud) {
     }
 }
 
+/* ---------- WiFi 热点连接（wpa_supplicant + udhcpc） ---------- */
+static const char *find_wlan_iface(void) {
+    static char buf[32] = "wlan0";
+    GtkTreeIter it;
+    if (gtk_tree_model_get_iter_first(GTK_TREE_MODEL(store), &it)) {
+        do {
+            gchar *name = NULL;
+            gtk_tree_model_get(GTK_TREE_MODEL(store), &it, C_IF, &name, -1);
+            if (name && strncmp(name, "wlan", 4) == 0) {
+                g_strlcpy(buf, name, sizeof buf);
+                g_free(name);
+                return buf;
+            }
+            g_free(name);
+        } while (gtk_tree_model_iter_next(GTK_TREE_MODEL(store), &it));
+    }
+    return buf;
+}
+
+static void wifi_connect(const char *ssid, const char *psk) {
+    if (!ssid || !ssid[0]) return;
+    const char *ifname = find_wlan_iface();
+    /* 生成 wpa_supplicant.conf（写入 /tmp，避免污染系统配置） */
+    GString *conf = g_string_new("network={\n");
+    g_string_append_printf(conf, "    ssid=\"%s\"\n", ssid);
+    if (psk && psk[0])
+        g_string_append_printf(conf, "    psk=\"%s\"\n", psk);
+    else
+        g_string_append(conf, "    key_mgmt=NONE\n");
+    g_string_append(conf, "}\n");
+    g_file_set_contents("/tmp/qywifi.conf", conf->str, conf->len, NULL);
+    g_string_free(conf, TRUE);
+    g_printerr("QYNETWIFI: connect ssid=%s iface=%s\n", ssid, ifname);
+    gchar *cmd = g_strdup_printf(
+        "wpa_supplicant -B -i %s -c /tmp/qywifi.conf >/dev/null 2>&1; "
+        "udhcpc -i %s >/dev/null 2>&1 &", ifname, ifname);
+    g_spawn_command_line_async(cmd, NULL);
+    g_free(cmd);
+    if (status_label) {
+        gchar *s = g_strdup_printf(TR("正在连接 WiFi %s（%s）..."), ssid, ifname);
+        gtk_label_set_text(GTK_LABEL(status_label), s);
+        g_free(s);
+    }
+    g_timeout_add(3000, (GSourceFunc)refresh_list, NULL);
+}
+
+static void on_wifi_clicked(GtkWidget *w, gpointer ud) {
+    (void)w; (void)ud;
+    GtkWidget *dlg = gtk_dialog_new_with_buttons(TR("连接 WiFi"), NULL,
+        GTK_DIALOG_MODAL, TR("连接"), GTK_RESPONSE_OK,
+        TR("取消"), GTK_RESPONSE_CANCEL, NULL);
+    GtkWidget *box = gtk_dialog_get_content_area(GTK_DIALOG(dlg));
+    GtkWidget *ssid_e = gtk_entry_new();
+    gtk_entry_set_placeholder_text(GTK_ENTRY(ssid_e), TR("WiFi 名称 (SSID)"));
+    GtkWidget *psk_e = gtk_entry_new();
+    gtk_entry_set_placeholder_text(GTK_ENTRY(psk_e), TR("密码（开放网络留空）"));
+    gtk_entry_set_visibility(GTK_ENTRY(psk_e), FALSE);
+    gtk_box_pack_start(GTK_BOX(box), ssid_e, FALSE, FALSE, 6);
+    gtk_box_pack_start(GTK_BOX(box), psk_e, FALSE, FALSE, 6);
+    gtk_widget_show_all(dlg);
+    if (gtk_dialog_run(GTK_DIALOG(dlg)) == GTK_RESPONSE_OK) {
+        const char *ssid = gtk_entry_get_text(GTK_ENTRY(ssid_e));
+        const char *psk = gtk_entry_get_text(GTK_ENTRY(psk_e));
+        wifi_connect(ssid, psk);
+    }
+    gtk_widget_destroy(dlg);
+}
+
+/* 自动化: QYNET_WIFI=SSID|密码 */
+static gboolean auto_wifi(gpointer p) {
+    char *arg = (char *)p;
+    char *bar = strchr(arg, '|');
+    if (bar) *bar = 0;
+    wifi_connect(arg, bar ? bar + 1 : "");
+    g_free(arg);
+    return G_SOURCE_REMOVE;
+}
+
 /* 自动化: QYNET_CONNECT=eth0 */
 static gboolean auto_connect(gpointer p) {
     do_connect(NULL, p);
@@ -188,10 +266,14 @@ int main(int argc, char **argv) {
     GtkWidget *b_refresh = gtk_button_new_with_label(TR("刷新"));
     qy_add_class(b_refresh, "qy-btn");
     g_signal_connect(b_refresh, "clicked", G_CALLBACK(refresh_list), NULL);
+    GtkWidget *b_wifi = gtk_button_new_with_label(TR("WiFi 连接"));
+    qy_add_class(b_wifi, "qy-btn");
+    g_signal_connect(b_wifi, "clicked", G_CALLBACK(on_wifi_clicked), NULL);
     count_label = gtk_label_new("");
     status_label = gtk_label_new("");
     gtk_box_pack_start(GTK_BOX(hb), b_conn, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hb), b_refresh, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(hb), b_wifi, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(hb), count_label, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), hb, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vbox), status_label, FALSE, FALSE, 0);
@@ -203,6 +285,10 @@ int main(int argc, char **argv) {
     const char *qc = g_getenv("QYNET_CONNECT");
     if (qc && qc[0])
         g_timeout_add(600, auto_connect, g_strdup(qc));
+    /* 自动化: QYNET_WIFI=SSID|密码 自动连接 WiFi */
+    const char *qw = g_getenv("QYNET_WIFI");
+    if (qw && qw[0])
+        g_timeout_add(800, auto_wifi, g_strdup(qw));
 
     gtk_main();
     return 0;
