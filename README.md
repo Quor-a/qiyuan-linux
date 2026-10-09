@@ -2271,3 +2271,12 @@ ngs-about-v2.png`。
 - **实测**：`QYSHOTMODE: --window 回退全屏（Wayland 无窗口/区域选择协议）`，退出码 0
 
 构建产物：`qydesktop 0.1.0-219`。
+
+### 图片查看器 Delete 删除到回收站（v0.1.0-220，2026-10 实测）
+
+针对快捷键审计"qyview Delete 删除图片 ❌"：
+- **Delete 键**：当前图片移到系统回收站（`g_file_trash`），自动加载下一张；全部删完则复位视图
+- 删除失败打印 `QYVIEWDBG: trash fail ...`
+- **实测**：qyview 编译 rc=0
+
+构建产物：`qydesktop 0.1.0-220`。

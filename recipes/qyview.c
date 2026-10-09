@@ -245,6 +245,24 @@ static gboolean on_key(GtkWidget *w, GdkEventKey *ev, gpointer ud) {
     } else if (ev->keyval == GDK_KEY_minus) {
         /* - 缩小 */
         zoom /= 1.15; gtk_widget_queue_draw(w); update_zoom();
+    } else if (ev->keyval == GDK_KEY_Delete) {
+        /* Delete: 当前图片移到回收站 */
+        const char *path = g_ptr_array_index(dir_files, dir_idx);
+        GFile *f = g_file_new_for_path(path);
+        GError *err = NULL;
+        if (g_file_trash(f, NULL, &err)) {
+            g_printerr("QYVIEWDBG: trashed %s\n", path);
+            g_ptr_array_remove_index(dir_files, dir_idx);
+            if (dir_files->len > 0) {
+                if (dir_idx >= (int)dir_files->len) dir_idx = 0;
+                load_by_index(GTK_WIDGET(ud), dir_idx);
+            } else {
+                zoom = 1.0; pan_x = pan_y = 0; gtk_widget_queue_draw(w);
+            }
+        } else {
+            g_printerr("QYVIEWDBG: trash fail %s\n", err ? err->message : "?");
+            g_clear_error(&err);
+        }
     }
     return FALSE;
 }
