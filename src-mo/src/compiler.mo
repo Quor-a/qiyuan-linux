@@ -3472,7 +3472,25 @@ fn parse_global() -> i64 {
         if accept("byte") == 1 {
             vt = ty_byte();
         } else {
-            return err_atp("expected a type", gv(K_PLINE), gv(K_PCOL), gv(K_PPOS));
+            if accept("f64") == 1 {
+                vt = ty_f64();
+                expect("=");
+                # 浮点字面量 K_TKIND=5，位模式在 K_TIVAL/K_TFVAL（lex_number 写入）
+                let fneg: i64 = 0;
+                if accept("-") == 1 { fneg = 1; }
+                if gv(K_TKIND) != 5 { return err_at2("expected a float literal", gv(K_LINE), gv(K_COL)); }
+                let fv: i64 = gv(K_TIVAL) ^ (fneg * -9223372036854775808);
+                next_token();
+                expect(";");
+                let faddr: i64 = 268435456 + gv(K_DLEN);
+                dquad(fv);
+                if sym_dup(scratch2()) >= 0 { return err_atp("duplicate definition", gv(K_PLINE), gv(K_PCOL), gv(K_PPOS)); }
+                let fid: i64 = sym_add(scratch2(), 2, faddr, 0);
+                store64(heap + O_STY + fid * 8, vt);
+                return 0;
+            } else {
+                return err_atp("expected a type", gv(K_PLINE), gv(K_PCOL), gv(K_PPOS));
+            }
         }
     }
     expect("=");
@@ -3835,10 +3853,16 @@ fn parse_program() -> i64 {
                 if tok_is("var") == 1 {
                     parse_global();
                 } else {
+                    if tok_is("const") == 1 {
+                        # const 复用全局声明路径（编译期常量约定；当前实现为
+                        # 只读语义的全局存储——写它编译不报错但约定不改写）
+                        parse_global();
+                    } else {
                     if tok_is("fn") == 1 {
                         parse_func();
                     } else {
                         return syntax_error();
+                    }
                     }
                 }
             }

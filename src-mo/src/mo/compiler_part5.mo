@@ -368,6 +368,34 @@ fn parse_let() -> i64 {
             sv(K_CUROFF, p - esz * n);
         }
         if accept("=") == 1 {
+            # byte 数组的字符串字面量初始化：let t: [32] byte = "abc"
+            # 把字面量（已落在输出数据段，NUL 结尾）逐字节拷进局部数组。
+            if ty_kind(et) == 5 && gv(K_TKIND) == 3 {
+                # 字面量在编译器进程里读不到（该地址映射 moc 自身数据段，
+                # 读到垃圾——见 skill 教训），必须从编译器字符串池 O_STRS 拷。
+                let sa: i64 = strpool();   # 编译器侧可读地址（heap + O_STRS + STROFF）
+                next_token();
+                expect(";");
+                if sym_dup(scratch2()) >= 0 { return err_atp("duplicate definition", gv(K_PLINE), gv(K_PCOL), gv(K_PPOS)); }
+                let id: i64 = sym_add(scratch2(), 1, off, 0);
+                store64(heap + O_STY + id * 8, ty_array(et, n));
+                let k2: i64 = 0;
+                while k2 < n {
+                    let c: i64 = load8(sa + k2);
+                    g_movabs_rax(c);
+                    g_store_local_b(off + k2);
+                    if c == 0 { break; }
+                    k2 = k2 + 1;
+                }
+                # 剩余槽清零
+                k2 = k2 + 1;
+                while k2 < n {
+                    g_movabs_rax(0);
+                    g_store_local_b(off + k2);
+                    k2 = k2 + 1;
+                }
+                return 0;
+            }
             if ty_kind(et) != 0 { if ty_kind(et) != 5 { if ty_kind(et) != 6 { return err_at2("cannot init a struct array this way", gv(K_LINE), gv(K_COL)); } } }
             let v: i64 = gv(K_TIVAL);
             next_token();
@@ -698,6 +726,26 @@ fn parse_global() -> i64 {
             }
         }
         expect("=");
+        # 全局 byte 数组的字符串字面量初始化：var g: [16] byte = "global"
+        if ty_kind(et) == 5 && gv(K_TKIND) == 3 {
+            let sa2: i64 = strpool();
+            next_token();
+            expect(";");
+            let addr2: i64 = 268435456 + gv(K_DLEN);
+            let i2: i64 = 0;
+            while i2 < n {
+                let c2: i64 = load8(sa2 + i2);
+                dbyte(c2 & 255);
+                if c2 == 0 { i2 = i2 + 1; break; }
+                i2 = i2 + 1;
+            }
+            while i2 < n { dbyte(0); i2 = i2 + 1; }
+            while (gv(K_DLEN) & 7) != 0 { dbyte(0); }
+            if sym_dup(scratch2()) >= 0 { return err_atp("duplicate definition", gv(K_PLINE), gv(K_PCOL), gv(K_PPOS)); }
+            let id2: i64 = sym_add(scratch2(), 2, addr2, 0);
+            store64(heap + O_STY + id2 * 8, ty_array(et, n));
+            return 0;
+        }
         let v: i64 = gv(K_TIVAL);
         next_token();
         expect(";");
@@ -742,12 +790,43 @@ fn parse_global() -> i64 {
         if accept("byte") == 1 {
             vt = ty_byte();
         } else {
-            return err_atp("expected a type", gv(K_PLINE), gv(K_PCOL), gv(K_PPOS));
+            if accept("f64") == 1 {
+                vt = ty_f64();
+                expect("=");
+                # 浮点字面量 K_TKIND=5，位模式在 K_TIVAL/K_TFVAL（lex_number 写入）
+                let fneg: i64 = 0;
+                if accept("-") == 1 { fneg = 1; }
+                if gv(K_TKIND) != 5 { return err_at2("expected a float literal", gv(K_LINE), gv(K_COL)); }
+                let fv: i64 = gv(K_TIVAL) ^ (fneg * -9223372036854775808);
+                next_token();
+                expect(";");
+                let faddr: i64 = 268435456 + gv(K_DLEN);
+                dquad(fv);
+                if sym_dup(scratch2()) >= 0 { return err_atp("duplicate definition", gv(K_PLINE), gv(K_PCOL), gv(K_PPOS)); }
+                let fid: i64 = sym_add(scratch2(), 2, faddr, 0);
+                store64(heap + O_STY + fid * 8, vt);
+                return 0;
+            } else {
+                return err_atp("expected a type", gv(K_PLINE), gv(K_PCOL), gv(K_PPOS));
+            }
         }
     }
     expect("=");
-    let v: i64 = gv(K_TIVAL);
-    next_token();
+    # 全局标量初始化支持带符号十进制（var x: i64 = -1 之前只认裸字面量）
+    let v: i64 = 0;
+    if gv(K_TKIND) == 3 {
+        v = gv(K_TIVAL);
+        next_token();
+    } else {
+        if accept("-") == 1 {
+            if gv(K_TKIND) != 2 { return err_at2("expected a number after -", gv(K_LINE), gv(K_COL)); }
+            v = -gv(K_TIVAL);
+            next_token();
+        } else {
+            v = gv(K_TIVAL);
+            next_token();
+        }
+    }
     expect(";");
     let addr: i64 = 268435456 + gv(K_DLEN);
     dquad(v);
@@ -1092,10 +1171,16 @@ fn parse_program() -> i64 {
                 if tok_is("var") == 1 {
                     parse_global();
                 } else {
+                    if tok_is("const") == 1 {
+                        # const 复用全局声明路径（编译期常量约定；当前实现为
+                        # 只读语义的全局存储——写它编译不报错但约定不改写）
+                        parse_global();
+                    } else {
                     if tok_is("fn") == 1 {
                         parse_func();
                     } else {
                         return syntax_error();
+                    }
                     }
                 }
             }
