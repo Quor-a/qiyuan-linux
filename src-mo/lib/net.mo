@@ -26,8 +26,9 @@ fn sock_addr(buf: i64, addr: i64, port: i64) -> i64 {
     let np: i64 = htons(port);
     store8(buf + 0, AF_INET & 255);
     store8(buf + 1, 0);
-    store8(buf + 2, (np / 256) & 255);
-    store8(buf + 3, np & 255);
+    # np = htons(port) 后，低字节是原高位：网络序端口 = np 低字节在前
+    store8(buf + 2, np & 255);
+    store8(buf + 3, (np / 256) & 255);
     store8(buf + 4, addr & 255);
     store8(buf + 5, (addr / 256) & 255);
     store8(buf + 6, (addr / 65536) & 255);
@@ -83,6 +84,47 @@ fn tcp_connect(ip: i64, port: i64) -> i64 {
         return 0 - 1;
     }
     return fd;
+}
+
+# 解析点分十进制 IP（"127.0.0.1"）→ sock_addr 字节序整数
+# sock_addr 按 addr 低字节在前（网络序）填写，因此 127.0.0.1 应返回 0x7f000001
+# 失败返回 -1
+fn inet_aton(s: i64) -> i64 {
+    let o0: i64 = 0 - 1;
+    let o1: i64 = 0 - 1;
+    let o2: i64 = 0 - 1;
+    let o3: i64 = 0 - 1;
+    let cur: i64 = 0;
+    let digits: i64 = 0;
+    let n: i64 = 0;
+    let i: i64 = 0;
+    while load8(s + i) != 0 {
+        let c: i64 = load8(s + i);
+        if c >= 48 && c <= 57 {
+            cur = cur * 10 + (c - 48);
+            digits = digits + 1;
+            if digits > 3 || cur > 255 { return 0 - 1; }
+        } else if c == 46 {
+            if digits == 0 { return 0 - 1; }
+            if n == 0 { o0 = cur; } else if n == 1 { o1 = cur; } else if n == 2 { o2 = cur; }
+            n = n + 1;
+            cur = 0;
+            digits = 0;
+        } else {
+            return 0 - 1;
+        }
+        i = i + 1;
+    }
+    if digits == 0 || n != 3 { return 0 - 1; }
+    o3 = cur;
+    return o0 + o1 * 256 + o2 * 65536 + o3 * 16777216;
+}
+
+# 便捷接口：连到 "127.0.0.1" 这类字符串地址 + 端口
+fn tcp_connect_host(host: i64, port: i64) -> i64 {
+    let ip: i64 = inet_aton(host);
+    if ip < 0 { return 0 - 1; }
+    return tcp_connect(ip, port);
 }
 
 # 收数据，返回字节数；0 表示对端关闭，负数表示出错
