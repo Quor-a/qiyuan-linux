@@ -2189,3 +2189,13 @@ ngs-about-v2.png`。
 - **实测**：`QYSHORTCUTS: loaded=13`
 
 构建产物：`qydesktop 0.1.0-210`。
+
+### 系统设置搜索（v0.1.0-211，2026-10 实测）
+
+针对快捷键审计"qysettings 40 个设置页没有搜索"：
+- **顶部新增搜索框**：输入关键词（如"声音""分辨率""语言"），自动切换到标签名包含关键词的第一个设置页
+- 布局改为 vbox（搜索框 + notebook），未匹配时日志 `QYSETTINGSSEARCH: ... (无匹配)`
+- **实测**：qysettings 在 weston 下运行正常
+- **截图**：docs/screenshots/qysettings-search.png
+
+构建产物：`qydesktop 0.1.0-211`。

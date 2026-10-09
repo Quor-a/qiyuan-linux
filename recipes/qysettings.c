@@ -1722,6 +1722,26 @@ static void on_accel_close(GtkAccelGroup *ag, GObject *a, guint keyval,
     gtk_widget_destroy(GTK_WIDGET(ud));
 }
 
+/* 设置页搜索：输入关键词，切换标签名包含关键词的第一个页面 */
+static void on_settings_search(GtkSearchEntry *se, gpointer ud) {
+    const char *needle = gtk_entry_get_text(GTK_ENTRY(se));
+    GtkWidget *nb = (GtkWidget *)ud;
+    if (!needle || !needle[0]) return;
+    int n = gtk_notebook_get_n_pages(GTK_NOTEBOOK(nb));
+    for (int i = 0; i < n; i++) {
+        GtkWidget *page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(nb), i);
+        GtkWidget *lbl = gtk_notebook_get_tab_label(GTK_NOTEBOOK(nb), page);
+        if (!lbl) continue;
+        const char *title = gtk_label_get_text(GTK_LABEL(lbl));
+        if (title && g_strrstr(title, needle)) {
+            gtk_notebook_set_current_page(GTK_NOTEBOOK(nb), i);
+            g_printerr("QYSETTINGSSEARCH: %s -> %s\n", needle, title);
+            return;
+        }
+    }
+    g_printerr("QYSETTINGSSEARCH: %s -> (无匹配)\n", needle);
+}
+
 static void activate(GtkApplication *app, gpointer ud) {
     qy_load_theme();
     GtkWidget *win = gtk_application_window_new(app);
@@ -1731,7 +1751,13 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_window_set_default_size(GTK_WINDOW(win), 620, 420);
 
     GtkWidget *nb = gtk_notebook_new();
-    gtk_container_add(GTK_CONTAINER(win), nb);
+    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
+    gtk_container_add(GTK_CONTAINER(win), vbox);
+    GtkWidget *search_entry = gtk_search_entry_new();
+    gtk_entry_set_placeholder_text(GTK_ENTRY(search_entry), TR("搜索设置项（如 声音/分辨率/语言）"));
+    g_signal_connect(search_entry, "search-changed", G_CALLBACK(on_settings_search), nb);
+    gtk_box_pack_start(GTK_BOX(vbox), search_entry, FALSE, FALSE, 4);
+    gtk_box_pack_start(GTK_BOX(vbox), nb, TRUE, TRUE, 0);
 
     /* 关于本机 */
     GtkWidget *v1 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
