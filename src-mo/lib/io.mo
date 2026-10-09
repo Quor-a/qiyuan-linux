@@ -117,6 +117,11 @@ fn f64_parts(v: i64, out: i64) -> i64 {
         } else {
             f6 = (fp << (21 - sh2)) * 1000000 >> 21;
         }
+        # 999999.99 类四舍五入到 1000000 → 必须向整数部分进位
+        if f6 >= 1000000 {
+            f6 = f6 - 1000000;
+            store64(out + 8, ip + 1);
+        }
         store64(out + 16, f6);
         return 0;
     }
@@ -130,11 +135,17 @@ fn f64_parts(v: i64, out: i64) -> i64 {
     }
     store64(out, sign);
     store64(out + 8, 0);
+    let f6b: i64 = 0;
     if sh > 21 {
-        store64(out + 16, ((num >> 21) * 1000000 + (1 << (sh - 22))) / (1 << (sh - 21)));
+        f6b = ((num >> 21) * 1000000 + (1 << (sh - 22))) / (1 << (sh - 21));
     } else {
-        store64(out + 16, (num << (21 - sh)) * 1000000 >> 21);
+        f6b = (num << (21 - sh)) * 1000000 >> 21;
     }
+    if f6b >= 1000000 {
+        f6b = f6b - 1000000;
+        store64(out + 8, 1);
+    }
+    store64(out + 16, f6b);
     return 0;
 }
 
@@ -146,9 +157,13 @@ fn print_f64(v: i64) -> i64 {
     if kind == 2 { print("inf"); return 0; }
     if kind == 3 { print("0.0"); return 0; }
     if fpbuf[1] < 0 { fpbuf[1] = 0 - fpbuf[1]; }
+    let fd: i64 = fpbuf[2];
+    if fd >= 1000000 {
+        fd = fd - 1000000;
+        fpbuf[1] = fpbuf[1] + 1;
+    }
     if kind == 1 { print("-"); }
     print_i64(fpbuf[1]);
-    let fd: i64 = fpbuf[2];
     if fd != 0 {
         let db: [8] i64 = 0;
         let i: i64 = 6;

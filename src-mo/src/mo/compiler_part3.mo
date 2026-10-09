@@ -154,14 +154,28 @@ fn dtoi_f64(iv: i64, fv: i64, fd: i64, neg: i64) -> i64 {
     let num: i64 = iv * fd + fv;
     if num == 0 { return 0; }
     let e: i64 = 0;
-    let t: i64 = fd;
-    while t <= num {
-        t = t * 2;
-        e = e + 1;
+    let den: i64 = 0;
+    if num < fd {
+        # 值 < 1：倍增 num 直至 [fd, 2fd)（value*2^j 归一到 [1,2)），E = -j
+        # 此前直接走 t 循环会得到 den > num → r 为负 → 位模式垃圾（0.25 类全错）
+        let j: i64 = 0;
+        let n2: i64 = num;
+        while n2 < fd {
+            n2 = n2 * 2;
+            j = j + 1;
+        }
+        e = 0 - j;
+        den = fd;
+        num = n2;
+    } else {
+        let t: i64 = fd;
+        while t <= num {
+            t = t * 2;
+            e = e + 1;
+        }
+        e = e - 1;
+        den = t / 2;
     }
-    e = e - 1;
-    # den = fd * 2^e；e 可为 -1（如 0.5），用循环结束时的 t/2 免去负移
-    let den: i64 = t / 2;
     let r: i64 = num - den;
     let frac: i64 = 0;
     let k: i64 = 0;
