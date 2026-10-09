@@ -138,6 +138,55 @@ static void on_equal_clicked(GtkButton *b, gpointer ud) {
     }
 }
 
+/* ---------- 键盘输入：数字/运算符/回车/退格 ---------- */
+static gboolean on_key_press(GtkWidget *w, GdkEventKey *ev, gpointer ud) {
+    (void)w; (void)ud;
+    if (ev->keyval >= GDK_KEY_0 && ev->keyval <= GDK_KEY_9) {
+        char c = (char)('0' + (ev->keyval - GDK_KEY_0));
+        append_char(c);
+        return TRUE;
+    }
+    switch (ev->keyval) {
+        case GDK_KEY_plus: case GDK_KEY_KP_Add: append_char('+'); return TRUE;
+        case GDK_KEY_minus: case GDK_KEY_KP_Subtract: append_char('-'); return TRUE;
+        case GDK_KEY_asterisk: case GDK_KEY_KP_Multiply: append_char('*'); return TRUE;
+        case GDK_KEY_slash: case GDK_KEY_KP_Divide: append_char('/'); return TRUE;
+        case GDK_KEY_parenleft: append_char('('); return TRUE;
+        case GDK_KEY_parenright: append_char(')'); return TRUE;
+        case GDK_KEY_period: case GDK_KEY_KP_Decimal: append_char('.'); return TRUE;
+        case GDK_KEY_BackSpace: on_backspace_clicked(NULL, NULL); return TRUE;
+        case GDK_KEY_Return: case GDK_KEY_KP_Enter: case GDK_KEY_equal:
+            on_equal_clicked(NULL, NULL);
+            return TRUE;
+        case GDK_KEY_Escape: case GDK_KEY_c: case GDK_KEY_C:
+            on_clear_clicked(NULL, NULL);
+            return TRUE;
+    }
+    return FALSE;
+}
+
+/* 自动化验证: QYCALC_KEY=12+34= 启动后模拟键盘输入 */
+static gboolean auto_key_input(gpointer p) {
+    const char *s = (const char *)p;
+    for (const char *q = s; *q; q++) {
+        GdkEventKey ev;
+        memset(&ev, 0, sizeof ev);
+        if (*q >= '0' && *q <= '9') ev.keyval = GDK_KEY_0 + (*q - '0');
+        else if (*q == '+') ev.keyval = GDK_KEY_plus;
+        else if (*q == '-') ev.keyval = GDK_KEY_minus;
+        else if (*q == '*') ev.keyval = GDK_KEY_asterisk;
+        else if (*q == '/') ev.keyval = GDK_KEY_slash;
+        else if (*q == '(') ev.keyval = GDK_KEY_parenleft;
+        else if (*q == ')') ev.keyval = GDK_KEY_parenright;
+        else if (*q == '.') ev.keyval = GDK_KEY_period;
+        else if (*q == '=') ev.keyval = GDK_KEY_equal;
+        else if (*q == 'c' || *q == 'C') ev.keyval = GDK_KEY_C;
+        else continue;
+        on_key_press(NULL, &ev, NULL);
+    }
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 按钮网格 ---------- */
 static GtkWidget *calc_button(const char *label, const char *ud, GCallback cb) {
     GtkWidget *b = gtk_button_new_with_label(label);
@@ -229,6 +278,13 @@ int main(int argc, char **argv) {
     const char *env_expr = g_getenv("QYCALC_EXPR");
     if (env_expr && env_expr[0])
         g_timeout_add(700, auto_calc, g_strdup(env_expr));
+
+    /* 键盘输入支持 */
+    g_signal_connect(win, "key-press-event", G_CALLBACK(on_key_press), NULL);
+    /* 自动化验证: QYCALC_KEY=12+34= 启动后模拟键盘输入 */
+    const char *env_key = g_getenv("QYCALC_KEY");
+    if (env_key && env_key[0])
+        g_timeout_add(900, auto_key_input, g_strdup(env_key));
 
     gtk_main();
     return 0;
