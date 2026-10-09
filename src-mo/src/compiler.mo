@@ -9,35 +9,35 @@ var INPATH: i64 = 0;
 var O_SRC: i64 = 0;
 var O_CODE: i64 = 4194304;
 var O_DATA: i64 = 5242880;
-var O_NAMES: i64 = 6291456;
-var O_SYN:  i64 = 6815744;
+var O_NAMES: i64 = 9437184;
+var O_SYN:  i64 = 9961472;
 var K_WARN:   i64 = 464;   # 0=关闭未使用变量警告（有误报，见 docs）
-var O_SU:   i64 = 9000000;   # 符号是否被读过（未使用检查，见 K_WARN）
-var O_SK:   i64 = 6832128;
-var O_SA:   i64 = 6848512;
-var O_SP:   i64 = 6864896;
-var O_SD:   i64 = 6881280;
-var O_FP:   i64 = 6897664;
-var O_FS:   i64 = 7028736;
-var O_JP:   i64 = 7160800;
-var O_JL:   i64 = 7291872;
-var O_LB:   i64 = 7324640;
-var O_SCAL: i64 = 7357408;
+var O_SU:   i64 = 12145728;   # 符号是否被读过（未使用检查，见 K_WARN）
+var O_SK:   i64 = 9977856;
+var O_SA:   i64 = 9994240;
+var O_SP:   i64 = 10010624;
+var O_SD:   i64 = 10027008;
+var O_FP:   i64 = 10043392;
+var O_FS:   i64 = 10174464;
+var O_JP:   i64 = 10306528;
+var O_JL:   i64 = 10437600;
+var O_LB:   i64 = 10470368;
+var O_SCAL: i64 = 10503136;
 var O_FILES: i64 = 16777216;   # 16 个源文件槽 × 1MB
 var O_STRS:  i64 = 22020096;
 # 结构体表：最多 32 个结构体，每个最多 32 个字段
-var O_STN:   i64 = 8388608;    # 结构体名（intern 偏移）
-var O_STF:   i64 = 8388864;    # 字段个数
-var O_STFLD: i64 = 8389120;    # 字段名 id：idx = si*32 + fi
-var O_STFT:  i64 = 8404992;    # 字段类型 id：0=i64，>=1 为结构体索引+1
-var O_STY:   i64 = 8420864;    # 变量类型：0=i64/数组，>=1 为结构体索引+1
-var O_IMP:   i64 = 8437760;    # 已导入文件路径（intern 偏移），用于去重与环检测
+var O_STN:   i64 = 11534336;    # 结构体名（intern 偏移）
+var O_STF:   i64 = 11534592;    # 字段个数
+var O_STFLD: i64 = 11534848;    # 字段名 id：idx = si*32 + fi
+var O_STFT:  i64 = 11550720;    # 字段类型 id：0=i64，>=1 为结构体索引+1
+var O_STY:   i64 = 11566592;    # 变量类型：0=i64/数组，>=1 为结构体索引+1
+var O_IMP:   i64 = 11583488;    # 已导入文件路径（intern 偏移），用于去重与环检测
 # 类型表：最多 512 个类型
-var O_TK:    i64 = 8445952;    # kind: 0=int 1=void 2=struct 3=array 4=ptr
-var O_TA:    i64 = 8450048;    # aux1: si(结构体) / 元素或指向类型
-var O_TB:    i64 = 8454144;    # aux2: 数组元素个数
-var O_FRT:   i64 = 8458240;    # 函数返回类型 id
-var O_FPT:   i64 = 8462336;    # 形参类型：fidx*8 + pi
+var O_TK:    i64 = 11591680;    # kind: 0=int 1=void 2=struct 3=array 4=ptr
+var O_TA:    i64 = 11595776;    # aux1: si(结构体) / 元素或指向类型
+var O_TB:    i64 = 11599872;    # aux2: 数组元素个数
+var O_FRT:   i64 = 11603968;    # 函数返回类型 id
+var O_FPT:   i64 = 11608064;    # 形参类型：fidx*8 + pi
 # 调试信息专用缓冲（都在 O_STRS 之后，堆空间充裕）
 # 调试数据放在主堆之后单独申请的一块内存里（DBG 为基址，下列为相对偏移）。
 # 早先直接放在 heap + 大偏移处，结果被字符串池覆盖——行号表读出来是字符串内容。
@@ -1560,7 +1560,7 @@ fn scratch3() -> i64 { return heap + O_SCAL + 1000; }
 # 按调用深度分配的暂存区，避免嵌套调用互相覆盖
 var CALLD:  i64 = 0;
 var R_ETY:  i64 = 0;      # 最近一个表达式的类型 id
-var O_SCR:  i64 = 7454720;
+var O_SCR:  i64 = 10600448;
 
 fn cscratch() -> i64 {
     return heap + O_SCR + CALLD * 256;
@@ -2355,7 +2355,11 @@ fn parse_call() -> i64 {
     if na >= 2 { g_pop_rsi(); }
     if na >= 1 { g_pop_rdi(); }
     R_SYM = sym_lookup_func(cscratch());
-    if R_SYM < 0 { CALLD = CALLD - 1; return undef_err(cscratch()); }
+    if R_SYM < 0 {
+        let cn: i64 = cscratch();
+        CALLD = CALLD - 1;
+        return undef_err(cn);
+    }
     emit_call_patch(R_SYM);
     CALLD = CALLD - 1;
     return 0;
