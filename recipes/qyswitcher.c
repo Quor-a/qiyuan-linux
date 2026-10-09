@@ -83,12 +83,38 @@ static void add_running_apps(void) {
     (void)shown;
 }
 
+/* 进程存活检查（/proc/comm，不依赖 pidof） */
+static gboolean proc_alive(const char *name) {
+    GDir *dir = g_dir_open("/proc", 0, NULL);
+    if (!dir) return FALSE;
+    const char *ent;
+    gboolean found = FALSE;
+    while ((ent = g_dir_read_name(dir)) != NULL) {
+        if (!g_ascii_isdigit(ent[0])) continue;
+        gchar *cp = g_strdup_printf("/proc/%s/comm", ent);
+        gchar *comm = NULL;
+        if (g_file_get_contents(cp, &comm, NULL, NULL) && comm) {
+            g_strstrip(comm);
+            if (strcmp(comm, name) == 0) { found = TRUE; g_free(comm); g_free(cp); break; }
+        }
+        g_free(comm);
+        g_free(cp);
+    }
+    g_dir_close(dir);
+    return found;
+}
+
 static void on_row_clicked(GtkWidget *w, gpointer ud) {
     (void)w;
     const char *id = (const char *)ud;
-    /* 若是已知应用名则启动 */
+    /* 若是已知应用名则启动（已运行则提示） */
     for (int k = 0; k < NKNOWN; k++) {
         if (strcmp(id, known_apps[k]) == 0) {
+            if (proc_alive(id)) {
+                gtk_label_set_text(GTK_LABEL(status_label), g_strdup_printf("%s %s", id, TR("已在运行")));
+                g_free(ud);
+                return;
+            }
             gchar *cmd = g_strdup_printf("%s &", id);
             g_spawn_command_line_async(cmd, NULL);
             g_free(cmd);
@@ -111,7 +137,12 @@ static void populate(void) {
     int n = 0;
     gchar **lines = fetch_windows(&n);
     if (!n) {
-        gtk_label_set_text(GTK_LABEL(status_label), TR("未找到窗口"));
+        /* Wayland 会话没有 X11 窗口枚举 → 退化为运行中应用列表 */
+        if (g_getenv("WAYLAND_DISPLAY"))
+            gtk_label_set_text(GTK_LABEL(status_label), TR("Wayland 模式：运行中应用"));
+        else
+            gtk_label_set_text(GTK_LABEL(status_label), TR("未找到窗口"));
+        add_running_apps();
         gtk_widget_show_all(listbox);
         return;
     }
@@ -145,13 +176,15 @@ static void on_refresh(GtkWidget *w, gpointer ud) {
 static gboolean auto_sw(gpointer p) {
     (void)p;
     populate();
+    const char *wld = g_getenv("WAYLAND_DISPLAY");
+    g_printerr("QYSWITCHDBG: mode=%s wayland=%s\n",
+               wld ? "wayland" : "x11", wld ? wld : "none");
     return G_SOURCE_REMOVE;
 }
 
-static void activate(GtkApplication *app, gpointer ud) {
-    (void)ud;
+static void build_ui(void) {
     qy_load_theme();
-    win = gtk_application_window_new(app);
+    win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(win), TR("窗口切换器"));
     gtk_window_set_default_size(GTK_WINDOW(win), 420, 320);
     gtk_window_set_position(GTK_WINDOW(win), GTK_WIN_POS_CENTER);
@@ -191,10 +224,8 @@ static void activate(GtkApplication *app, gpointer ud) {
 }
 
 int main(int argc, char **argv) {
-    GtkApplication *app = gtk_application_new("com.qiyuan.switcher", G_APPLICATION_NON_UNIQUE);
-    g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
-    char *own_argv[2] = { argv[0], NULL };
-    int rc = g_application_run(G_APPLICATION(app), 1, own_argv);
-    g_object_unref(app);
-    return rc;
+    gtk_init(&argc, &argv);
+    build_ui();
+    gtk_main();
+    return 0;
 }

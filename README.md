@@ -2015,3 +2015,13 @@ ngs-about-v2.png`。
 - 实测：配置 idle-time=5 后 qynotifd 触发自动锁屏，qylock 全屏锁屏保持运行
 
 构建产物：`qydesktop 0.1.0-193`。
+
+### 窗口切换器 Wayland 模式（v0.1.0-194，2026-10 实测）
+
+针对排查报告"qyswitcher 完全依赖 X11，Wayland 下不工作"：
+- **qyswitcher 去 GtkApplication**：改普通 gtk_init，无 dbus 会话也能运行（与 qylock 同型修复）
+- **Wayland 模式**：检测到 WAYLAND_DISPLAY 且无 X11 窗口时，自动退化为「运行中应用」列表（/proc 扫描 qy 应用）
+- **防重复启动**：点击已在运行的应用时提示「已在运行」，不再重复拉起实例
+- **自动化日志**：`QYSWITCHDBG: mode=wayland wayland=qy`，实测 qyswitcher 在 weston 下保持运行
+
+构建产物：`qydesktop 0.1.0-194`。
