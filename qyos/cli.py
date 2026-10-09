@@ -658,6 +658,13 @@ def pkg_main(argv=None) -> int:
     sp = sub.add_parser("manifest", help="生成根目录完整清单")
     sp.add_argument("--out", help="清单输出路径")
 
+    sp = sub.add_parser("foreign", help="安装外来格式包（deb/rpm/apk/pacman）")
+    sp.add_argument("files", nargs="+", help="外来包文件路径")
+    sp.add_argument("--info", action="store_true", help="只查看元信息不安装")
+    sp.add_argument("--force-arch", action="store_true",
+                    help="架构不符时强装（可能无法运行）")
+    sp.add_argument("--dry-run", action="store_true", help="只演练不写入")
+
     a = p.parse_args(argv)
     a.dry_run_sub = getattr(a, "dry_run", False) if a.cmd else False
     pubkey = Path(a.pubkey) if Path(a.pubkey).exists() else None
@@ -717,7 +724,38 @@ def pkg_main(argv=None) -> int:
                    dry_run=dry, allow_unsigned=a.allow_unsigned)
 
     try:
-        if a.cmd in ("install", "-S"):
+        if a.cmd == "foreign":
+            from qyos import foreign as FG
+            rc = 0
+            for f in a.files:
+                fp = Path(f)
+                try:
+                    pkg = FG.read_foreign(fp)
+                except FG.ForeignError as e:
+                    util.log("err", f"{fp.name}: {e}")
+                    rc = 1
+                    continue
+                if a.info:
+                    print(FG.describe(pkg))
+                    continue
+                try:
+                    r = FG.install_foreign(
+                        fp, Path(a.root),
+                        force_arch=a.force_arch, dry_run=a.dry_run)
+                except FG.ForeignError as e:
+                    util.log("err", f"{fp.name}: {e}")
+                    rc = 1
+                    continue
+                tag = "[演练] " if a.dry_run else ""
+                util.log("ok", f"{tag}已安装 {r['name']} {r['version']}"
+                         f"（{r['kind']}，{r['arch']}，"
+                         f"{r['files']} 个文件）")
+                if r["untranslated"]:
+                    util.log("warn", "依赖未自动对应启元包名: "
+                             + " ".join(r["untranslated"])
+                             + " —— 装完若跑不起来先查这些")
+            return rc
+        elif a.cmd in ("install", "-S"):
             m.install(a.names, as_explicit=not a.as_deps)
         elif a.cmd in ("remove", "-R"):
             m.remove(a.names, recursive=a.recursive,
