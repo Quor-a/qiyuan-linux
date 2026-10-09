@@ -2215,3 +2215,14 @@ ngs-about-v2.png`。
 - **实测**：qysettings 编译 rc=0
 
 构建产物：`qydesktop 0.1.0-213`。
+
+### 文件管理器路径地址栏（v0.1.0-214，2026-10 实测）
+
+针对快捷键审计"qyfiles 无地址栏 / Ctrl+L 无法聚焦"：
+- **新增路径地址栏**（工具栏下方）：实时显示当前目录，回车跳转到输入的目录
+- **Ctrl+L 聚焦地址栏**（qyfiles 加速键增至 14 个）
+- 目录不存在时状态栏提示"目录不存在"
+- **实测**：qyfiles 编译 rc=0，weston 下运行正常
+- **截图**：docs/screenshots/qyfiles-pathbar.png
+
+构建产物：`qydesktop 0.1.0-214`。

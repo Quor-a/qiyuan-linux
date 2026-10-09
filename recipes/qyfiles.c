@@ -9,6 +9,7 @@
 
 static GtkWidget *view;
 static GtkWidget *status;
+static GtkWidget *path_entry = NULL;  /* 路径地址栏 */
 static char cwd[4096];
 static int in_trash = 0;   /* 当前是否处于回收站页 */
 static int g_argc = 0;     /* main 传下: --trash 检测用 */
@@ -666,6 +667,16 @@ static gboolean auto_rightclick(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* 地址栏回车跳转目录 */
+static void on_path_activate(GtkEntry *e, gpointer ud) {
+    (void)ud;
+    const char *p = gtk_entry_get_text(e);
+    if (p && g_file_test(p, G_FILE_TEST_IS_DIR))
+        chdir_to(p);
+    else
+        gtk_label_set_text(GTK_LABEL(status), TR("目录不存在"));
+}
+
 /* ---------- 导航 ---------- */
 static void chdir_to(const char *path) {
     in_trash = 0;
@@ -714,6 +725,7 @@ static void chdir_to(const char *path) {
     gtk_label_set_text(GTK_LABEL(status), msg);
     g_free(msg);
     g_strlcpy(cwd, path, sizeof cwd);
+    if (path_entry) gtk_entry_set_text(GTK_ENTRY(path_entry), cwd);
 }
 
 static void chdir_trash(void) {
@@ -977,6 +989,16 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_container_add(GTK_CONTAINER(toolbar), hbox);
     add_class(toolbar, "qy-files-toolbar");
     gtk_box_pack_start(GTK_BOX(vbox), toolbar, FALSE, FALSE, 2);
+    /* 路径地址栏 */
+    GtkWidget *pathbar = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
+    GtkWidget *plabel = gtk_label_new(TR("路径"));
+    add_class(plabel, "qy-files-status");
+    gtk_box_pack_start(GTK_BOX(pathbar), plabel, FALSE, FALSE, 4);
+    path_entry = gtk_entry_new();
+    gtk_entry_set_placeholder_text(GTK_ENTRY(path_entry), "/");
+    g_signal_connect(path_entry, "activate", G_CALLBACK(on_path_activate), NULL);
+    gtk_box_pack_start(GTK_BOX(pathbar), path_entry, TRUE, TRUE, 0);
+    gtk_box_pack_start(GTK_BOX(vbox), pathbar, FALSE, FALSE, 2);
     GtkWidget *b_ref = gtk_button_new_with_label(TR("刷新"));
     add_class(b_ref, "qy-btn");
     g_signal_connect(b_ref, "clicked", G_CALLBACK(on_refresh), NULL);
@@ -1109,6 +1131,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_widget_add_accelerator(b_home, "clicked", accel, GDK_KEY_Home, GDK_MOD1_MASK, GTK_ACCEL_VISIBLE);   /* Alt+Home 主目录 */
     gtk_widget_add_accelerator(b_open, "clicked", accel, GDK_KEY_Return, 0, GTK_ACCEL_VISIBLE);             /* Enter 打开 */
     gtk_widget_add_accelerator(search_entry, "grab-focus", accel, GDK_KEY_f, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE); /* Ctrl+F 搜索 */
+    gtk_widget_add_accelerator(path_entry, "grab-focus", accel, GDK_KEY_l, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE); /* Ctrl+L 地址栏 */
     /* Ctrl+A 全选（多选模式已启用） */
     GClosure *selcl = g_cclosure_new(G_CALLBACK(on_select_all), NULL, NULL);
     gtk_accel_group_connect(accel, GDK_KEY_a, GDK_CONTROL_MASK, GTK_ACCEL_VISIBLE, selcl);
