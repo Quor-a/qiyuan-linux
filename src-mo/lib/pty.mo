@@ -74,7 +74,7 @@ fn pty_close() -> i64 {
 
 # ---- 进程控制 ----
 
-fn execve(path: i64, argv: i64, envp: i64) -> i64 {
+fn pty_exec(path: i64, argv: i64, envp: i64) -> i64 {
     return syscall(59, path, argv, envp, 0, 0, 0);
 }
 
