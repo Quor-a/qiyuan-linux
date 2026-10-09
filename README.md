@@ -2065,3 +2065,12 @@ ngs-about-v2.png`。
 - **截图**：docs/screenshots/qydriver-cats.png
 
 构建产物：`qydesktop 0.1.0-198`。
+
+### 开始菜单补全应用入口（v0.1.0-199，2026-10 实测）
+
+- **新增「驱动管理器」**（系统分类）：直达 9 类驱动检测与模块列表
+- **新增「Git 工具」**（工具分类）：内置 Git 图形工具入口
+- **新增「欢迎」**（系统分类）：首次使用引导入口
+- **截图**：docs/screenshots/qyappmenu-apps.png（开始菜单实测显示）
+
+构建产物：`qydesktop 0.1.0-199`。

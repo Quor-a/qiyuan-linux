@@ -34,6 +34,9 @@ static AppEntry apps[] = {
     { "全局搜索",   "🔍", "#22d3ee", "qysearch",        0, "系统" },
     { "音乐播放器", "🎵", "#ec4899", "qymedia",         0, "娱乐" },
     { "窗口切换器", "⇥", "#a78bfa", "qyswitcher",     0, "系统" },
+    { "驱动管理器", "💾", "#64748b", "qydriver",       0, "系统" },
+    { "Git 工具",   "⎇", "#f97316", "qygit",           0, "工具" },
+    { "欢迎",       "👋", "#22c55e", "qywelcome",      0, "系统" },
 };
 #define NAPPS ((int)(sizeof apps / sizeof apps[0]))
 
