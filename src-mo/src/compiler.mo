@@ -3019,16 +3019,21 @@ fn parse_let() -> i64 {
                 et = ty_byte();
                 next_token();
             } else {
-                if gv(K_TKIND) == 1 {
-                    let si: i64 = st_lookup(tokbuf());
-                    if si >= 0 {
-                        et = ty_struct(si);
-                        next_token();
-                    } else {
-                        return err_at2("unknown type", gv(K_LINE), gv(K_COL));
-                    }
+                if tok_is("f64") == 1 {
+                    et = ty_f64();
+                    next_token();
                 } else {
-                    return err_at2("expected a type", gv(K_LINE), gv(K_COL));
+                    if gv(K_TKIND) == 1 {
+                        let si: i64 = st_lookup(tokbuf());
+                        if si >= 0 {
+                            et = ty_struct(si);
+                            next_token();
+                        } else {
+                            return err_at2("unknown type", gv(K_LINE), gv(K_COL));
+                        }
+                    } else {
+                        return err_at2("expected a type", gv(K_LINE), gv(K_COL));
+                    }
                 }
             }
         }
@@ -3044,7 +3049,7 @@ fn parse_let() -> i64 {
             sv(K_CUROFF, p - esz * n);
         }
         if accept("=") == 1 {
-            if ty_kind(et) != 0 { if ty_kind(et) != 5 { return err_at2("cannot init a struct array this way", gv(K_LINE), gv(K_COL)); } }
+            if ty_kind(et) != 0 { if ty_kind(et) != 5 { if ty_kind(et) != 6 { return err_at2("cannot init a struct array this way", gv(K_LINE), gv(K_COL)); } } }
             let v: i64 = gv(K_TIVAL);
             next_token();
             expect(";");
@@ -3298,16 +3303,21 @@ fn parse_global() -> i64 {
                 et = ty_byte();
                 next_token();
             } else {
-                if gv(K_TKIND) == 1 {
-                    let si: i64 = st_lookup(tokbuf());
-                    if si >= 0 {
-                        et = ty_struct(si);
-                        next_token();
-                    } else {
-                        return err_at2("unknown type", gv(K_LINE), gv(K_COL));
-                    }
+                if tok_is("f64") == 1 {
+                    et = ty_f64();
+                    next_token();
                 } else {
-                    return err_at2("expected a type", gv(K_LINE), gv(K_COL));
+                    if gv(K_TKIND) == 1 {
+                        let si: i64 = st_lookup(tokbuf());
+                        if si >= 0 {
+                            et = ty_struct(si);
+                            next_token();
+                        } else {
+                            return err_at2("unknown type", gv(K_LINE), gv(K_COL));
+                        }
+                    } else {
+                        return err_at2("expected a type", gv(K_LINE), gv(K_COL));
+                    }
                 }
             }
         }
