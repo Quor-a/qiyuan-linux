@@ -17,7 +17,7 @@ fn scratch3() -> i64 { return heap + O_SCAL + 1000; }
 # 按调用深度分配的暂存区，避免嵌套调用互相覆盖
 var CALLD:  i64 = 0;
 var R_ETY:  i64 = 0;      # 最近一个表达式的类型 id
-var O_SCR:  i64 = 7454720;
+var O_SCR:  i64 = 10600448;
 
 fn cscratch() -> i64 {
     return heap + O_SCR + CALLD * 256;
@@ -304,16 +304,32 @@ fn parse_eq() -> i64 {
     parse_rel();
     while 1 {
         if accept("==") == 1 {
+            let lt: i64 = R_ETY;
             g_push_rax();
             parse_rel();
+            let rt: i64 = R_ETY;
             g_pop_rcx();
-            g_cmp_set(0x94);
+            if f_bin_promote(lt, rt) == 1 {
+                g_fint2f(lt);
+                g_fint2f_r(rt);
+                g_fcmp_set(0x94);
+            } else {
+                g_cmp_set(0x94);
+            }
         } else {
             if accept("!=") == 1 {
+                let lt2: i64 = R_ETY;
                 g_push_rax();
                 parse_rel();
+                let rt2: i64 = R_ETY;
                 g_pop_rcx();
-                g_cmp_set(0x95);
+                if f_bin_promote(lt2, rt2) == 1 {
+                    g_fint2f(lt2);
+                    g_fint2f_r(rt2);
+                    g_fcmp_set(0x95);
+                } else {
+                    g_cmp_set(0x95);
+                }
             } else {
                 return 0;
             }
@@ -326,28 +342,40 @@ fn parse_rel() -> i64 {
     parse_shift();
     while 1 {
         if accept("<") == 1 {
+            let l1: i64 = R_ETY;
             g_push_rax();
             parse_shift();
+            let r1: i64 = R_ETY;
             g_pop_rcx();
-            g_cmp_set(0x9c);
+            if f_bin_promote(l1, r1) == 1 { g_fint2f(l1); g_fint2f_r(r1); g_fcmp_set(0x92); }
+            else { g_cmp_set(0x9c); }
         } else {
             if accept("<=") == 1 {
+                let l2: i64 = R_ETY;
                 g_push_rax();
                 parse_shift();
+                let r2: i64 = R_ETY;
                 g_pop_rcx();
-                g_cmp_set(0x9e);
+                if f_bin_promote(l2, r2) == 1 { g_fint2f(l2); g_fint2f_r(r2); g_fcmp_set(0x96); }
+                else { g_cmp_set(0x9e); }
             } else {
                 if accept(">") == 1 {
+                    let l3: i64 = R_ETY;
                     g_push_rax();
                     parse_shift();
+                    let r3: i64 = R_ETY;
                     g_pop_rcx();
-                    g_cmp_set(0x9f);
+                    if f_bin_promote(l3, r3) == 1 { g_fint2f(l3); g_fint2f_r(r3); g_fcmp_set(0x97); }
+                    else { g_cmp_set(0x9f); }
                 } else {
                     if accept(">=") == 1 {
+                        let l4: i64 = R_ETY;
                         g_push_rax();
                         parse_shift();
+                        let r4: i64 = R_ETY;
                         g_pop_rcx();
-                        g_cmp_set(0x9d);
+                        if f_bin_promote(l4, r4) == 1 { g_fint2f(l4); g_fint2f_r(r4); g_fcmp_set(0x93); }
+                        else { g_cmp_set(0x9d); }
                     } else {
                         return 0;
                     }
@@ -385,17 +413,35 @@ fn parse_add() -> i64 {
     parse_mul();
     while 1 {
         if accept("+") == 1 {
+            let lt: i64 = R_ETY;
             g_push_rax();
             parse_mul();
+            let rt: i64 = R_ETY;
             g_pop_rcx();
-            g_add();
-            R_ETY = ty_int();
+            if f_bin_promote(lt, rt) == 1 {
+                g_fint2f(lt);
+                g_fint2f_r(rt);
+                g_fop(0);
+                R_ETY = ty_f64();
+            } else {
+                g_add();
+                R_ETY = ty_int();
+            }
         } else {
             if accept("-") == 1 {
+                let lt2: i64 = R_ETY;
                 g_push_rax();
                 parse_mul();
+                let rt2: i64 = R_ETY;
                 g_pop_rcx();
-                g_sub();
+                if f_bin_promote(lt2, rt2) == 1 {
+                    g_fint2f(lt2);
+                    g_fint2f_r(rt2);
+                    g_fop(1);
+                    R_ETY = ty_f64();
+                } else {
+                    g_sub();
+                }
             } else {
                 return 0;
             }
@@ -408,17 +454,35 @@ fn parse_mul() -> i64 {
     parse_unary();
     while 1 {
         if accept("*") == 1 {
+            let lt: i64 = R_ETY;
             g_push_rax();
             parse_unary();
+            let rt: i64 = R_ETY;
             g_pop_rcx();
-            g_imul();
-            R_ETY = ty_int();
+            if f_bin_promote(lt, rt) == 1 {
+                g_fint2f(lt);
+                g_fint2f_r(rt);
+                g_fop(2);
+                R_ETY = ty_f64();
+            } else {
+                g_imul();
+                R_ETY = ty_int();
+            }
         } else {
             if accept("/") == 1 {
+                let lt2: i64 = R_ETY;
                 g_push_rax();
                 parse_unary();
+                let rt2: i64 = R_ETY;
                 g_pop_rcx();
-                g_idiv(0);
+                if f_bin_promote(lt2, rt2) == 1 {
+                    g_fint2f(lt2);
+                    g_fint2f_r(rt2);
+                    g_fop(3);
+                    R_ETY = ty_f64();
+                } else {
+                    g_idiv(0);
+                }
             } else {
                 if accept("%") == 1 {
                     g_push_rax();
@@ -454,6 +518,11 @@ fn parse_unary() -> i64 {
     if accept("&") == 1 { return parse_addr(); }
     if accept("-") == 1 {
         parse_unary();
+        if ty_kind(R_ETY) == 6 {
+            # f64 位模式只翻符号位：rax ^= 1<<63（不要走整数 neg）
+            g_xor_imm63();
+            return 0;
+        }
         g_neg();
         R_ETY = ty_int();
         return 0;
@@ -489,6 +558,13 @@ fn undef_err(name: i64) -> i64 {
 
 fn parse_primary() -> i64 {
     let k: i64 = gv(K_TKIND);
+    # f64 字面量：位模式当 i64 装进 rax，类型 f64
+    if k == 5 {
+        g_movabs_rax(gv(K_TIVAL));
+        next_token();
+        R_ETY = ty_f64();
+        return 0;
+    }
     if k == 2 {
         g_movabs_rax(gv(K_TIVAL));
         next_token();
@@ -777,6 +853,60 @@ fn parse_call() -> i64 {
         CALLD = CALLD - 1;
         return 0;
     }
+    if streq(cscratch(), "fabs") == 1 {
+        g_pop_rax();
+        ops4(0x66, 0x48, 0x0f, 0x6e); emit1(0xc0);   # movq xmm0, rax
+        ops2(0x49, 0xbb); emit8(0x7fffffffffffffff); # movabs r11, mask
+        ops4(0x66, 0x49, 0x0f, 0x6e); emit1(0xcb);   # movq xmm1, r11
+        ops4(0x66, 0x0f, 0x54, 0xc1);                # andpd xmm0, xmm1
+        ops4(0x66, 0x48, 0x0f, 0x7e); emit1(0xc0);   # movq rax, xmm0
+        CALLD = CALLD - 1;
+        R_ETY = ty_f64();
+        return 0;
+    }
+    if streq(cscratch(), "fmin") == 1 {
+        g_pop_rax();              # 右
+        g_movq_rax_xmm1();
+        g_pop_rcx();              # 左
+        g_movq_rcx_xmm0();
+        # minsd xmm0, xmm1: F2 0F 5D C1
+        ops4(0xf2, 0x0f, 0x5d, 0xc1);
+        g_movq_xmm0_rax();
+        CALLD = CALLD - 1;
+        R_ETY = ty_f64();
+        return 0;
+    }
+    if streq(cscratch(), "fmax") == 1 {
+        g_pop_rax();
+        g_movq_rax_xmm1();
+        g_pop_rcx();
+        g_movq_rcx_xmm0();
+        # maxsd xmm0, xmm1: F2 0F 5F C1
+        ops4(0xf2, 0x0f, 0x5f, 0xc1);
+        g_movq_xmm0_rax();
+        CALLD = CALLD - 1;
+        R_ETY = ty_f64();
+        return 0;
+    }
+    # int -> f64 / f64 -> int（截断）显式转换
+    if streq(cscratch(), "itof") == 1 {
+        g_pop_rax();
+        # cvtsi2sd xmm0, rax
+        ops4(0xf2, 0x48, 0x0f, 0x2a); emit1(0xc0);
+        g_movq_xmm0_rax();
+        CALLD = CALLD - 1;
+        R_ETY = ty_f64();
+        return 0;
+    }
+    if streq(cscratch(), "ftoi") == 1 {
+        g_pop_rax();
+        ops3(0x48, 0x89, 0xc1);                      # mov rcx, rax
+        g_movq_rcx_xmm0();
+        g_cvtsd2si();
+        CALLD = CALLD - 1;
+        R_ETY = ty_int();
+        return 0;
+    }
     if streq(cscratch(), "syscall") == 1 {
         if na >= 7 { g_pop_r9(); }
         if na >= 6 { g_pop_r8(); }
@@ -812,7 +942,11 @@ fn parse_call() -> i64 {
     if na >= 2 { g_pop_rsi(); }
     if na >= 1 { g_pop_rdi(); }
     R_SYM = sym_lookup_func(cscratch());
-    if R_SYM < 0 { CALLD = CALLD - 1; return undef_err(cscratch()); }
+    if R_SYM < 0 {
+        let cn: i64 = cscratch();
+        CALLD = CALLD - 1;
+        return undef_err(cn);
+    }
     emit_call_patch(R_SYM);
     CALLD = CALLD - 1;
     return 0;

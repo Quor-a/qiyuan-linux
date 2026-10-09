@@ -1237,7 +1237,7 @@ fn g_divsd()  -> i64 { ops4(0xf2, 0x0f, 0x5e, 0xc1); return 0; }
 # int(rcx) → xmm0 双精度
 fn g_cvtsi2sd_rcx() -> i64 { ops4(0xf2, 0x48, 0x0f, 0x2a); emit1(0xc1); return 0; }
 # xmm0 → rax 位模式
-fn g_cvtsd2si() -> i64 { ops4(0xf2, 0x48, 0x0f, 0x7d); emit1(0xc0); return 0; }
+fn g_cvtsd2si() -> i64 { ops4(0xf2, 0x48, 0x0f, 0x2c); emit1(0xc0); return 0; }
 
 # rax = f64(rcx) op f64(rax)
 fn g_fop(op: i64) -> i64 {
@@ -2566,6 +2566,60 @@ fn parse_call() -> i64 {
         ops3(0x48, 0x89, 0x19);
         g_zero_rax();
         CALLD = CALLD - 1;
+        return 0;
+    }
+    if streq(cscratch(), "fabs") == 1 {
+        g_pop_rax();
+        ops4(0x66, 0x48, 0x0f, 0x6e); emit1(0xc0);   # movq xmm0, rax
+        ops2(0x49, 0xbb); emit8(0x7fffffffffffffff); # movabs r11, mask
+        ops4(0x66, 0x49, 0x0f, 0x6e); emit1(0xcb);   # movq xmm1, r11
+        ops4(0x66, 0x0f, 0x54, 0xc1);                # andpd xmm0, xmm1
+        ops4(0x66, 0x48, 0x0f, 0x7e); emit1(0xc0);   # movq rax, xmm0
+        CALLD = CALLD - 1;
+        R_ETY = ty_f64();
+        return 0;
+    }
+    if streq(cscratch(), "fmin") == 1 {
+        g_pop_rax();              # 右
+        g_movq_rax_xmm1();
+        g_pop_rcx();              # 左
+        g_movq_rcx_xmm0();
+        # minsd xmm0, xmm1: F2 0F 5D C1
+        ops4(0xf2, 0x0f, 0x5d, 0xc1);
+        g_movq_xmm0_rax();
+        CALLD = CALLD - 1;
+        R_ETY = ty_f64();
+        return 0;
+    }
+    if streq(cscratch(), "fmax") == 1 {
+        g_pop_rax();
+        g_movq_rax_xmm1();
+        g_pop_rcx();
+        g_movq_rcx_xmm0();
+        # maxsd xmm0, xmm1: F2 0F 5F C1
+        ops4(0xf2, 0x0f, 0x5f, 0xc1);
+        g_movq_xmm0_rax();
+        CALLD = CALLD - 1;
+        R_ETY = ty_f64();
+        return 0;
+    }
+    # int -> f64 / f64 -> int（截断）显式转换
+    if streq(cscratch(), "itof") == 1 {
+        g_pop_rax();
+        # cvtsi2sd xmm0, rax
+        ops4(0xf2, 0x48, 0x0f, 0x2a); emit1(0xc0);
+        g_movq_xmm0_rax();
+        CALLD = CALLD - 1;
+        R_ETY = ty_f64();
+        return 0;
+    }
+    if streq(cscratch(), "ftoi") == 1 {
+        g_pop_rax();
+        ops3(0x48, 0x89, 0xc1);                      # mov rcx, rax
+        g_movq_rcx_xmm0();
+        g_cvtsd2si();
+        CALLD = CALLD - 1;
+        R_ETY = ty_int();
         return 0;
     }
     if streq(cscratch(), "syscall") == 1 {

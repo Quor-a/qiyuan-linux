@@ -394,10 +394,14 @@ fn parse_let() -> i64 {
         if accept("byte") == 1 {
             vt = ty_byte();
         } else {
-            if accept("ptr") == 1 {
-                vt = ty_ptr(ty_byte());
+            if accept("f64") == 1 {
+                vt = ty_f64();
             } else {
-                return err_atp("expected a type", gv(K_PLINE), gv(K_PCOL), gv(K_PPOS));
+                if accept("ptr") == 1 {
+                    vt = ty_ptr(ty_byte());
+                } else {
+                    return err_atp("expected a type", gv(K_PLINE), gv(K_PCOL), gv(K_PPOS));
+                }
             }
         }
     }
@@ -717,10 +721,14 @@ fn parse_func() -> i64 {
             if accept("byte") == 1 {
                 pt = ty_byte();
             } else {
-                if accept("ptr") == 1 {
-                    pt = ty_ptr(ty_byte());
+                if accept("f64") == 1 {
+                    pt = ty_f64();
                 } else {
-                    return err_atp("expected a type", gv(K_PLINE), gv(K_PCOL), gv(K_PPOS));
+                    if accept("ptr") == 1 {
+                        pt = ty_ptr(ty_byte());
+                    } else {
+                        return err_atp("expected a type", gv(K_PLINE), gv(K_PCOL), gv(K_PPOS));
+                    }
                 }
             }
         }
@@ -736,7 +744,11 @@ fn parse_func() -> i64 {
     }
     expect(")");
     expect("->");
-    expect("i64");
+    if accept("f64") == 1 {
+        # 返回 f64：位模式经 rax 返回，语义同 i64
+    } else {
+        expect("i64");
+    }
     store64(heap + O_SP + fsi * 8, nb);
     g_prologue();
     let i: i64 = 0;

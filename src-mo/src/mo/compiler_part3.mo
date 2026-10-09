@@ -120,11 +120,85 @@ fn lex_number(p: i64) -> i64 {
         v = v * 10 + (sbyte(p) - 48);
         p = p + 1;
     }
+    # 小数点 → f64 字面量（TKIND=5，TIVAL 存 IEEE754 位模式）
+    if sbyte(p) == 46 {
+        if is_digit(sbyte(p + 1)) == 1 {
+            let q: i64 = p + 1;
+            let fv: i64 = 0;
+            let fd: i64 = 1;
+            while is_digit(sbyte(q)) == 1 {
+                fv = fv * 10 + (sbyte(q) - 48);
+                fd = fd * 10;
+                q = q + 1;
+            }
+            # 位模式 = f64(v + fv/fd)：用整数部分 exp + 小数逼近
+            let bits: i64 = dtoi_f64(v, fv, fd, 0);
+            p = q;
+            sv(K_POS, p);
+            sv(K_TKIND, 5);
+            sv(K_TIVAL, bits);
+            sv(K_TFVAL, bits);
+            store8(tokbuf(), 0);
+            return 0;
+        }
+    }
     sv(K_POS, p);
     sv(K_TKIND, 2);
     sv(K_TIVAL, v);
     store8(tokbuf(), 0);
     return 0;
+}
+
+# 整数+小数 → IEEE754 位模式（逐位长除法，避免 num<<52 溢出）
+fn dtoi_f64(iv: i64, fv: i64, fd: i64, neg: i64) -> i64 {
+    let num: i64 = iv * fd + fv;
+    if num == 0 { return 0; }
+    let e: i64 = 0;
+    let t: i64 = fd;
+    while t <= num {
+        t = t * 2;
+        e = e + 1;
+    }
+    e = e - 1;
+    # den = fd * 2^e；e 可为 -1（如 0.5），用循环结束时的 t/2 免去负移
+    let den: i64 = t / 2;
+    let r: i64 = num - den;
+    let frac: i64 = 0;
+    let k: i64 = 0;
+    while k < 52 {
+        r = r * 2;
+        frac = frac * 2;
+        if r >= den {
+            r = r - den;
+            frac = frac + 1;
+        }
+        k = k + 1;
+    }
+    if r * 2 >= den { frac = frac + 1; }
+    if frac >= 4503599627370496 {
+        frac = frac - 4503599627370496;
+        e = e + 1;
+    }
+    let bits: i64 = (e + 1023) * 4503599627370496 + frac;
+    if neg == 1 { bits = bits - 9223372036854775808; }
+    return bits;
+}
+fn bits_frac52(v: i64) -> i64 { return v & 4503599627370495; }
+fn bits_exp52(v: i64) -> i64 { return (v >> 52) & 2047; }
+fn int_to_f64(n: i64) -> i64 {
+    if n == 0 { return 0; }
+    let e: i64 = 62;
+    while e >= 0 {
+        if (n >> e) & 1 == 1 { break; }
+        e = e - 1;
+    }
+    let frac: i64 = 0;
+    if e <= 52 {
+        frac = (n - (1 << e)) << (52 - e);
+    } else {
+        frac = (n - (1 << e)) >> (e - 52);
+    }
+    return (e + 1023) * 4503599627370496 + frac;
 }
 
 # 字符串字面量：内容写入输出数据段（供生成的程序用），

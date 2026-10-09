@@ -138,11 +138,15 @@ fn g_movabs_rax(v: i64) -> i64 {
     if v < 0 {
         ops2(0x48, 0xb8);
         emit8(v);
+        # 8 字节形式不进折叠缓存：K_LASTR 是 32 位形式的陈旧长度，
+        # f64 位模式（大数/负数）会令 try_fold_rhs 回退出错误长度
+        sv(K_LAST, 0);
         return 0;
     }
     if v > 4294967295 {
         ops2(0x48, 0xb8);
         emit8(v);
+        sv(K_LAST, 0);
         return 0;
     }
     emit1(0xb8);
@@ -791,5 +795,93 @@ fn emit_jmp(l: i64) -> i64 {
     sv(K_PJMP, k + 1);
     sv(K_PJLBL, l);
     sv(K_PJEND, gv(K_CLEN));
+    return 0;
+}
+
+# ============================ f64 / SSE ============================
+# 约定：f64 值以 64 位模式经 rax 传递；二元运算左操作数在 rcx。
+
+fn g_movq_rcx_xmm0() -> i64 { ops4(0x66, 0x48, 0x0f, 0x6e); emit1(0xc1); return 0; }
+fn g_movq_rax_xmm1() -> i64 { ops4(0x66, 0x48, 0x0f, 0x6e); emit1(0xc8); return 0; }
+fn g_movq_xmm0_rax() -> i64 { ops4(0x66, 0x48, 0x0f, 0x7e); emit1(0xc0); return 0; }
+fn g_addsd()  -> i64 { ops4(0xf2, 0x0f, 0x58, 0xc1); return 0; }
+fn g_subsd()  -> i64 { ops4(0xf2, 0x0f, 0x5c, 0xc1); return 0; }
+fn g_mulsd()  -> i64 { ops4(0xf2, 0x0f, 0x59, 0xc1); return 0; }
+fn g_divsd()  -> i64 { ops4(0xf2, 0x0f, 0x5e, 0xc1); return 0; }
+# int(rcx) → xmm0 双精度
+fn g_cvtsi2sd_rcx() -> i64 { ops4(0xf2, 0x48, 0x0f, 0x2a); emit1(0xc1); return 0; }
+# xmm0 → rax 位模式
+fn g_cvtsd2si() -> i64 { ops4(0xf2, 0x48, 0x0f, 0x2c); emit1(0xc0); return 0; }
+
+# rax = f64(rcx) op f64(rax)
+fn g_fop(op: i64) -> i64 {
+    spill_cache();
+    g_movq_rcx_xmm0();
+    g_movq_rax_xmm1();
+    if op == 0 { g_addsd(); }
+    if op == 1 { g_subsd(); }
+    if op == 2 { g_mulsd(); }
+    if op == 3 { g_divsd(); }
+    g_movq_xmm0_rax();
+    return 0;
+}
+
+# 混合 int/f64 提升：任一侧 f64 → 都转 f64
+# 返回 1 = 本运算按 f64 做（结果在 rax 为位模式）
+fn f_bin_promote(lt: i64, rt: i64) -> i64 {
+    if ty_kind(lt) == 6 { return 1; }
+    if ty_kind(rt) == 6 { return 1; }
+    return 0;
+}
+
+# rcx 中的值按类型 lt 进入 xmm0：f64 位模式 movq；int 先 cvt
+fn g_fint2f(lt: i64) -> i64 {
+    if ty_kind(lt) == 6 {
+        g_movq_rcx_xmm0();
+    } else {
+        g_cvtsi2sd_rcx();
+    }
+    return 0;
+}
+
+# rax 中的值按类型 rt 进入 xmm1（经 rcx 转接：先 save rax→rcx? 不能破坏左值已在 xmm0）
+# 方案：rax 值先mov 到 r11，再从 r11 载入 xmm1
+fn g_fint2f_r(rt: i64) -> i64 {
+    ops3(0x49, 0x89, 0xc3);   # mov r11, rax
+    if ty_kind(rt) == 6 {
+        ops4(0x66, 0x49, 0x0f, 0x6e);   # movq xmm1, r11
+        emit1(0xcb);
+    } else {
+        ops3(0x4c, 0x89, 0xd8);         # mov rax, r11
+        ops4(0xf2, 0x48, 0x0f, 0x2a);   # cvtsi2sd xmm1, rax
+        emit1(0xc8);
+    }
+    return 0;
+}
+
+# rax ^= 1<<63（f64 符号位翻转）
+fn g_xor_imm63() -> i64 {
+    ops2(0x49, 0xb8);          # movabs r8, 0x8000000000000000
+    emit8(0 - 9223372036854775807 - 1);
+    ops3(0x4c, 0x31, 0xc0);    # xor rax, r8
+    return 0;
+}
+
+# f64 比较：ucomisd xmm0(左),xmm1(右) → setcc
+# ucomisd: 66 0F 2E C1
+fn g_ucomisd() -> i64 { ops4(0x66, 0x0f, 0x2e, 0xc1); return 0; }
+
+# rax = (f64)rcx OP (f64)rax 的 0/1
+# 注意 ucomisd 的无序(NaN)置 CF=ZF=PF=1：
+#   < : CF=1   ≤: CF=1|ZF=1   > : 左>右 = !(CF|ZF)   ≥ = !(CF)
+# setcc 直接支持 b/ba/e/ne（<,>,=,!=）；le/ge 用 setnbe 组合：
+#   ≤ : setbe(0x96)  ≥ : setae(0x93)（CF=0）
+fn g_fcmp_set(cc: i64) -> i64 {
+    g_movq_rcx_xmm0();
+    g_movq_rax_xmm1();
+    g_ucomisd();
+    ops2(0x0f, cc);
+    emit1(0xc0);
+    ops4(0x48, 0x0f, 0xb6, 0xc0);
     return 0;
 }
