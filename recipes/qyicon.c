@@ -1,0 +1,322 @@
+/*
+ * qyicon.c — 启元统一 cairo 图标层
+ * 风格与托盘线稿一致：24×24 逻辑坐标、1.5px 描边、圆帽圆角。
+ * 供 qydesktop / qyappmenu 使用，替代「彩色块+字符」。
+ */
+#include "qyicon.h"
+#include <string.h>
+
+/* ---------- 通用圆角矩形 ---------- */
+void qy_rounded_rect(cairo_t *cr, double x, double y, double w, double h, double r) {
+    if (r > w / 2) r = w / 2;
+    if (r > h / 2) r = h / 2;
+    cairo_new_sub_path(cr);
+    cairo_arc(cr, x + w - r, y + r, r, -G_PI / 2, 0);
+    cairo_arc(cr, x + w - r, y + h - r, r, 0, G_PI / 2);
+    cairo_arc(cr, x + r, y + h - r, r, G_PI / 2, G_PI);
+    cairo_arc(cr, x + r, y + r, r, G_PI, 3 * G_PI / 2);
+    cairo_close_path(cr);
+}
+
+/* ---------- 各图标绘制（24×24 逻辑坐标，中心 12,12） ---------- */
+
+#define PX(v) (x + (v) * s / 24.0)
+#define PY(v) (y + (v) * s / 24.0)
+#define SET_LINE(cr_) \
+    do { \
+        double _lw = (s > 20.0 ? s / 16.0 : 1.4); \
+        cairo_set_line_width((cr_), _lw); \
+        cairo_set_line_cap((cr_), CAIRO_LINE_CAP_ROUND); \
+        cairo_set_line_join((cr_), CAIRO_LINE_JOIN_ROUND); \
+    } while (0)
+
+static void draw_term(cairo_t *cr, double x, double y, double s) {
+    qy_rounded_rect(cr, PX(5), PY(5.5), PX(14), PY(13), PX(3));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(9), PY(10.5)); cairo_line_to(cr, PX(12), PY(13)); cairo_line_to(cr, PX(9), PY(15.5));
+    cairo_move_to(cr, PX(13.5), PY(15.5)); cairo_line_to(cr, PX(17.5), PY(15.5));
+    cairo_stroke(cr);
+}
+
+static void draw_browser(cairo_t *cr, double x, double y, double s) {
+    cairo_arc(cr, PX(12), PY(12), PX(7.2), 0, 2 * G_PI);
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(4.8), PY(12)); cairo_line_to(cr, PX(19.2), PY(12));
+    cairo_move_to(cr, PX(12), PY(4.8)); cairo_line_to(cr, PX(12), PY(19.2));
+    cairo_stroke(cr);
+}
+
+static void draw_files(cairo_t *cr, double x, double y, double s) {
+    qy_rounded_rect(cr, PX(6), PY(4.5), PX(12.5), PY(15), PX(2.2));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(15), PY(4.5)); cairo_line_to(cr, PX(18.5), PY(8));
+    cairo_move_to(cr, PX(15), PY(8)); cairo_line_to(cr, PX(18.5), PY(8));
+    cairo_stroke(cr);
+}
+
+static void draw_image(cairo_t *cr, double x, double y, double s) {
+    qy_rounded_rect(cr, PX(4.8), PY(6), PX(14.4), PY(12), PX(2));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(7), PY(15.5)); cairo_line_to(cr, PX(10.5), PY(10.5));
+    cairo_line_to(cr, PX(13), PY(13.5)); cairo_line_to(cr, PX(15.5), PY(11.5));
+    cairo_line_to(cr, PX(18.5), PY(15.5));
+    cairo_stroke(cr);
+    cairo_arc(cr, PX(9.5), PY(9), PX(1.4), 0, 2 * G_PI);
+    cairo_stroke(cr);
+}
+
+static void draw_archive(cairo_t *cr, double x, double y, double s) {
+    qy_rounded_rect(cr, PX(6), PY(5), PX(12), PY(14), PX(2));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(10.2), PY(5)); cairo_line_to(cr, PX(10.2), PY(9));
+    cairo_move_to(cr, PX(13.8), PY(5)); cairo_line_to(cr, PX(13.8), PY(9));
+    cairo_move_to(cr, PX(10.2), PY(9)); cairo_line_to(cr, PX(13.8), PY(9));
+    cairo_stroke(cr);
+}
+
+static void draw_trash(cairo_t *cr, double x, double y, double s) {
+    qy_rounded_rect(cr, PX(7.5), PY(8.5), PX(9), PY(10.5), PX(1.5));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(5.5), PY(7.5)); cairo_line_to(cr, PX(18.5), PY(7.5));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(10), PY(7.5)); cairo_curve_to(cr, PX(10), PY(5.5), PX(14), PY(5.5), PX(14), PY(7.5));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(10.5), PY(11)); cairo_line_to(cr, PX(10.5), PY(16.5));
+    cairo_move_to(cr, PX(13.5), PY(11)); cairo_line_to(cr, PX(13.5), PY(16.5));
+    cairo_stroke(cr);
+}
+
+static void draw_edit(cairo_t *cr, double x, double y, double s) {
+    cairo_move_to(cr, PX(5.5), PY(18.5)); cairo_line_to(cr, PX(18.5), PY(5.5));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(15), PY(5.5)); cairo_line_to(cr, PX(18.5), PY(9));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(5), PY(19)); cairo_line_to(cr, PX(7.5), PY(17.5));
+    cairo_stroke(cr);
+}
+
+static void draw_store(cairo_t *cr, double x, double y, double s) {
+    qy_rounded_rect(cr, PX(7), PY(9), PX(10), PY(9), PX(2));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(9.5), PY(9)); cairo_curve_to(cr, PX(9.5), PY(6.5), PX(14.5), PY(6.5), PX(14.5), PY(9));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(7), PY(12)); cairo_line_to(cr, PX(17), PY(12));
+    cairo_stroke(cr);
+}
+
+static void draw_shot(cairo_t *cr, double x, double y, double s) {
+    qy_rounded_rect(cr, PX(4.5), PY(8), PX(15), PY(9.5), PX(2.5));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(8.5), PY(8)); cairo_curve_to(cr, PX(8.5), PY(6.5), PX(9.5), PY(5.8), PX(12), PY(5.8));
+    cairo_curve_to(cr, PX(14.5), PY(5.8), PX(15.5), PY(6.5), PX(15.5), PY(8));
+    cairo_stroke(cr);
+    cairo_arc(cr, PX(12), PY(12.8), PX(2.8), 0, 2 * G_PI);
+    cairo_stroke(cr);
+}
+
+static void draw_clipboard(cairo_t *cr, double x, double y, double s) {
+    qy_rounded_rect(cr, PX(7), PY(5.5), PX(10), PY(13.5), PX(2));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(10), PY(5.5)); cairo_curve_to(cr, PX(10), PY(3.5), PX(14), PY(3.5), PX(14), PY(5.5));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(9.5), PY(10.5)); cairo_line_to(cr, PX(14.5), PY(10.5));
+    cairo_move_to(cr, PX(9.5), PY(13.5)); cairo_line_to(cr, PX(14.5), PY(13.5));
+    cairo_stroke(cr);
+}
+
+static void draw_lock(cairo_t *cr, double x, double y, double s) {
+    cairo_move_to(cr, PX(9), PY(11)); cairo_curve_to(cr, PX(9), PY(7), PX(15), PY(7), PX(15), PY(11));
+    cairo_stroke(cr);
+    qy_rounded_rect(cr, PX(6.5), PY(10.5), PX(11), PY(8.5), PX(2));
+    cairo_stroke(cr);
+    cairo_arc(cr, PX(12), PY(14), PX(1.2), 0, 2 * G_PI);
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(12), PY(15.2)); cairo_line_to(cr, PX(12), PY(17));
+    cairo_stroke(cr);
+}
+
+static void draw_search(cairo_t *cr, double x, double y, double s) {
+    cairo_arc(cr, PX(10), PY(10.5), PX(5.2), 0, 2 * G_PI);
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(14.2), PY(14.2)); cairo_line_to(cr, PX(19.5), PY(19.5));
+    cairo_stroke(cr);
+}
+
+static void draw_music(cairo_t *cr, double x, double y, double s) {
+    cairo_move_to(cr, PX(10.5), PY(5.5)); cairo_line_to(cr, PX(10.5), PY(16.5));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(10.5), PY(5.5)); cairo_curve_to(cr, PX(14), PY(6.5), PX(15.5), PY(9.5), PX(15), PY(12.5));
+    cairo_stroke(cr);
+    cairo_arc(cr, PX(10.5), PY(17.5), PX(1.8), 0, 2 * G_PI);
+    cairo_stroke(cr);
+    cairo_arc(cr, PX(14.5), PY(15.5), PX(1.8), 0, 2 * G_PI);
+    cairo_stroke(cr);
+}
+
+static void draw_switcher(cairo_t *cr, double x, double y, double s) {
+    cairo_move_to(cr, PX(13.5), PY(8.5)); cairo_line_to(cr, PX(9.5), PY(12)); cairo_line_to(cr, PX(13.5), PY(15.5));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(10.5), PY(8.5)); cairo_line_to(cr, PX(14.5), PY(12)); cairo_line_to(cr, PX(10.5), PY(15.5));
+    cairo_stroke(cr);
+}
+
+static void draw_driver(cairo_t *cr, double x, double y, double s) {
+    qy_rounded_rect(cr, PX(5), PY(8.5), PX(14), PY(7.5), PX(1.5));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(5), PY(15)); cairo_curve_to(cr, PX(5), PY(16.8), PX(19), PY(16.8), PX(19), PY(15));
+    cairo_stroke(cr);
+    cairo_arc(cr, PX(12), PY(12), PX(2.6), 0, 2 * G_PI);
+    cairo_stroke(cr);
+}
+
+static void draw_git(cairo_t *cr, double x, double y, double s) {
+    cairo_arc(cr, PX(7.5), PY(6.5), PX(2), 0, 2 * G_PI);
+    cairo_stroke(cr);
+    cairo_arc(cr, PX(16.5), PY(6.5), PX(2), 0, 2 * G_PI);
+    cairo_stroke(cr);
+    cairo_arc(cr, PX(12), PY(17.5), PX(2), 0, 2 * G_PI);
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(7.5), PY(8.5)); cairo_line_to(cr, PX(7.5), PY(14));
+    cairo_curve_to(cr, PX(7.5), PY(16.5), PX(12), PY(16.5), PX(12), PY(15.5));
+    cairo_move_to(cr, PX(16.5), PY(8.5)); cairo_line_to(cr, PX(16.5), PY(12));
+    cairo_curve_to(cr, PX(16.5), PY(14), PX(12), PY(14.5), PX(12), PY(15.5));
+    cairo_stroke(cr);
+}
+
+static void draw_welcome(cairo_t *cr, double x, double y, double s) {
+    cairo_move_to(cr, PX(12), PY(4.5));
+    cairo_line_to(cr, PX(13.6), PY(10.4));
+    cairo_line_to(cr, PX(19.5), PY(12));
+    cairo_line_to(cr, PX(13.6), PY(13.6));
+    cairo_line_to(cr, PX(12), PY(19.5));
+    cairo_line_to(cr, PX(10.4), PY(13.6));
+    cairo_line_to(cr, PX(4.5), PY(12));
+    cairo_line_to(cr, PX(10.4), PY(10.4));
+    cairo_close_path(cr);
+    cairo_stroke(cr);
+}
+
+static void draw_home(cairo_t *cr, double x, double y, double s) {
+    cairo_move_to(cr, PX(5.5), PY(11.5)); cairo_line_to(cr, PX(12), PY(5.5)); cairo_line_to(cr, PX(18.5), PY(11.5));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(6.5), PY(10.5)); cairo_line_to(cr, PX(6.5), PY(18.5));
+    cairo_line_to(cr, PX(17.5), PY(18.5)); cairo_line_to(cr, PX(17.5), PY(10.5));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(10), PY(18.5)); cairo_line_to(cr, PX(10), PY(14));
+    cairo_line_to(cr, PX(14), PY(14)); cairo_line_to(cr, PX(14), PY(18.5));
+    cairo_stroke(cr);
+}
+
+static void draw_settings(cairo_t *cr, double x, double y, double s) {
+    cairo_arc(cr, PX(12), PY(12), PX(4.5), 0, 2 * G_PI);
+    cairo_stroke(cr);
+    /* 8 个齿（固定 24 网格坐标，避免 math.h） */
+    const double teeth[8][4] = {
+        { 18.2, 12.0, 20.6, 12.0 },
+        { 16.4, 16.4, 18.1, 18.1 },
+        { 12.0, 18.2, 12.0, 20.6 },
+        { 7.6, 16.4, 5.9, 18.1 },
+        { 5.8, 12.0, 3.4, 12.0 },
+        { 7.6, 7.6, 5.9, 5.9 },
+        { 12.0, 5.8, 12.0, 3.4 },
+        { 16.4, 7.6, 18.1, 5.9 },
+    };
+    int i;
+    for (i = 0; i < 8; i++) {
+        cairo_move_to(cr, PX(teeth[i][0]), PY(teeth[i][1]));
+        cairo_line_to(cr, PX(teeth[i][2]), PY(teeth[i][3]));
+    }
+    cairo_stroke(cr);
+}
+
+static void draw_monitor(cairo_t *cr, double x, double y, double s) {
+    qy_rounded_rect(cr, PX(5), PY(6), PX(14), PY(10), PX(1.8));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(8.5), PY(16.5)); cairo_line_to(cr, PX(15.5), PY(16.5));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(10), PY(16.5)); cairo_line_to(cr, PX(10), PY(19.5));
+    cairo_move_to(cr, PX(14), PY(16.5)); cairo_line_to(cr, PX(14), PY(19.5));
+    cairo_move_to(cr, PX(8.5), PY(19.5)); cairo_line_to(cr, PX(15.5), PY(19.5));
+    cairo_stroke(cr);
+}
+
+static void draw_setup(cairo_t *cr, double x, double y, double s) {
+    cairo_move_to(cr, PX(12), PY(5)); cairo_line_to(cr, PX(12), PY(13.5));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(8), PY(10.5)); cairo_line_to(cr, PX(12), PY(15)); cairo_line_to(cr, PX(16), PY(10.5));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(6.5), PY(18)); cairo_line_to(cr, PX(17.5), PY(18));
+    cairo_stroke(cr);
+}
+
+static void draw_users(cairo_t *cr, double x, double y, double s) {
+    cairo_arc(cr, PX(12), PY(8), PX(3.5), 0, 2 * G_PI);
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(6.5), PY(19)); cairo_curve_to(cr, PX(7.5), PY(15), PX(16.5), PY(15), PX(17.5), PY(19));
+    cairo_stroke(cr);
+}
+
+static void draw_network(cairo_t *cr, double x, double y, double s) {
+    cairo_move_to(cr, PX(6), PY(12)); cairo_line_to(cr, PX(18), PY(12));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(15), PY(9)); cairo_line_to(cr, PX(18), PY(12)); cairo_line_to(cr, PX(15), PY(15));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(9), PY(9)); cairo_line_to(cr, PX(6), PY(12)); cairo_line_to(cr, PX(9), PY(15));
+    cairo_stroke(cr);
+    cairo_arc(cr, PX(12), PY(12), PX(1.2), 0, 2 * G_PI);
+    cairo_stroke(cr);
+}
+
+#undef SET_LINE
+
+/* ---------- 函数表 ---------- */
+static void (* const drawers[QY_ICON_COUNT])(cairo_t *, double, double, double) = {
+    draw_term, draw_browser, draw_files, draw_image, draw_archive,
+    draw_trash, draw_edit, draw_store, draw_shot, draw_clipboard,
+    draw_lock, draw_search, draw_music, draw_switcher, draw_driver,
+    draw_git, draw_welcome, draw_home, draw_settings, draw_monitor,
+    draw_setup, draw_users, draw_network,
+};
+
+/* ---------- 统一分发器 ---------- */
+void qy_icon_draw(cairo_t *cr, QyIconId id, double x, double y, double size,
+                          gboolean filled, const GdkRGBA *color) {
+    (void)filled;
+    if (id < 0 || id >= QY_ICON_COUNT) id = QY_ICON_SETTINGS;
+    if (color) cairo_set_source_rgba(cr, color->red, color->green, color->blue, color->alpha);
+    else cairo_set_source_rgb(cr, 1, 1, 1);
+    double lw = (size > 20.0 ? size / 16.0 : 1.4);
+    cairo_set_line_width(cr, lw);
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+    cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);
+    drawers[id](cr, x, y, size);
+}
+
+/* ---------- 玻璃拟态圆角底 + 线稿 ---------- */
+void qy_icon_tile(cairo_t *cr, QyIconId id, double x, double y, double size,
+                  double radius, const GdkRGBA *bg, const GdkRGBA *color) {
+    if (bg) cairo_set_source_rgba(cr, bg->red, bg->green, bg->blue, bg->alpha);
+    else cairo_set_source_rgba(cr, 1, 1, 1, 0.06);
+    qy_rounded_rect(cr, x, y, size, size, radius);
+    cairo_fill_preserve(cr);
+    cairo_set_line_width(cr, 1.0);
+    cairo_set_source_rgba(cr, 1, 1, 1, 0.14);
+    cairo_stroke(cr);
+    qy_icon_draw(cr, id, x, y, size, FALSE, color);
+}
+
+/* ---------- Pixbuf 渲染（供 GtkImage/GtkIconView） ---------- */
+GdkPixbuf *qy_icon_pixbuf(QyIconId id, int px, const GdkRGBA *bg) {
+    cairo_surface_t *surf = cairo_image_surface_create(CAIRO_FORMAT_ARGB32, px, px);
+    cairo_t *cr = cairo_create(surf);
+    if (bg) cairo_set_source_rgba(cr, bg->red, bg->green, bg->blue, bg->alpha);
+    else cairo_set_source_rgba(cr, 0, 0, 0, 0);
+    cairo_paint(cr);
+    double pad = px * 0.12;
+    qy_icon_draw(cr, id, pad, pad, px - pad * 2, FALSE, NULL);
+    cairo_destroy(cr);
+    cairo_surface_flush(surf);
+    GdkPixbuf *pb = gdk_pixbuf_get_from_surface(surf, 0, 0, px, px);
+    cairo_surface_destroy(surf);
+    return pb;
+}

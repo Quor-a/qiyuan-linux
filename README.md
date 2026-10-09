@@ -2312,3 +2312,16 @@ ngs-about-v2.png`。
 - 截图：docs/screenshots/ui-v3-notif-bell.png（cairo 铃铛托盘）
 
 构建产物：`qydesktop 0.1.0-223`。
+
+### UI 改版第 4 轮：统一 cairo 图标层 qyicon + 玻璃 tile + 根除紫色（v0.1.0-224，2026-10 实测）
+
+多专家群聊第一轮共识落地（视觉/图标/审计/实现 4 专家）：
+- **新增 recipes/qyicon.c/.h**：统一 cairo 图标库，QyIconId 枚举 23 个线稿（终端/浏览器/文件/图片/压缩/回收站/编辑/商店/截图/剪贴板/锁/搜索/音乐/切换/驱动/Git/欢迎/主文件夹/设置/监视/安装/用户/网络），24×24 逻辑坐标、1.5px 圆帽描边；API：qy_icon_draw / qy_icon_tile（玻璃底+线稿）/ qy_icon_pixbuf
+- **qyappmenu**：弃「彩色块+字符」，改玻璃 tile（56px 圆角 12）+ 白色线稿 + 左上 4px 主色圆点；常用区图标同步 cairo 化
+- **qydesktop 桌面图标**：⚙✗▣▦>_ → cairo 线稿（44px 玻璃圆角底）
+- **根除紫色**：.c-settings #77216F（aubergine）等彩色类统一为 rgba(255,255,255,.08) 玻璃底 + hover .16
+- **新令牌**：@qy_tile_bg、@qy_accent_soft
+- 构建链：qydesktop/qyappmenu 编译命令加入 qyicon.c
+- 实测：qyappmenu/qydesktop 编译 rc=0
+
+构建产物：`qydesktop 0.1.0-224`。

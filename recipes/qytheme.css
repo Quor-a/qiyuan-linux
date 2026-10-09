@@ -15,6 +15,8 @@
 @define-color qy_accent #E95420;
 @define-color qy_accent_hover #ff6b3d;
 @define-color qy_ok #7cfc9a;
+@define-color qy_tile_bg rgba(255,255,255,0.06);
+@define-color qy_accent_soft rgba(255,138,61,0.14);
 
 /* 加载本主题的应用进程内，所有窗口默认深色底 */
 window {
@@ -142,23 +144,13 @@ list row button:hover {
     font-size: 8px;
 }
 
-/* ---------- 图标颜色类（与 AppEntry.color 对应） ---------- */
-.c-files    { background-color: #E95420; }
-.c-files:hover { background-color: #ff6b3d; }
-.c-term     { background-color: #2c2c2c; }
-.c-term:hover  { background-color: #3d3d3d; }
-.c-settings { background-color: #77216F; }
-.c-settings:hover { background-color: #8e2a84; }
-.c-store    { background-color: #0A7EA4; }
-.c-store:hover { background-color: #0c92be; }
-.c-mon      { background-color: #F59E0B; }
-.c-mon:hover  { background-color: #ffb32e; }
-.c-home     { background-color: #E9A820; }
-.c-home:hover  { background-color: #f5b942; }
-.c-trash    { background-color: #6B7280; }
-.c-trash:hover { background-color: #7c8494; }
-.c-grid     { background-color: #2A2E3A; }
-.c-grid:hover  { background-color: #3a3f4d; }
+/* ---------- 图标颜色类（统一玻璃底，配色交给 cairo 线稿，根除紫色） ---------- */
+.c-files, .c-term, .c-settings, .c-store, .c-mon, .c-home, .c-trash, .c-grid {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+.c-files:hover, .c-term:hover, .c-settings:hover, .c-store:hover, .c-mon:hover, .c-home:hover, .c-trash:hover, .c-grid:hover {
+    background-color: rgba(255, 255, 255, 0.16);
+}
 
 /* ---------- 桌面图标 ---------- */
 .qy-desktop-icon {

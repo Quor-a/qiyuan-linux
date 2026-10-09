@@ -6,7 +6,7 @@
 
 name = "qydesktop"
 version = "0.1.0"
-release = 223
+release = 224
 summary = "启元桌面 shell（GTK3 单窗口 + 主题）"
 license = "MIT"
 
@@ -49,6 +49,8 @@ RECIPE_NOTIFY_C = Path(__file__).parent / "qynotify.c"
 RECIPE_NOTIFD_C = Path(__file__).parent / "qynotifd.c"
 RECIPE_DRIVER_C = Path(__file__).parent / "qydriver.c"
 RECIPE_GIT_C = Path(__file__).parent / "qygit.c"
+RECIPE_QYICON_C = Path(__file__).parent / "qyicon.c"
+RECIPE_QYICON_H = Path(__file__).parent / "qyicon.h"
 
 
 def build(ctx):
@@ -56,6 +58,8 @@ def build(ctx):
     shutil.copy(RECIPE_FILES_C, Path(ctx.srcdir) / "qyfiles.c")
     shutil.copy(RECIPE_SETTINGS_C, Path(ctx.srcdir) / "qysettings.c")
     shutil.copy(RECIPE_APPMENU_C, Path(ctx.srcdir) / "qyappmenu.c")
+    shutil.copy(RECIPE_QYICON_C, Path(ctx.srcdir) / "qyicon.c")
+    shutil.copy(RECIPE_QYICON_H, Path(ctx.srcdir) / "qyicon.h")
     shutil.copy(Path(__file__).parent / "qyboot.c", Path(ctx.srcdir) / "qyboot.c")
     shutil.copy(RECIPE_EDIT_C, Path(ctx.srcdir) / "qyedit.c")
     shutil.copy(RECIPE_MON_C, Path(ctx.srcdir) / "qymon.c")
@@ -107,14 +111,14 @@ def build(ctx):
         "export PATH={0}/usr/bin:$PATH; export PKG_CONFIG_PATH={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; "
         "export PKG_CONFIG_SYSROOT_DIR={0}; export PKG_CONFIG_LIBDIR={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; "
         "export LD_LIBRARY_PATH={0}/usr/lib/x86_64-linux-gnu:{0}/usr/lib:{0}/lib; "
-        "gcc qydesktop.c qytheme.c qyl10n.c -o qydesktop $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qydesktop.c qyicon.c qytheme.c qyl10n.c -o qydesktop $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
         "gcc qyfiles.c qytheme.c qyl10n.c -o qyfiles $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
         "gcc qysettings.c qytheme.c qyl10n.c -o qysettings $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
         "gcc qyusers.c qytheme.c qyl10n.c -o qyusers $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
         "gcc qywelcome.c qytheme.c qyl10n.c -o qywelcome $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
         "gcc qysetup.c qytheme.c qyl10n.c -o qysetup $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
         "gcc qysudo.c -o qysudo -O2 -lcrypt && "
-        "gcc qyappmenu.c qytheme.c qyl10n.c -o qyappmenu $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
+        "gcc qyappmenu.c qyicon.c qytheme.c qyl10n.c -o qyappmenu $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
         "gcc qyedit.c qytheme.c qyl10n.c -o qyedit $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
         "gcc qymon.c qytheme.c qyl10n.c -o qymon $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
         "gcc qyview.c qytheme.c qyl10n.c -o qyview $(pkg-config --cflags --libs gtk+-3.0 gdk-pixbuf-2.0) -O2 -ljpeg -lmount && "

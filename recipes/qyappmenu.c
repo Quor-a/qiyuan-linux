@@ -1,5 +1,6 @@
 /* qyappmenu - 启元开始菜单 (ArcMenu 风格: 搜索+固定网格+常用列表+用户区) */
 #include "qyl10n.h"
+#include "qyicon.h"
 #include <gtk/gtk.h>
 #include <gdk/gdkkeysyms.h>
 #include <string.h>
@@ -118,30 +119,50 @@ static void on_icon_click(GtkButton *btn, gpointer ud) {
     gtk_widget_hide(menu_win);
 }
 
-/* 圆角矩形绘制 (cairo) — 统一图标底 */
+/* 应用名 → 统一图标 id */
+static QyIconId app_icon_id(const AppEntry *a) {
+    const char *n = a->name;
+    if (strstr(n, "文件")) return QY_ICON_FILES;
+    if (strstr(n, "图片")) return QY_ICON_IMAGE;
+    if (strstr(n, "终端")) return QY_ICON_TERM;
+    if (strstr(n, "编辑")) return QY_ICON_EDIT;
+    if (strstr(n, "浏览器")) return QY_ICON_BROWSER;
+    if (strstr(n, "软件") || strstr(n, "商店")) return QY_ICON_STORE;
+    if (strstr(n, "设置")) return QY_ICON_SETTINGS;
+    if (strstr(n, "回收")) return QY_ICON_TRASH;
+    if (strstr(n, "截图")) return QY_ICON_SHOT;
+    if (strstr(n, "剪贴")) return QY_ICON_CLIPBOARD;
+    if (strstr(n, "锁")) return QY_ICON_LOCK;
+    if (strstr(n, "搜索")) return QY_ICON_SEARCH;
+    if (strstr(n, "音乐")) return QY_ICON_MUSIC;
+    if (strstr(n, "切换")) return QY_ICON_SWITCHER;
+    if (strstr(n, "驱动")) return QY_ICON_DRIVER;
+    if (strstr(n, "Git")) return QY_ICON_GIT;
+    if (strstr(n, "欢迎")) return QY_ICON_WELCOME;
+    if (strstr(n, "监视")) return QY_ICON_MONITOR;
+    if (strstr(n, "安装")) return QY_ICON_SETUP;
+    if (strstr(n, "用户")) return QY_ICON_USERS;
+    if (strstr(n, "网络")) return QY_ICON_NETWORK;
+    if (strstr(n, "压缩")) return QY_ICON_ARCHIVE;
+    return QY_ICON_FILES;
+}
+
+/* 统一图标 tile 绘制（玻璃底 + 线稿 + 左上主色圆点） */
 static gboolean icon_draw_cb(GtkWidget *w, cairo_t *cr, gpointer ud) {
     AppEntry *a = (AppEntry *)ud;
     GtkAllocation al;
     gtk_widget_get_allocation(w, &al);
+    double size = al.width < al.height ? al.width : al.height;
+    double x = (al.width - size) / 2.0;
+    double y = (al.height - size) / 2.0;
+    double radius = 12.0 * size / 56.0;
+    qy_icon_tile(cr, app_icon_id(a), x, y, size, radius, NULL, NULL);
+    /* 左上 4px 主色圆点（保留应用辨识色，不铺满） */
     GdkRGBA c;
     gdk_rgba_parse(&c, a->color);
-    double r = 10.0, wdt = al.width, h = al.height;
-    cairo_new_sub_path(cr);
-    cairo_arc(cr, wdt-r, r, r, -G_PI/2, 0);
-    cairo_arc(cr, wdt-r, h-r, r, 0, G_PI/2);
-    cairo_arc(cr, r, h-r, r, G_PI/2, G_PI);
-    cairo_arc(cr, r, r, r, G_PI, 3*G_PI/2);
-    cairo_close_path(cr);
-    cairo_set_source_rgb(cr, c.red, c.green, c.blue);
+    cairo_set_source_rgba(cr, c.red, c.green, c.blue, 0.92);
+    cairo_arc(cr, x + size * 0.18, y + size * 0.18, size * 0.075, 0, 2 * G_PI);
     cairo_fill(cr);
-    /* 白色字符居中 */
-    cairo_set_source_rgb(cr, 1, 1, 1);
-    cairo_select_font_face(cr, "sans", CAIRO_FONT_SLANT_NORMAL, CAIRO_FONT_WEIGHT_BOLD);
-    cairo_set_font_size(cr, h * 0.48);
-    cairo_text_extents_t te;
-    cairo_text_extents(cr, a->icon, &te);
-    cairo_move_to(cr, (wdt - te.width)/2 - te.x_bearing, (h - te.height)/2 - te.y_bearing);
-    cairo_show_text(cr, a->icon);
     return FALSE;
 }
 
@@ -174,11 +195,24 @@ static void on_row_click(GtkButton *btn, gpointer ud) {
     gtk_widget_hide(menu_win);
 }
 
+static gboolean freq_icon_draw_cb(GtkWidget *w, cairo_t *cr, gpointer ud) {
+    AppEntry *a = (AppEntry *)ud;
+    GtkAllocation al;
+    gtk_widget_get_allocation(w, &al);
+    double size = al.width < al.height ? al.width : al.height;
+    double x = (al.width - size) / 2.0;
+    double y = (al.height - size) / 2.0;
+    qy_icon_draw(cr, app_icon_id(a), x, y, size, FALSE, NULL);
+    return FALSE;
+}
+
 static GtkWidget *make_freq_row(AppEntry *a) {
     GtkWidget *h = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
     GtkWidget *b = gtk_button_new();
     gtk_button_set_relief(GTK_BUTTON(b), GTK_RELIEF_NONE);
-    GtkWidget *ic = gtk_label_new(a->icon);
+    GtkWidget *ic = gtk_drawing_area_new();
+    gtk_widget_set_size_request(ic, 26, 26);
+    g_signal_connect(ic, "draw", G_CALLBACK(freq_icon_draw_cb), a);
     GtkWidget *lb = gtk_label_new(TR(a->name));
     gtk_widget_set_halign(lb, GTK_ALIGN_START);
     add_class(lb, "qy-appmenu-freq-label");

@@ -22,6 +22,7 @@
  * 主题：/usr/share/themes/qiyuan/gtk-3.0/gtk.css（GTK CSS，qytheme.css）。
  */
 #include "qyl10n.h"
+#include "qyicon.h"
 #include <gtk/gtk.h>
 #include <time.h>
 #include <string.h>
@@ -331,6 +332,28 @@ static gboolean dock_tick(gpointer ud) {
 }
 
 /* ---------- 桌面图标 ---------- */
+/* 字符 glyph → 统一图标 id（桌面图标接入点） */
+static QyIconId glyph_icon_id(const char *glyph) {
+    if (!glyph) return QY_ICON_FILES;
+    if (strcmp(glyph, "✗") == 0) return QY_ICON_TRASH;
+    if (strcmp(glyph, "⚙") == 0) return QY_ICON_SETTINGS;
+    if (strcmp(glyph, "▣") == 0) return QY_ICON_HOME;
+    if (strcmp(glyph, "▦") == 0) return QY_ICON_STORE;
+    if (strcmp(glyph, ">_") == 0) return QY_ICON_TERM;
+    return QY_ICON_FILES;
+}
+
+static gboolean desktop_icon_draw_cb(GtkWidget *w, cairo_t *cr, gpointer ud) {
+    QyIconId id = (QyIconId)GPOINTER_TO_INT(ud);
+    GtkAllocation al;
+    gtk_widget_get_allocation(w, &al);
+    double size = al.width < al.height ? al.width : al.height;
+    double x = (al.width - size) / 2.0;
+    double y = (al.height - size) / 2.0;
+    qy_icon_draw(cr, id, x, y, size, FALSE, NULL);
+    return FALSE;
+}
+
 static void desktop_icon_click(GtkButton *btn, gpointer ud) {
     launch_cmd((const char *)ud);
 }
@@ -343,14 +366,16 @@ static GtkWidget *desktop_icon(const char *glyph, const char *css,
     GtkWidget *v = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
     gtk_container_add(GTK_CONTAINER(btn), v);
 
-    /* 彩色圆形按钮（按钮才可靠绘制 CSS 背景色） */
+    /* 统一 cairo 线稿图标（44×44 玻璃圆角底） */
     GtkWidget *circle = gtk_button_new();
     gtk_button_set_relief(GTK_BUTTON(circle), GTK_RELIEF_NONE);
     add_class(circle, "qy-desktop-glyph");
     add_class(circle, css);
     gtk_widget_set_size_request(circle, 44, 44);
-    GtkWidget *gl = gtk_label_new(glyph);
-    gtk_container_add(GTK_CONTAINER(circle), gl);
+    GtkWidget *da = gtk_drawing_area_new();
+    g_signal_connect(da, "draw", G_CALLBACK(desktop_icon_draw_cb),
+                     GINT_TO_POINTER(glyph_icon_id(glyph)));
+    gtk_container_add(GTK_CONTAINER(circle), da);
 
     GtkWidget *lb = gtk_label_new(label);
     add_class(lb, "qy-desktop-label");
