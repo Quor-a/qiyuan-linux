@@ -665,6 +665,14 @@ def pkg_main(argv=None) -> int:
                     help="架构不符时强装（可能无法运行）")
     sp.add_argument("--dry-run", action="store_true", help="只演练不写入")
 
+    sp = sub.add_parser("layer", help="overlayfs 分层：就地接管其他系统")
+    sp.add_argument("action", choices=["take", "leave", "list"],
+                    help="take=接管 leave=还原 list=列出")
+    sp.add_argument("--base", help="原系统根目录（take 时必填）")
+    sp.add_argument("--name", default="default", help="层名")
+    sp.add_argument("--keep-upper", action="store_true",
+                    help="leave 时保留写入层（迁移用）")
+
     a = p.parse_args(argv)
     a.dry_run_sub = getattr(a, "dry_run", False) if a.cmd else False
     pubkey = Path(a.pubkey) if Path(a.pubkey).exists() else None
@@ -724,6 +732,47 @@ def pkg_main(argv=None) -> int:
                    dry_run=dry, allow_unsigned=a.allow_unsigned)
 
     try:
+        if a.cmd == "layer":
+            from qyos import layering as LG
+            if a.action == "list":
+                rows = LG.list_layers()
+                if not rows:
+                    print("（还没有任何层）")
+                    return 0
+                for r in rows:
+                    st = "已挂载" if r.get("mounted") else "未挂载"
+                    print(f"  {r.get('name') or '?':<12} {st}  "
+                          f"底层={r.get('base', r.get('lower'))}")
+                return 0
+            if a.action == "take":
+                if not a.base:
+                    util.log("err", "take 需要 --base <原系统根>")
+                    return 1
+                base = Path(a.base).resolve()
+                snap = LG.takeover_snapshot(base)
+                if snap.get("distro"):
+                    util.log("info", f"接管目标: {snap['distro']}"
+                             f"（{snap.get('package_system', '?')} 包系统）")
+                try:
+                    m = LG.create_layer(base, a.name)
+                except LG.LayerError as e:
+                    util.log("err", str(e))
+                    return 1
+                util.log("ok", f"层 '{a.name}' 已挂载")
+                print(f"  原系统（只读）: {m.lower}")
+                print(f"  写入层:         {m.upper}")
+                print(f"  接下来把包装进: qypkg --root {m.merged} foreign <包>")
+                print(f"  还原:           qypkg layer leave --name {a.name}")
+                return 0
+            # leave
+            try:
+                LG.destroy_layer(a.name, keep_upper=a.keep_upper)
+            except LG.LayerError as e:
+                util.log("err", str(e))
+                return 1
+            util.log("ok", f"层 '{a.name}' 已卸载"
+                     f"{'（写入层保留）' if a.keep_upper else '，原系统未动过'}")
+            return 0
         if a.cmd == "foreign":
             from qyos import foreign as FG
             rc = 0
