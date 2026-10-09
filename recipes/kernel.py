@@ -1,17 +1,17 @@
-"""Linux 内核 —— 6.16.x 稳定版（x86_64，内置图形/网络/文件系统驱动）
+"""Linux 内核 —— 7.2.x 稳定版（x86_64，内置图形/网络/文件系统驱动）
 
 许可证：GPL-2.0
 """
 
 name = "kernel"
-version = "6.16.1"
+version = "7.2.9"
 release = 1
 summary = "Linux 内核（启元基线配置）"
 homepage = ""
 license = "GPL-2.0"
 
-source = ["https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-6.16.1.tar.xz"]
-sha256 = ["ea43491bc7ace1e414b3b2d957f8cf96e7049155123f0acce798accf8da1acba"]
+source = ["https://cdn.kernel.org/pub/linux/kernel/v7.x/linux-7.2.9.tar.xz"]
+sha256 = ["b4c5dfbe51a364a6c7f03869200f88c8e1f77403539005f14b7fc6bc91b8d8ba"]
 
 depends = []
 makedepends = ["bison", "flex", "libelf"]
@@ -75,7 +75,7 @@ def build(ctx):
 
 def package(ctx):
     ctx.run("mkdir -p {}/boot".format(ctx.destdir))
-    ctx.run("cp arch/x86/boot/bzImage {}/boot/vmlinuz-6.16.1".format(ctx.destdir))
-    ctx.run("cp System.map {}/boot/System.map-6.16.1".format(ctx.destdir))
-    ctx.run("cp .config {}/boot/config-6.16.1".format(ctx.destdir))
+    ctx.run("cp arch/x86/boot/bzImage {}/boot/vmlinuz-7.2.9".format(ctx.destdir))
+    ctx.run("cp System.map {}/boot/System.map-7.2.9".format(ctx.destdir))
+    ctx.run("cp .config {}/boot/config-7.2.9".format(ctx.destdir))
     ctx.run("make INSTALL_MOD_PATH={} modules_install".format(ctx.destdir))
