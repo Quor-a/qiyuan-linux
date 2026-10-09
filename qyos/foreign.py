@@ -816,6 +816,7 @@ def install_foreign(path: Path, root: Path, *, kind: str | None = None,
         util.log("info", f"[dry-run] 将释放到 {root}（不执行脚本）")
     else:
         files = pkg.extract(root)
+        _after_extract(root, files, pkg.kind)
     result = {
         "name": pkg.name, "version": pkg.version, "release": pkg.release,
         "kind": pkg.kind, "arch": pkg.target_arch,
@@ -865,6 +866,42 @@ def install_foreign(path: Path, root: Path, *, kind: str | None = None,
     db.add_pkg(meta, meta.files, reason="foreign")
     result["recorded"] = True
     return result
+
+
+def _after_extract(root: Path, files: list[str], kind: str) -> None:
+    """外来包释放后的兼容层收尾（ISO 实测教训，2026-10-10）。
+
+    deb/rpm 的库放在 /usr/lib/<triplet>/ 或 /lib/<triplet>/（多架构目录），
+    启元的 ld.so 默认不搜这些路径——直接装完跑不起来（file 报
+    libmagic.so.1 找不到）。这里自动登记目录 + 跑 ldconfig（若 root 里有）。
+    """
+    root = Path(root)
+    extra = [d for d in ("/usr/lib/x86_64-linux-gnu", "/lib/x86_64-linux-gnu",
+                         "/usr/lib/aarch64-linux-gnu",
+                         "/lib/aarch64-linux-gnu")
+             if (root / d.strip("/")).is_dir()]
+    if not extra:
+        return
+    conf_dir = root / "etc" / "ld.so.conf.d"
+    conf = conf_dir / "qypkg-foreign.conf"
+    try:
+        conf_dir.mkdir(parents=True, exist_ok=True)
+        have = set(conf.read_text().split()) if conf.exists() else set()
+        new = [d for d in extra if d not in have]
+        if new:
+            with conf.open("a") as f:
+                f.write("\n".join(new) + "\n")
+            util.log("info", "外来库目录已登记: " + " ".join(new))
+    except OSError as e:
+        util.log("warn", f"登记外来库目录失败: {e}")
+        return
+    # 若目标系统有 ldconfig 就刷新缓存（chroot 环境用 --root 语义）
+    for name in ("ldconfig", "/usr/bin/ldconfig", "/sbin/ldconfig"):
+        p = root / name.strip("/") if not name.startswith("/") else Path(name)
+        if p.exists():
+            util.log("info", "提示: 建议运行 ldconfig 刷新动态库缓存"
+                             "（或临时用 LD_LIBRARY_PATH）")
+            break
 
 
 def root_arch(root: Path) -> str:
