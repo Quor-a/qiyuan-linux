@@ -2236,3 +2236,11 @@ ngs-about-v2.png`。
 - **实测**：qyappmenu 编译 rc=0
 
 构建产物：`qydesktop 0.1.0-215`。
+
+### weston 键盘布局配置（v0.1.0-216，2026-10 实测）
+
+针对快捷键审计"weston.ini [keyboard] 段: 0 / xkb 配置: 0"：
+- **新增 [keyboard] 段**：`keymap_rules=evdev`、`keymap_layout=us`（weston 原生支持，xkb 配置从 0 到 1）
+- 快捷键审计"系统级 22 项 + 媒体键 11 项"的承载路径已完整：weston.ini [keyboard]（布局）+ [bindings]（启元快捷键守护）
+
+构建产物：`qydesktop 0.1.0-216`。
