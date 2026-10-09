@@ -77,6 +77,51 @@ static gboolean auto_save_file(gpointer p) {
     return G_SOURCE_CONTINUE;
 }
 
+/* ---------- 查找：从光标处向后查找关键词 ---------- */
+static gboolean do_find_next(const char *needle) {
+    if (!needle || !needle[0]) return FALSE;
+    GtkTextBuffer *b = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
+    GtkTextIter cur;
+    gtk_text_buffer_get_iter_at_mark(b, &cur, gtk_text_buffer_get_insert(b));
+    GtkTextIter ms, me;
+    if (!gtk_text_iter_forward_search(&cur, needle, GTK_TEXT_SEARCH_TEXT_ONLY, &ms, &me, NULL)) {
+        /* 光标处找不到 → 从文档开头环绕再搜一次 */
+        gtk_text_buffer_get_start_iter(b, &cur);
+        if (!gtk_text_iter_forward_search(&cur, needle, GTK_TEXT_SEARCH_TEXT_ONLY, &ms, &me, NULL)) {
+            g_printerr("QYEDITDBG: find '%s' not found\n", needle);
+            return FALSE;
+        }
+    }
+    gtk_text_buffer_place_cursor(b, &ms);
+    gtk_text_buffer_select_range(b, &ms, &me);
+    gtk_text_view_scroll_to_iter(GTK_TEXT_VIEW(text_view), &ms, 0, FALSE, 0, 0);
+    g_printerr("QYEDITDBG: find '%s' line=%d\n", needle, gtk_text_iter_get_line(&ms) + 1);
+    return TRUE;
+}
+
+/* 查找按钮：弹出输入框 */
+static void on_find_clicked(GtkWidget *w, gpointer ud) {
+    (void)w; (void)ud;
+    GtkWidget *dlg = gtk_dialog_new_with_buttons("查找", GTK_WINDOW(win),
+        GTK_DIALOG_MODAL, "_确定", GTK_RESPONSE_OK, "_取消", GTK_RESPONSE_CANCEL, NULL);
+    GtkWidget *entry = gtk_entry_new();
+    GtkWidget *box = gtk_dialog_get_content_area(GTK_DIALOG(dlg));
+    gtk_box_pack_start(GTK_BOX(box), entry, FALSE, FALSE, 6);
+    gtk_widget_show_all(dlg);
+    if (gtk_dialog_run(GTK_DIALOG(dlg)) == GTK_RESPONSE_OK) {
+        const char *needle = gtk_entry_get_text(GTK_ENTRY(entry));
+        do_find_next(needle);
+    }
+    gtk_widget_destroy(dlg);
+}
+
+/* 自动化验证: QYEDIT_FIND=关键词 启动后查找 */
+static gboolean auto_find(gpointer p) {
+    const char *needle = (const char *)p;
+    do_find_next(needle);
+    return G_SOURCE_REMOVE;
+}
+
 /* ---------- 状态栏: 行 / 列 / 字符数 ---------- */
 static void update_status(GtkTextBuffer *b) {
     GtkTextIter it;
@@ -266,6 +311,10 @@ int main(int argc, char **argv) {
         g_timeout_add(2000, auto_save_file, NULL);
     else
         g_timeout_add_seconds(30, auto_save_file, NULL);
+    /* 自动化验证: QYEDIT_FIND=关键词 启动后查找 */
+    const char *find_env = getenv("QYEDIT_FIND");
+    if (find_env && find_env[0])
+        g_timeout_add(1000, auto_find, g_strdup(find_env));
     gtk_main();
     return 0;
 }

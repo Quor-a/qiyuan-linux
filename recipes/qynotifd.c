@@ -88,6 +88,20 @@ static gboolean conf_flag(const char *path, const char *key) {
     return on;
 }
 
+/* 自动启动白名单：仅允许启动已知 qy* 应用，防止 conf 被篡改后执行任意命令 */
+static const char *autostart_whitelist[] = {
+    "qydesktop", "qynotifd", "qynet", "qyfiles", "qyedit", "qymon",
+    "qybrowser", "qyshot", "qyclip", "qysettings", "qystore", "qyarc",
+    "qymedia", "qycalc", "qygit", "qyview", "qysearch", "qynotify",
+    "qyswitcher", "qyappmenu", "qydriver", "qylock", NULL
+};
+
+static gboolean autostart_allowed(const char *name) {
+    for (int i = 0; autostart_whitelist[i]; i++)
+        if (strcmp(name, autostart_whitelist[i]) == 0) return TRUE;
+    return FALSE;
+}
+
 /* 执行自动启动项（qyautostart.conf 格式：应用名=on/off） */
 static void run_autostart(void) {
     gchar *c = NULL;
@@ -105,7 +119,7 @@ static void run_autostart(void) {
         *eq = 0;
         const char *name = line;
         gboolean on = (eq[1] == 'o' && eq[2] == 'n');
-        if (on && g_str_has_prefix(name, "qy")) {
+        if (on && autostart_allowed(name)) {
             /* 防重复：应用已在运行则跳过（设置页重复保存不会重复启动） */
             char chk[128];
             snprintf(chk, sizeof chk, "pidof %s >/dev/null 2>&1", name);
@@ -174,10 +188,17 @@ static void handle_conf(const char *basename) {
     }
     if (g_str_has_prefix(basename, "qyfirewall")) {
         gboolean on = conf_flag(path, "firewall");
-        if (on)
-            g_spawn_command_line_async("iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT 2>/dev/null", NULL);
-        else
-            g_spawn_command_line_async("iptables -F 2>/dev/null", NULL);
+        if (on) {
+            /* 启用：清空旧规则 → 默认拒绝入站 → 放行回环与已建立连接 */
+            g_spawn_command_line_async("iptables -F", NULL);
+            g_spawn_command_line_async("iptables -P INPUT DROP", NULL);
+            g_spawn_command_line_async("iptables -A INPUT -i lo -j ACCEPT", NULL);
+            g_spawn_command_line_async("iptables -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT", NULL);
+        } else {
+            /* 关闭：清空规则并把默认策略改回 ACCEPT */
+            g_spawn_command_line_async("iptables -F", NULL);
+            g_spawn_command_line_async("iptables -P INPUT ACCEPT", NULL);
+        }
         send_notif("防火墙", on ? "防火墙已启用" : "防火墙已关闭");
         return;
     }

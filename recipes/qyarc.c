@@ -98,7 +98,9 @@ static void list_7z(void)
 {
     /* 7za l -slt: 逐块 Name/Size/Modified */
     char cmd[PATH_MAX + 64];
-    snprintf(cmd, sizeof cmd, "7za l -slt '%s'", g_arc);
+    gchar *qa = g_shell_quote(g_arc);
+    snprintf(cmd, sizeof cmd, "7za l -slt %s", qa);
+    g_free(qa);
     gchar *out = run_capture(cmd);
     if (!out) { status_set(TR("7za 执行失败")); return; }
     char name[1024] = "", size[64] = "", mtime[64] = "";
@@ -164,9 +166,11 @@ static void list_tar(void)
 {
     char cmd[PATH_MAX * 3 + 256];
     /* GNU tar 优先；系统 tar 缺依赖时回落 busybox（必须 -tv 才有元数据） */
+    gchar *qa = g_shell_quote(g_arc);
     snprintf(cmd, sizeof cmd,
-        "tar tvf '%s' 2>/dev/null || busybox tar -tvzf '%s' 2>/dev/null || busybox tar -tvf '%s'",
-        g_arc, g_arc, g_arc);
+        "tar tvf %s 2>/dev/null || busybox tar -tvzf %s 2>/dev/null || busybox tar -tvf %s",
+        qa, qa, qa);
+    g_free(qa);
     gchar *out = run_capture(cmd);
     if (!out) { status_set(TR("tar 执行失败")); return; }
     int n_items = 0;
@@ -238,16 +242,20 @@ static void do_extract_to(const char *dir)
 {
     const char *t = arc_type(g_arc);
     char cmd[PATH_MAX * 2 + 128];
+    gchar *qa = g_shell_quote(g_arc);
+    gchar *qd = g_shell_quote(dir);
     if (strcmp(t, "7z") == 0 || strcmp(t, "zip") == 0 || strcmp(t, "rar") == 0)
-        snprintf(cmd, sizeof cmd, "7za x -y -o'%s' '%s'", dir, g_arc);
+        snprintf(cmd, sizeof cmd, "7za x -y -o%s %s", qd, qa);
     else if (t[0] == 't')
-        snprintf(cmd, sizeof cmd, "tar xf '%s' -C '%s' 2>/dev/null || busybox tar -xzf '%s' -C '%s' 2>/dev/null || busybox tar -xf '%s' -C '%s'", g_arc, dir, g_arc, dir, g_arc, dir);
+        snprintf(cmd, sizeof cmd, "tar xf %s -C %s 2>/dev/null || busybox tar -xzf %s -C %s 2>/dev/null || busybox tar -xf %s -C %s", qa, qd, qa, qd, qa, qd);
     else if (strcmp(t, "gz") == 0 || strcmp(t, "xz") == 0 || strcmp(t, "zst") == 0) {
-        snprintf(cmd, sizeof cmd, "cp '%s' '%s/' && cd '%s' && ", g_arc, dir, dir);
+        snprintf(cmd, sizeof cmd, "cp %s %s/ && cd %s && ", qa, qd, qd);
         size_t n = strlen(cmd);
-        if (strcmp(t, "gz") == 0) snprintf(cmd + n, sizeof cmd - n, "gunzip -f '%s'", strrchr(g_arc, '/') ? g_arc : g_arc);
+        if (strcmp(t, "gz") == 0) snprintf(cmd + n, sizeof cmd - n, "gunzip -f %s", qa);
         /* 简化：gzip -d 在目标目录对副本执行 */
     }
+    g_free(qa);
+    g_free(qd);
     gboolean ok = run_shell_sync(cmd, NULL, FALSE);
     status_set(ok ? TR("已解压到 %s") : TR("解压失败"), dir);
 }
@@ -313,10 +321,14 @@ static void act_new(GtkWidget *w, gpointer data)
             char *src = gtk_file_chooser_get_filename(GTK_FILE_CHOOSER(sel));
             const char *t = arc_type(g_arc);
             char cmd[PATH_MAX * 3 + 128];
+            gchar *qa = g_shell_quote(g_arc);
+            gchar *qs = g_shell_quote(src);
             if (strcmp(t, "zip") == 0 || strcmp(t, "7z") == 0)
-                snprintf(cmd, sizeof cmd, "7za a '%s' '%s'", g_arc, src);
+                snprintf(cmd, sizeof cmd, "7za a %s %s", qa, qs);
             else
-                snprintf(cmd, sizeof cmd, "tar czf '%s' '%s' 2>/dev/null || busybox tar -czf '%s' '%s'", g_arc, src, g_arc, src);
+                snprintf(cmd, sizeof cmd, "tar czf %s %s 2>/dev/null || busybox tar -czf %s %s", qa, qs, qa, qs);
+            g_free(qa);
+            g_free(qs);
             gboolean ok = run_shell_sync(cmd, NULL, FALSE);
             status_set(ok ? TR("已创建 %s") : TR("创建失败"), g_arc);
             g_free(src);
@@ -338,9 +350,13 @@ static void act_delete(GtkWidget *w, gpointer data)
     gtk_tree_model_get(GTK_TREE_MODEL(g_store), &it, COL_NAME, &name, -1);
     const char *t = arc_type(g_arc);
     char cmd[PATH_MAX * 2 + 128];
+    gchar *qa = g_shell_quote(g_arc);
+    gchar *qn = g_shell_quote(name);
     if (strcmp(t, "7z") == 0 || strcmp(t, "zip") == 0)
-        snprintf(cmd, sizeof cmd, "7za d '%s' '%s'", g_arc, name);
-    else { status_set(TR("tar 包不支持删除条目（整包重打包实现，v2）")); g_free(name); return; }
+        snprintf(cmd, sizeof cmd, "7za d %s %s", qa, qn);
+    else { g_free(qa); g_free(qn); status_set(TR("tar 包不支持删除条目（整包重打包实现，v2）")); g_free(name); return; }
+    g_free(qa);
+    g_free(qn);
     run_shell_sync(cmd, NULL, FALSE);
     status_set(TR("已删除: %s"), name);
     g_free(name);

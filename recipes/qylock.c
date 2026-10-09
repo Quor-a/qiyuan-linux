@@ -27,7 +27,7 @@ static const char *get_lock_pass(void) {
         if (c[0]) g_strlcpy(pass, c, sizeof pass);
         g_free(c);
     }
-    if (!pass[0]) g_strlcpy(pass, "qiyuan", sizeof pass);
+    if (!pass[0]) return pass;   /* 安全：不提供默认密码，未设置时提示先配置 */
     return pass;
 }
 
@@ -47,7 +47,14 @@ static gboolean update_clock(gpointer p) {
 /* 尝试解锁 */
 static void try_unlock(void) {
     const char *input = gtk_entry_get_text(GTK_ENTRY(pass_entry));
-    if (strcmp(input, get_lock_pass()) == 0) {
+    const char *lock_pass = get_lock_pass();
+    if (!lock_pass[0]) {
+        gtk_label_set_text(GTK_LABEL(status_label), TR("未设置锁屏密码，请先运行 qysettings 配置"));
+        gtk_entry_set_text(GTK_ENTRY(pass_entry), "");
+        gtk_widget_grab_focus(pass_entry);
+        return;
+    }
+    if (strcmp(input, lock_pass) == 0) {
         if (g_app) g_application_quit(G_APPLICATION(g_app));
         else exit(0);
         return;

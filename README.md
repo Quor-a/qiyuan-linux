@@ -1990,3 +1990,17 @@ ngs-about-v2.png`。
 - 为装机向导的自测/截图提供稳定入口
 
 构建产物：`qydesktop 0.1.0-191`。
+
+### 安全修复 + 编辑器查找 + 通知守护注册（v0.1.0-192，2026-10 实测）
+
+按安全排查（P0/P1/P2）修复：
+- **qynotifd.unit 注册**：通知守护进程纳入 qyinit.d 系统启动，24 类 conf 有真实消费端
+- **自动登录不再重置密码**：移除 start-qydesktop.sh 中 `chpasswd 用户名:用户名` 的隐患
+- **wayland socket 收紧**：/tmp/xdg 由 777 改为 755，socket 属主改为 root:用户 且 660
+- **qyarc 命令注入修复**：压缩包/文件名/解压目录全部经 g_shell_quote 转义（8 处）
+- **qylock 取消默认密码**：无 /etc/qylockpass.conf 时提示先配置，不再默认为 qiyuan
+- **autostart 白名单**：仅允许启动预置 qy* 应用，防 conf 被篡改后执行任意命令
+- **防火墙逻辑修正**：启用=默认 DROP+放行回环/已建立；关闭=清空并恢复 ACCEPT
+- **qyedit 查找**：工具栏「查找」按钮 + QYEDIT_FIND 自动化；实测 `find 'gamma' line=3`
+
+构建产物：`qydesktop 0.1.0-192`。

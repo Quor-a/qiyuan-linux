@@ -6,7 +6,7 @@
 
 name = "qydesktop"
 version = "0.1.0"
-release = 191
+release = 192
 summary = "启元桌面 shell（GTK3 单窗口 + 主题）"
 license = "MIT"
 
@@ -94,6 +94,7 @@ def build(ctx):
     shutil.copy(Path(__file__).parent / "weston.unit", Path(ctx.srcdir) / "weston.unit")
     shutil.copy(Path(__file__).parent / "zz-selftest.unit", Path(ctx.srcdir) / "zz-selftest.unit")
     shutil.copy(Path(__file__).parent / "qydesktop.unit", Path(ctx.srcdir) / "qydesktop.unit")
+    shutil.copy(Path(__file__).parent / "qynotifd.unit", Path(ctx.srcdir) / "qynotifd.unit")
     for _f in ("qyl10n.c", "qyl10n.h", "qysetup.c", "qysudo.c", "qyusers.c", "qywelcome.c",
                "qyuseradd.sh", "qyinstall.sh", "qyinitpw.sh", "qyboot.unit", "qysudoers"):
         shutil.copy(Path(__file__).parent / _f, Path(ctx.srcdir) / _f)
@@ -202,6 +203,6 @@ def package(ctx):
     for _s in ("start-qydesktop.sh", "start-sshd.sh", "start-udevd.sh",
                "start-weston.sh", "qyselftest.sh"):
         ctx.run("cp {0} {1}/usr/bin/{0} && chmod 0755 {1}/usr/bin/{0}".format(_s, ctx.destdir))
-    for _u in ("qydesktop.unit", "sshd.unit", "udevd.unit", "weston.unit",
-               "zz-selftest.unit"):
+    for _u in ("qydesktop.unit", "qynotifd.unit", "sshd.unit", "udevd.unit",
+               "weston.unit", "zz-selftest.unit"):
         ctx.install_file(_u, "etc/qyinit.d/" + _u)

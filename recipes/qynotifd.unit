@@ -1,0 +1,5 @@
+[Unit]
+Description=Qiyuan Notification Daemon (conf consumer / autolock / autostart / sshd)
+After=udevd
+ExecStart=/usr/bin/qynotifd
+Restart=on-failure

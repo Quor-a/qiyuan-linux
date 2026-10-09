@@ -30,11 +30,11 @@ AU=""
 if [ -n "$AU" ] && getent passwd "$AU" >/dev/null; then
     UH=$(getent passwd "$AU" | cut -d: -f6)
     mkdir -p "$UH" && chown "$AU" "$UH"
-    # 允许普通用户连 root 会话的 wayland socket (单用户共享 compositor)
-    chmod 777 /tmp/xdg 2>/dev/null
-    chmod o+rw /tmp/xdg/wayland-1 2>/dev/null
-    echo "$AU:$AU" | busybox chpasswd >/dev/null 2>&1 || true
-    env XDG_RUNTIME_DIR=/tmp/xdg WAYLAND_DISPLAY=wayland-1 GDK_BACKEND=wayland LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu:/usr/lib:/lib HOME=$UH USER=$AU LOGNAME=$AU /bin/busybox su $AU -c "/usr/bin/qydesktop" > /dev/console 2>&1 &
+    # 允许自动登录用户访问 root 会话的 wayland socket（收紧权限：不再全局 777）
+    chmod 755 /tmp/xdg 2>/dev/null
+    chown root:"$AU" /tmp/xdg/wayland-1 2>/dev/null
+    chmod 660 /tmp/xdg/wayland-1 2>/dev/null
+    env XDG_RUNTIME_DIR=/tmp/xdg WAYLAND_DISPLAY=wayland-1 GDK_BACKEND=wayland LD_LIBRARY_PATH=/usr/lib:/lib HOME=$UH USER=$AU LOGNAME=$AU /bin/busybox su $AU -c "/usr/bin/qydesktop" > /dev/console 2>&1 &
 else
     /usr/bin/qydesktop > /dev/console 2>&1 &
 fi
