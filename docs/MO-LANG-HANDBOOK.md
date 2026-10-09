@@ -193,6 +193,15 @@ import "vec.mo";
 - 字符串是字节序列，UTF-8 处理需自己按 byte 操作（标准库尚无 unicode 模块）
 - 浮点支持有限，当前以整数为中心
 
+### 实战抓到的两大陷阱（写递归/解析代码前必读）
+
+1. **全局缓冲不可重入**。递归函数里凡是调用 `dir_list`、`read_file` 等向全局
+   缓冲写数据的函数，子调用返回后外层缓冲已被覆盖。修法：按深度分槽
+   （`names_at(depth)` 返回该层专属缓冲），见 `examples/qydu.mo` 的 scan()。
+2. **原地截断破坏 strlen**。对缓冲区 `store8(p, 0)` 截断后再
+   `p = p + strlen(p) + 1` 推进行指针，行内容全变空。修法：逐字节拷贝到
+   行缓冲再处理，见 `examples/qypack.mo` 的 cmd_undo()。
+
 ## 八、学习资源
 
 - `docs/tutorial.md` 入门教程
