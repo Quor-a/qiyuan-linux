@@ -57,6 +57,7 @@ var K_DLEN:   i64 = 32;
 var K_NLEN:   i64 = 40;
 var K_TKIND:  i64 = 48;
 var K_TIVAL:  i64 = 56;
+var K_TFVAL:  i64 = 496;   # 浮点字面量位模式（避开 K_NLAB=104 等已用槽）
 var K_NSYM:   i64 = 64;
 var K_DEPTH:  i64 = 72;
 var K_CUROFF: i64 = 80;
@@ -345,6 +346,7 @@ fn syntax_error() -> i64 {
 fn ty_int() -> i64  { return 0; }
 fn ty_void() -> i64 { return 1; }
 fn ty_byte() -> i64 { return 2; }
+fn ty_f64() -> i64  { return 3; }
 
 # 预置 id 0 = int, id 1 = void
 fn ty_init() -> i64 {
@@ -358,7 +360,11 @@ fn ty_init() -> i64 {
     store64(heap + O_TB + 16, 0);
     store64(heap + O_TA + 8, 0);
     store64(heap + O_TB + 8, 0);
-    sv(K_NTYPE, 3);
+    # id 3 = f64（kind 6，SSE 双精度）
+    store64(heap + O_TK + 24, 6);
+    store64(heap + O_TA + 24, 0);
+    store64(heap + O_TB + 24, 0);
+    sv(K_NTYPE, 4);
     return 0;
 }
 
@@ -558,11 +564,15 @@ fn g_movabs_rax(v: i64) -> i64 {
     if v < 0 {
         ops2(0x48, 0xb8);
         emit8(v);
+        # 8 字节形式不进折叠缓存：K_LASTR 是 32 位形式的陈旧长度，
+        # f64 位模式（大数/负数）会令 try_fold_rhs 回退出错误长度
+        sv(K_LAST, 0);
         return 0;
     }
     if v > 4294967295 {
         ops2(0x48, 0xb8);
         emit8(v);
+        sv(K_LAST, 0);
         return 0;
     }
     emit1(0xb8);
@@ -1214,6 +1224,94 @@ fn emit_jmp(l: i64) -> i64 {
     return 0;
 }
 
+# ============================ f64 / SSE ============================
+# 约定：f64 值以 64 位模式经 rax 传递；二元运算左操作数在 rcx。
+
+fn g_movq_rcx_xmm0() -> i64 { ops4(0x66, 0x48, 0x0f, 0x6e); emit1(0xc1); return 0; }
+fn g_movq_rax_xmm1() -> i64 { ops4(0x66, 0x48, 0x0f, 0x6e); emit1(0xc8); return 0; }
+fn g_movq_xmm0_rax() -> i64 { ops4(0x66, 0x48, 0x0f, 0x7e); emit1(0xc0); return 0; }
+fn g_addsd()  -> i64 { ops4(0xf2, 0x0f, 0x58, 0xc1); return 0; }
+fn g_subsd()  -> i64 { ops4(0xf2, 0x0f, 0x5c, 0xc1); return 0; }
+fn g_mulsd()  -> i64 { ops4(0xf2, 0x0f, 0x59, 0xc1); return 0; }
+fn g_divsd()  -> i64 { ops4(0xf2, 0x0f, 0x5e, 0xc1); return 0; }
+# int(rcx) → xmm0 双精度
+fn g_cvtsi2sd_rcx() -> i64 { ops4(0xf2, 0x48, 0x0f, 0x2a); emit1(0xc1); return 0; }
+# xmm0 → rax 位模式
+fn g_cvtsd2si() -> i64 { ops4(0xf2, 0x48, 0x0f, 0x7d); emit1(0xc0); return 0; }
+
+# rax = f64(rcx) op f64(rax)
+fn g_fop(op: i64) -> i64 {
+    spill_cache();
+    g_movq_rcx_xmm0();
+    g_movq_rax_xmm1();
+    if op == 0 { g_addsd(); }
+    if op == 1 { g_subsd(); }
+    if op == 2 { g_mulsd(); }
+    if op == 3 { g_divsd(); }
+    g_movq_xmm0_rax();
+    return 0;
+}
+
+# 混合 int/f64 提升：任一侧 f64 → 都转 f64
+# 返回 1 = 本运算按 f64 做（结果在 rax 为位模式）
+fn f_bin_promote(lt: i64, rt: i64) -> i64 {
+    if ty_kind(lt) == 6 { return 1; }
+    if ty_kind(rt) == 6 { return 1; }
+    return 0;
+}
+
+# rcx 中的值按类型 lt 进入 xmm0：f64 位模式 movq；int 先 cvt
+fn g_fint2f(lt: i64) -> i64 {
+    if ty_kind(lt) == 6 {
+        g_movq_rcx_xmm0();
+    } else {
+        g_cvtsi2sd_rcx();
+    }
+    return 0;
+}
+
+# rax 中的值按类型 rt 进入 xmm1（经 rcx 转接：先 save rax→rcx? 不能破坏左值已在 xmm0）
+# 方案：rax 值先mov 到 r11，再从 r11 载入 xmm1
+fn g_fint2f_r(rt: i64) -> i64 {
+    ops3(0x49, 0x89, 0xc3);   # mov r11, rax
+    if ty_kind(rt) == 6 {
+        ops4(0x66, 0x49, 0x0f, 0x6e);   # movq xmm1, r11
+        emit1(0xcb);
+    } else {
+        ops3(0x4c, 0x89, 0xd8);         # mov rax, r11
+        ops4(0xf2, 0x48, 0x0f, 0x2a);   # cvtsi2sd xmm1, rax
+        emit1(0xc8);
+    }
+    return 0;
+}
+
+# rax ^= 1<<63（f64 符号位翻转）
+fn g_xor_imm63() -> i64 {
+    ops2(0x49, 0xb8);          # movabs r8, 0x8000000000000000
+    emit8(0 - 9223372036854775807 - 1);
+    ops3(0x4c, 0x31, 0xc0);    # xor rax, r8
+    return 0;
+}
+
+# f64 比较：ucomisd xmm0(左),xmm1(右) → setcc
+# ucomisd: 66 0F 2E C1
+fn g_ucomisd() -> i64 { ops4(0x66, 0x0f, 0x2e, 0xc1); return 0; }
+
+# rax = (f64)rcx OP (f64)rax 的 0/1
+# 注意 ucomisd 的无序(NaN)置 CF=ZF=PF=1：
+#   < : CF=1   ≤: CF=1|ZF=1   > : 左>右 = !(CF|ZF)   ≥ = !(CF)
+# setcc 直接支持 b/ba/e/ne（<,>,=,!=）；le/ge 用 setnbe 组合：
+#   ≤ : setbe(0x96)  ≥ : setae(0x93)（CF=0）
+fn g_fcmp_set(cc: i64) -> i64 {
+    g_movq_rcx_xmm0();
+    g_movq_rax_xmm1();
+    g_ucomisd();
+    ops2(0x0f, cc);
+    emit1(0xc0);
+    ops4(0x48, 0x0f, 0xb6, 0xc0);
+    return 0;
+}
+
 # ==========================================================================
 #  词法分析
 # ==========================================================================
@@ -1335,11 +1433,85 @@ fn lex_number(p: i64) -> i64 {
         v = v * 10 + (sbyte(p) - 48);
         p = p + 1;
     }
+    # 小数点 → f64 字面量（TKIND=5，TIVAL 存 IEEE754 位模式）
+    if sbyte(p) == 46 {
+        if is_digit(sbyte(p + 1)) == 1 {
+            let q: i64 = p + 1;
+            let fv: i64 = 0;
+            let fd: i64 = 1;
+            while is_digit(sbyte(q)) == 1 {
+                fv = fv * 10 + (sbyte(q) - 48);
+                fd = fd * 10;
+                q = q + 1;
+            }
+            # 位模式 = f64(v + fv/fd)：用整数部分 exp + 小数逼近
+            let bits: i64 = dtoi_f64(v, fv, fd, 0);
+            p = q;
+            sv(K_POS, p);
+            sv(K_TKIND, 5);
+            sv(K_TIVAL, bits);
+            sv(K_TFVAL, bits);
+            store8(tokbuf(), 0);
+            return 0;
+        }
+    }
     sv(K_POS, p);
     sv(K_TKIND, 2);
     sv(K_TIVAL, v);
     store8(tokbuf(), 0);
     return 0;
+}
+
+# 整数+小数 → IEEE754 位模式（逐位长除法，避免 num<<52 溢出）
+fn dtoi_f64(iv: i64, fv: i64, fd: i64, neg: i64) -> i64 {
+    let num: i64 = iv * fd + fv;
+    if num == 0 { return 0; }
+    let e: i64 = 0;
+    let t: i64 = fd;
+    while t <= num {
+        t = t * 2;
+        e = e + 1;
+    }
+    e = e - 1;
+    # den = fd * 2^e；e 可为 -1（如 0.5），用循环结束时的 t/2 免去负移
+    let den: i64 = t / 2;
+    let r: i64 = num - den;
+    let frac: i64 = 0;
+    let k: i64 = 0;
+    while k < 52 {
+        r = r * 2;
+        frac = frac * 2;
+        if r >= den {
+            r = r - den;
+            frac = frac + 1;
+        }
+        k = k + 1;
+    }
+    if r * 2 >= den { frac = frac + 1; }
+    if frac >= 4503599627370496 {
+        frac = frac - 4503599627370496;
+        e = e + 1;
+    }
+    let bits: i64 = (e + 1023) * 4503599627370496 + frac;
+    if neg == 1 { bits = bits - 9223372036854775808; }
+    return bits;
+}
+fn bits_frac52(v: i64) -> i64 { return v & 4503599627370495; }
+fn bits_exp52(v: i64) -> i64 { return (v >> 52) & 2047; }
+fn int_to_f64(n: i64) -> i64 {
+    if n == 0 { return 0; }
+    let e: i64 = 62;
+    while e >= 0 {
+        if (n >> e) & 1 == 1 { break; }
+        e = e - 1;
+    }
+    let frac: i64 = 0;
+    if e <= 52 {
+        frac = (n - (1 << e)) << (52 - e);
+    } else {
+        frac = (n - (1 << e)) >> (e - 52);
+    }
+    return (e + 1023) * 4503599627370496 + frac;
 }
 
 # 字符串字面量：内容写入输出数据段（供生成的程序用），
@@ -1847,16 +2019,32 @@ fn parse_eq() -> i64 {
     parse_rel();
     while 1 {
         if accept("==") == 1 {
+            let lt: i64 = R_ETY;
             g_push_rax();
             parse_rel();
+            let rt: i64 = R_ETY;
             g_pop_rcx();
-            g_cmp_set(0x94);
+            if f_bin_promote(lt, rt) == 1 {
+                g_fint2f(lt);
+                g_fint2f_r(rt);
+                g_fcmp_set(0x94);
+            } else {
+                g_cmp_set(0x94);
+            }
         } else {
             if accept("!=") == 1 {
+                let lt2: i64 = R_ETY;
                 g_push_rax();
                 parse_rel();
+                let rt2: i64 = R_ETY;
                 g_pop_rcx();
-                g_cmp_set(0x95);
+                if f_bin_promote(lt2, rt2) == 1 {
+                    g_fint2f(lt2);
+                    g_fint2f_r(rt2);
+                    g_fcmp_set(0x95);
+                } else {
+                    g_cmp_set(0x95);
+                }
             } else {
                 return 0;
             }
@@ -1869,28 +2057,40 @@ fn parse_rel() -> i64 {
     parse_shift();
     while 1 {
         if accept("<") == 1 {
+            let l1: i64 = R_ETY;
             g_push_rax();
             parse_shift();
+            let r1: i64 = R_ETY;
             g_pop_rcx();
-            g_cmp_set(0x9c);
+            if f_bin_promote(l1, r1) == 1 { g_fint2f(l1); g_fint2f_r(r1); g_fcmp_set(0x92); }
+            else { g_cmp_set(0x9c); }
         } else {
             if accept("<=") == 1 {
+                let l2: i64 = R_ETY;
                 g_push_rax();
                 parse_shift();
+                let r2: i64 = R_ETY;
                 g_pop_rcx();
-                g_cmp_set(0x9e);
+                if f_bin_promote(l2, r2) == 1 { g_fint2f(l2); g_fint2f_r(r2); g_fcmp_set(0x96); }
+                else { g_cmp_set(0x9e); }
             } else {
                 if accept(">") == 1 {
+                    let l3: i64 = R_ETY;
                     g_push_rax();
                     parse_shift();
+                    let r3: i64 = R_ETY;
                     g_pop_rcx();
-                    g_cmp_set(0x9f);
+                    if f_bin_promote(l3, r3) == 1 { g_fint2f(l3); g_fint2f_r(r3); g_fcmp_set(0x97); }
+                    else { g_cmp_set(0x9f); }
                 } else {
                     if accept(">=") == 1 {
+                        let l4: i64 = R_ETY;
                         g_push_rax();
                         parse_shift();
+                        let r4: i64 = R_ETY;
                         g_pop_rcx();
-                        g_cmp_set(0x9d);
+                        if f_bin_promote(l4, r4) == 1 { g_fint2f(l4); g_fint2f_r(r4); g_fcmp_set(0x93); }
+                        else { g_cmp_set(0x9d); }
                     } else {
                         return 0;
                     }
@@ -1928,17 +2128,35 @@ fn parse_add() -> i64 {
     parse_mul();
     while 1 {
         if accept("+") == 1 {
+            let lt: i64 = R_ETY;
             g_push_rax();
             parse_mul();
+            let rt: i64 = R_ETY;
             g_pop_rcx();
-            g_add();
-            R_ETY = ty_int();
+            if f_bin_promote(lt, rt) == 1 {
+                g_fint2f(lt);
+                g_fint2f_r(rt);
+                g_fop(0);
+                R_ETY = ty_f64();
+            } else {
+                g_add();
+                R_ETY = ty_int();
+            }
         } else {
             if accept("-") == 1 {
+                let lt2: i64 = R_ETY;
                 g_push_rax();
                 parse_mul();
+                let rt2: i64 = R_ETY;
                 g_pop_rcx();
-                g_sub();
+                if f_bin_promote(lt2, rt2) == 1 {
+                    g_fint2f(lt2);
+                    g_fint2f_r(rt2);
+                    g_fop(1);
+                    R_ETY = ty_f64();
+                } else {
+                    g_sub();
+                }
             } else {
                 return 0;
             }
@@ -1951,17 +2169,35 @@ fn parse_mul() -> i64 {
     parse_unary();
     while 1 {
         if accept("*") == 1 {
+            let lt: i64 = R_ETY;
             g_push_rax();
             parse_unary();
+            let rt: i64 = R_ETY;
             g_pop_rcx();
-            g_imul();
-            R_ETY = ty_int();
+            if f_bin_promote(lt, rt) == 1 {
+                g_fint2f(lt);
+                g_fint2f_r(rt);
+                g_fop(2);
+                R_ETY = ty_f64();
+            } else {
+                g_imul();
+                R_ETY = ty_int();
+            }
         } else {
             if accept("/") == 1 {
+                let lt2: i64 = R_ETY;
                 g_push_rax();
                 parse_unary();
+                let rt2: i64 = R_ETY;
                 g_pop_rcx();
-                g_idiv(0);
+                if f_bin_promote(lt2, rt2) == 1 {
+                    g_fint2f(lt2);
+                    g_fint2f_r(rt2);
+                    g_fop(3);
+                    R_ETY = ty_f64();
+                } else {
+                    g_idiv(0);
+                }
             } else {
                 if accept("%") == 1 {
                     g_push_rax();
@@ -1997,6 +2233,11 @@ fn parse_unary() -> i64 {
     if accept("&") == 1 { return parse_addr(); }
     if accept("-") == 1 {
         parse_unary();
+        if ty_kind(R_ETY) == 6 {
+            # f64 位模式只翻符号位：rax ^= 1<<63（不要走整数 neg）
+            g_xor_imm63();
+            return 0;
+        }
         g_neg();
         R_ETY = ty_int();
         return 0;
@@ -2032,6 +2273,13 @@ fn undef_err(name: i64) -> i64 {
 
 fn parse_primary() -> i64 {
     let k: i64 = gv(K_TKIND);
+    # f64 字面量：位模式当 i64 装进 rax，类型 f64
+    if k == 5 {
+        g_movabs_rax(gv(K_TIVAL));
+        next_token();
+        R_ETY = ty_f64();
+        return 0;
+    }
     if k == 2 {
         g_movabs_rax(gv(K_TIVAL));
         next_token();
@@ -2760,10 +3008,14 @@ fn parse_let() -> i64 {
         if accept("byte") == 1 {
             vt = ty_byte();
         } else {
-            if accept("ptr") == 1 {
-                vt = ty_ptr(ty_byte());
+            if accept("f64") == 1 {
+                vt = ty_f64();
             } else {
-                return err_atp("expected a type", gv(K_PLINE), gv(K_PCOL), gv(K_PPOS));
+                if accept("ptr") == 1 {
+                    vt = ty_ptr(ty_byte());
+                } else {
+                    return err_atp("expected a type", gv(K_PLINE), gv(K_PCOL), gv(K_PPOS));
+                }
             }
         }
     }
@@ -3083,10 +3335,14 @@ fn parse_func() -> i64 {
             if accept("byte") == 1 {
                 pt = ty_byte();
             } else {
-                if accept("ptr") == 1 {
-                    pt = ty_ptr(ty_byte());
+                if accept("f64") == 1 {
+                    pt = ty_f64();
                 } else {
-                    return err_atp("expected a type", gv(K_PLINE), gv(K_PCOL), gv(K_PPOS));
+                    if accept("ptr") == 1 {
+                        pt = ty_ptr(ty_byte());
+                    } else {
+                        return err_atp("expected a type", gv(K_PLINE), gv(K_PCOL), gv(K_PPOS));
+                    }
                 }
             }
         }
@@ -3102,7 +3358,11 @@ fn parse_func() -> i64 {
     }
     expect(")");
     expect("->");
-    expect("i64");
+    if accept("f64") == 1 {
+        # 返回 f64：位模式经 rax 返回，语义同 i64
+    } else {
+        expect("i64");
+    }
     store64(heap + O_SP + fsi * 8, nb);
     g_prologue();
     let i: i64 = 0;
