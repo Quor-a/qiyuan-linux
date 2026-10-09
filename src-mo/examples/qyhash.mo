@@ -47,8 +47,7 @@ fn crc_hex_of(buf: i64, n: i64) -> i64 {
     return 0;
 }
 
-# 对单个文件：流式读入（此处一次性，文件 ≤64K；大文件演示分块摘要见下）
-# sha256 是单次接口，大文件需分块扩展接口——先按 ≤64K 实现，超出报错
+# 对单个文件：流式分块摘要（任意大小），输出 hex 与 crc
 fn hash_file(path: i64) -> i64 {
     let sz: i64 = stat_size(path);
     if sz < 0 {
@@ -57,20 +56,11 @@ fn hash_file(path: i64) -> i64 {
         fputs_err("\n");
         return 0 - 1;
     }
-    if sz > 65000 {
-        fputs_err("qyhash: 超大文件（暂限 65000B，待 sha256 分块接口）: ");
-        fputs_err(path);
-        fputs_err("\n");
-        return 0 - 1;
-    }
     let fd: i64 = fopen(path, 0, 0);
     if fd < 0 { return 0 - 1; }
-    let n: i64 = fread(fd, &fbuf, 65000);
+    sha256_file(fd, &hex);
     fclose(fd);
-    if n < 0 { return 0 - 1; }
-    sha256_hex(&fbuf, n, &hex);
-    crc_hex_of(&fbuf, n);
-    return n;
+    return sz;
 }
 
 fn print_hash_line(path: i64) -> i64 {

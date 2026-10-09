@@ -4,6 +4,8 @@
 # 不需要任何系统调用 —— 所以能完全用墨语言自己实现。
 # 这是「无 libc」带来的另一个好处：密码学库没有外部依赖。
 
+import "fs.mo";   # fread（sha256_file 流式读文件）
+
 var M32: i64 = 4294967295;      # 0xFFFFFFFF
 
 # ---- 32 位辅助：墨语言只有 i64，所有 32 位运算都要手动截断 ----
@@ -185,6 +187,146 @@ fn sha256(msg: i64, n: i64, out: i64) -> i64 {
         i = i + 1;
     }
     return 32;
+}
+
+# 判断布尔 / null 之前——流式 SHA-256（任意大小文件）
+# 结构：每次 process 64 字节块，维护 8 个 h 与总长；final 补填充
+var SHA_H0: i64 = 0; var SHA_H1: i64 = 0; var SHA_H2: i64 = 0; var SHA_H3: i64 = 0;
+var SHA_H4: i64 = 0; var SHA_H5: i64 = 0; var SHA_H6: i64 = 0; var SHA_H7: i64 = 0;
+var SHA_LEN: i64 = 0;          # 已处理总字节数
+var SHA_CACHE: [64] byte = 0;  # 不满一块的缓存
+var SHA_CACHEN: i64 = 0;
+var SHA_BLK: [64] byte = 0;
+var SHA_W: [64] i64 = 0;
+
+fn sha256_block(blk: i64) -> i64 {
+    # 消息扩展（与 sha256 主循环一致）
+    let t: i64 = 0;
+    while t < 16 {
+        SHA_W[t] = (load8(blk + t * 4) * 16777216) + (load8(blk + t * 4 + 1) * 65536)
+                 + (load8(blk + t * 4 + 2) * 256) + load8(blk + t * 4 + 3);
+        t = t + 1;
+    }
+    while t < 64 {
+        let s0: i64 = rotr32(SHA_W[t - 15], 7) ^ rotr32(SHA_W[t - 15], 18) ^ shr32(SHA_W[t - 15], 3);
+        let s1: i64 = rotr32(SHA_W[t - 2], 17) ^ rotr32(SHA_W[t - 2], 19) ^ shr32(SHA_W[t - 2], 10);
+        SHA_W[t] = (SHA_W[t - 16] + s0 + SHA_W[t - 7] + s1) & M32;
+        t = t + 1;
+    }
+    let a: i64 = SHA_H0; let b: i64 = SHA_H1; let c: i64 = SHA_H2; let d: i64 = SHA_H3;
+    let e: i64 = SHA_H4; let f: i64 = SHA_H5; let g: i64 = SHA_H6; let h: i64 = SHA_H7;
+    t = 0;
+    while t < 64 {
+        let S1: i64 = rotr32(e, 6) ^ rotr32(e, 11) ^ rotr32(e, 25);
+        let ch: i64 = (e & f) ^ ((M32 ^ e) & g);
+        let t1: i64 = (h + S1 + ch + K256[t] + SHA_W[t]) & M32;
+        let S0: i64 = rotr32(a, 2) ^ rotr32(a, 13) ^ rotr32(a, 22);
+        let mj: i64 = (a & b) ^ (a & c) ^ (b & c);
+        let t2: i64 = (S0 + mj) & M32;
+        h = g; g = f; f = e; e = (d + t1) & M32;
+        d = c; c = b; b = a; a = (t1 + t2) & M32;
+        t = t + 1;
+    }
+    SHA_H0 = (SHA_H0 + a) & M32; SHA_H1 = (SHA_H1 + b) & M32;
+    SHA_H2 = (SHA_H2 + c) & M32; SHA_H3 = (SHA_H3 + d) & M32;
+    SHA_H4 = (SHA_H4 + e) & M32; SHA_H5 = (SHA_H5 + f) & M32;
+    SHA_H6 = (SHA_H6 + g) & M32; SHA_H7 = (SHA_H7 + h) & M32;
+    return 0;
+}
+
+# 开始一次流式摘要
+fn sha256_init() -> i64 {
+    k256_init();
+    SHA_H0 = 1779033703; SHA_H1 = 3144134277;
+    SHA_H2 = 1013904242; SHA_H3 = 2773480762;
+    SHA_H4 = 1359893119; SHA_H5 = 2600822924;
+    SHA_H6 = 528734635;  SHA_H7 = 1541459225;
+    SHA_LEN = 0;
+    SHA_CACHEN = 0;
+    return 0;
+}
+
+# 喂一段数据（可任意长度、任意次）
+fn sha256_update(buf: i64, n: i64) -> i64 {
+    SHA_LEN = SHA_LEN + n;
+    let i: i64 = 0;
+    # 先填缓存
+    while SHA_CACHEN > 0 && i < n {
+        store8(&SHA_CACHE + SHA_CACHEN, load8(buf + i));
+        SHA_CACHEN = SHA_CACHEN + 1;
+        i = i + 1;
+        if SHA_CACHEN == 64 {
+            sha256_block(&SHA_CACHE);
+            SHA_CACHEN = 0;
+        }
+    }
+    # 整块直接处理
+    while i + 64 <= n {
+        sha256_block(buf + i);
+        i = i + 64;
+    }
+    # 剩余进缓存
+    while i < n {
+        store8(&SHA_CACHE + SHA_CACHEN, load8(buf + i));
+        SHA_CACHEN = SHA_CACHEN + 1;
+        i = i + 1;
+    }
+    return 0;
+}
+
+# 结束：补填充，输出 32 字节摘要
+fn sha256_final(out: i64) -> i64 {
+    let bitlen: i64 = SHA_LEN * 8;
+    # 先把缓存当独立消息做填充：0x80、零、8 字节大端长度
+    let cache_len: i64 = SHA_CACHEN;
+    store8(&SHA_CACHE + cache_len, 128);
+    let pad_end: i64 = 56;
+    let i: i64 = cache_len + 1;
+    while i < 64 {
+        if i < pad_end {
+            store8(&SHA_CACHE + i, 0);
+        } else {
+            let sh: i64 = 56 - (8 * (i - pad_end));
+            store8(&SHA_CACHE + i, (bitlen / (1 << sh)) & 255);
+        }
+        i = i + 1;
+    }
+    sha256_block(&SHA_CACHE);
+    let hs0: i64 = SHA_H0; let hs1: i64 = SHA_H1; let hs2: i64 = SHA_H2; let hs3: i64 = SHA_H3;
+    let hs4: i64 = SHA_H4; let hs5: i64 = SHA_H5; let hs6: i64 = SHA_H6; let hs7: i64 = SHA_H7;
+    store8(out + 0, shr32(hs0, 24) & 255); store8(out + 1, shr32(hs0, 16) & 255);
+    store8(out + 2, shr32(hs0, 8) & 255);  store8(out + 3, hs0 & 255);
+    store8(out + 4, shr32(hs1, 24) & 255); store8(out + 5, shr32(hs1, 16) & 255);
+    store8(out + 6, shr32(hs1, 8) & 255);  store8(out + 7, hs1 & 255);
+    store8(out + 8, shr32(hs2, 24) & 255); store8(out + 9, shr32(hs2, 16) & 255);
+    store8(out + 10, shr32(hs2, 8) & 255); store8(out + 11, hs2 & 255);
+    store8(out + 12, shr32(hs3, 24) & 255); store8(out + 13, shr32(hs3, 16) & 255);
+    store8(out + 14, shr32(hs3, 8) & 255); store8(out + 15, hs3 & 255);
+    store8(out + 16, shr32(hs4, 24) & 255); store8(out + 17, shr32(hs4, 16) & 255);
+    store8(out + 18, shr32(hs4, 8) & 255); store8(out + 19, hs4 & 255);
+    store8(out + 20, shr32(hs5, 24) & 255); store8(out + 21, shr32(hs5, 16) & 255);
+    store8(out + 22, shr32(hs5, 8) & 255); store8(out + 23, hs5 & 255);
+    store8(out + 24, shr32(hs6, 24) & 255); store8(out + 25, shr32(hs6, 16) & 255);
+    store8(out + 26, shr32(hs6, 8) & 255); store8(out + 27, hs6 & 255);
+    store8(out + 28, shr32(hs7, 24) & 255); store8(out + 29, shr32(hs7, 16) & 255);
+    store8(out + 30, shr32(hs7, 8) & 255); store8(out + 31, hs7 & 255);
+    return 32;
+}
+
+# 流式哈希整个文件（fd 已打开），输出 64 字符 hex（dst 至少 65 字节）
+var FILEBUF: [65536] byte = 0;
+var DIGEST: [32] byte = 0;
+fn sha256_file(fd: i64, dst: i64) -> i64 {
+    sha256_init();
+    let r: i64 = 0;
+    while 1 == 1 {
+        r = fread(fd, &FILEBUF, 65536);
+        if r <= 0 { break; }
+        sha256_update(&FILEBUF, r);
+    }
+    sha256_final(&DIGEST);
+    hex_of(&DIGEST, 32, dst);
+    return 0;
 }
 
 # 把 32 字节摘要写成 64 字符的十六进制串（dst 至少 65 字节）
