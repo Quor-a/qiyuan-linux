@@ -599,6 +599,11 @@ def main_cli(argv=None) -> int:
     sp = sub.add_parser("verify", help="自检 boot.img")
     sp.add_argument("image")
 
+    sp = sub.add_parser("unpack", help="解出 boot.img 的 kernel/ramdisk/dtb")
+    sp.add_argument("image")
+    sp.add_argument("--out", default=".",
+                    help="输出目录（默认当前目录）")
+
     sp = sub.add_parser("super", help="动态分区布局")
     sp.add_argument("--root-mb", type=int, default=3072)
 
@@ -644,6 +649,30 @@ def main_cli(argv=None) -> int:
         util.log("ok", "自检通过")
         for k, v in info.items():
             print(f"  {k:<16} {v}")
+        return 0
+
+    if a.cmd == "unpack":
+        data = Path(a.image).read_bytes()
+        probs = verify_boot_image(data)
+        if probs:
+            for p in probs:
+                util.log("err", p)
+            return 1
+        info = parse_boot_image(data)
+        page = info["page_size"]
+        hdr = align_up(HEADER_SIZE, page)
+        out = Path(a.out)
+        out.mkdir(parents=True, exist_ok=True)
+        off = hdr
+        for part in ("kernel", "ramdisk", "dtb"):
+            size = info.get(f"{part}_size", 0)
+            if not size:
+                continue
+            blob = data[off:off + size]
+            (out / f"{part}.img").write_bytes(blob)
+            util.log("ok", f"{part}.img（{size} 字节）")
+            off += align_up(size, page)
+        util.log("ok", f"已解出到 {out}/")
         return 0
 
     if a.cmd == "super":

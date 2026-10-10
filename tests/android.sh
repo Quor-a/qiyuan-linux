@@ -81,6 +81,32 @@ print(f"  qiyuan-1.0 → 稳定值 {a}")
 PYEOF
 [ $? -eq 0 ] && ok "Android 版本号不被误当年份" || bad "os_version 编码错误"
 
+step "4b. boot.img 解包能还原原文件"
+python3 - <<'PYEOF'
+import sys, pathlib, tempfile
+sys.path.insert(0, '.')
+import subprocess
+tmp = pathlib.Path(tempfile.mkdtemp())
+k = b'KERNEL' * 2000 + bytes(range(256))
+r = b'RAMDISK' * 900
+d = b'\xd0\x0d\xfe\xed' + b'DTB' * 400
+(tmp / 'k').write_bytes(k)
+(tmp / 'r').write_bytes(r)
+(tmp / 'd').write_bytes(d)
+subprocess.run(['./bin/qyandroid', 'bootimg', '--kernel', str(tmp / 'k'),
+                '--ramdisk', str(tmp / 'r'), '--dtb', str(tmp / 'd'),
+                '--out', str(tmp / 'b.img')], check=True,
+               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+subprocess.run(['./bin/qyandroid', 'unpack', str(tmp / 'b.img'),
+                '--out', str(tmp / 'x')], check=True,
+               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+assert (tmp / 'x' / 'kernel.img').read_bytes() == k, "kernel 未还原"
+assert (tmp / 'x' / 'ramdisk.img').read_bytes() == r, "ramdisk 未还原"
+assert (tmp / 'x' / 'dtb.img').read_bytes() == d, "dtb 未还原"
+print("  build→unpack round-trip 逐字节一致")
+PYEOF
+[ $? -eq 0 ] && ok "解包能还原 kernel/ramdisk/dtb" || bad "round-trip 不一致"
+
 step "5. 动态分区布局"
 ./bin/qyandroid super --root-mb 3072 > "$TMP/super.txt" 2>&1
 grep -q "system_a" "$TMP/super.txt" && grep -q "只读" "$TMP/super.txt" \
