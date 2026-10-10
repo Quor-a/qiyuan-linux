@@ -156,6 +156,7 @@ static void build_ui(void) {
     qy_window_setup(GTK_WINDOW(win), 480, 320, 360, 260, FALSE);
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+    qy_add_class(vbox, "qy-app-surface");
     gtk_widget_set_margin_start(vbox, 12);
     gtk_widget_set_margin_end(vbox, 12);
     gtk_widget_set_margin_top(vbox, 10);

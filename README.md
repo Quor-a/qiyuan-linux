@@ -2416,3 +2416,9 @@ ngs-about-v2.png`。
 - **开始菜单**：应用项图标统一 18px、`.qy-appmenu-item` hover、搜索框 `.qy-appmenu-search` 样式
 - **Dock/开始菜单映射**：task_icon_id/app_icon_id 开头用 qy_icon_for_app 兜底
 - 审计字符归零；构建产物 `qydesktop 0.1.0-233`
+
+### UI 改版第 14 轮：应用面板统一+浏览器地址/状态栏细节（v0.1.0-234，2026-10 实测）
+
+- **`.qy-app-surface` 面板**：接入 qyfiles（主内容区）/qybrowser（内容 paned）/qyview（图片区）/qymedia（播放区）/qyshot（预览区）；qysettings 已有 notebook 面板样式跳过
+- **浏览器**：地址栏 entry 加 `.qy-search-entry` 统一输入框；状态栏加 `.qy-browser-status`（顶部 1px 分隔 + 次要色）
+- 审计字符归零；构建产物 `qydesktop 0.1.0-234`

@@ -483,6 +483,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     g_signal_connect(back_btn, "clicked", G_CALLBACK(on_back), NULL);
     g_signal_connect(fwd_btn, "clicked", G_CALLBACK(on_fwd), NULL);
     url_entry = gtk_entry_new();
+    qy_add_class(url_entry, "qy-search-entry");
     gtk_entry_set_placeholder_text(GTK_ENTRY(url_entry), "https://...");
     GtkWidget *btn = gtk_button_new_with_label(TR("打开"));
     qy_add_class(btn, "qy-btn");
@@ -505,6 +506,7 @@ static void activate(GtkApplication *app, gpointer ud) {
 
     /* 正文: 左侧纯文本视图 + 右侧链接面板 */
     GtkWidget *paned = gtk_paned_new(GTK_ORIENTATION_HORIZONTAL);
+    qy_add_class(paned, "qy-app-surface");
     GtkWidget *sw = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
     view = gtk_text_view_new();
@@ -532,6 +534,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     /* 状态栏 */
     status_label = gtk_label_new(TR("就绪"));
     qy_add_class(status_label, "qy-mon-info");
+    qy_add_class(status_label, "qy-browser-status");
     gtk_widget_set_halign(status_label, GTK_ALIGN_START);
     gtk_box_pack_start(GTK_BOX(vbox), status_label, FALSE, FALSE, 0);
 

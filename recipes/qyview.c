@@ -284,6 +284,7 @@ static void activate(GtkApplication *app, gpointer ud) {
 
     /* 图片绘制区 */
     GtkWidget *da = gtk_drawing_area_new();
+    qy_add_class(da, "qy-app-surface");
     gtk_box_pack_start(GTK_BOX(vbox), da, TRUE, TRUE, 0);
     g_signal_connect(da, "draw", G_CALLBACK(on_draw), NULL);
     g_signal_connect(da, "scroll-event", G_CALLBACK(on_scroll), NULL);

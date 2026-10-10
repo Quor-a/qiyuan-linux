@@ -944,6 +944,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     qy_window_setup(GTK_WINDOW(win), 920, 560, 720, 480, FALSE);
 
     GtkWidget *hpane = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    qy_add_class(hpane, "qy-app-surface");
     gtk_container_add(GTK_CONTAINER(win), hpane);
 
     /* 侧边栏 */

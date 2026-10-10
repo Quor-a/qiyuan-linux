@@ -208,6 +208,7 @@ static void activate(GtkApplication *app, gpointer ud) {
 
     /* 预览区 */
     GtkWidget *sw = gtk_scrolled_window_new(NULL, NULL);
+    qy_add_class(sw, "qy-app-surface");
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(sw), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
     gtk_scrolled_window_set_min_content_height(GTK_SCROLLED_WINDOW(sw), 360);
     preview = gtk_image_new();
