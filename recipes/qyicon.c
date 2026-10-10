@@ -480,6 +480,23 @@ static void draw_open(cairo_t *cr, double x, double y, double s) {
     cairo_stroke(cr);
 }
 
+static void draw_clock(cairo_t *cr, double x, double y, double s) {
+    SET_LINE(cr);
+    cairo_arc(cr, PX(12), PY(12), PX(7.5), 0, 2 * G_PI);
+    cairo_move_to(cr, PX(12), PY(12)); cairo_line_to(cr, PX(12), PY(7.5));
+    cairo_move_to(cr, PX(12), PY(12)); cairo_line_to(cr, PX(15), PY(13));
+    cairo_stroke(cr);
+}
+
+static void draw_keyboard(cairo_t *cr, double x, double y, double s) {
+    SET_LINE(cr);
+    qy_rounded_rect(cr, PX(5), PY(7.5), PX(14), PY(9), PX(1.5));
+    cairo_stroke(cr);
+    cairo_move_to(cr, PX(7.5), PY(10.5)); cairo_line_to(cr, PX(16.5), PY(10.5));
+    cairo_move_to(cr, PX(8.5), PY(13.5)); cairo_line_to(cr, PX(15.5), PY(13.5));
+    cairo_stroke(cr);
+}
+
 #undef SET_LINE
 
 /* ---------- 函数表 ---------- */
@@ -499,6 +516,7 @@ static void (* const drawers[QY_ICON_COUNT])(cairo_t *, double, double, double) 
     draw_prev, draw_next, draw_bookmark,
     draw_list, draw_calc, draw_save,
     draw_rotate, draw_fit, draw_open,
+    draw_clock, draw_keyboard,
 };
 
 /* ---------- 统一分发器 ---------- */
@@ -542,4 +560,31 @@ GdkPixbuf *qy_icon_pixbuf(QyIconId id, int px, const GdkRGBA *bg) {
     GdkPixbuf *pb = gdk_pixbuf_get_from_surface(surf, 0, 0, px, px);
     cairo_surface_destroy(surf);
     return pb;
+}
+
+/* ---------- 应用名 → 图标映射 ---------- */
+QyIconId qy_icon_for_app(const char *app) {
+    if (!app) return QY_ICON_GRID;
+    if (g_str_has_prefix(app, "qybrowser")) return QY_ICON_BROWSER;
+    if (g_str_has_prefix(app, "qyfiles")) return QY_ICON_FILES;
+    if (g_str_has_prefix(app, "qyterm") || g_str_has_prefix(app, "qyterminal")) return QY_ICON_TERM;
+    if (g_str_has_prefix(app, "qysettings")) return QY_ICON_SETTINGS;
+    if (g_str_has_prefix(app, "qysearch")) return QY_ICON_SEARCH;
+    if (g_str_has_prefix(app, "qycalc")) return QY_ICON_CALC;
+    if (g_str_has_prefix(app, "qyshot")) return QY_ICON_SHOT;
+    if (g_str_has_prefix(app, "qyclip")) return QY_ICON_CLIPBOARD;
+    if (g_str_has_prefix(app, "qylock")) return QY_ICON_LOCK;
+    if (g_str_has_prefix(app, "qysetup")) return QY_ICON_SETUP;
+    if (g_str_has_prefix(app, "qyedit")) return QY_ICON_EDIT;
+    if (g_str_has_prefix(app, "qymon")) return QY_ICON_MONITOR;
+    if (g_str_has_prefix(app, "qynet")) return QY_ICON_NETWORK;
+    if (g_str_has_prefix(app, "qystore")) return QY_ICON_STORE;
+    if (g_str_has_prefix(app, "qymedia") || g_str_has_prefix(app, "qymusic")) return QY_ICON_PLAY;
+    if (g_str_has_prefix(app, "qyview")) return QY_ICON_IMAGE;
+    if (g_str_has_prefix(app, "qywelcome")) return QY_ICON_GRID;
+    if (g_str_has_prefix(app, "qyswitcher")) return QY_ICON_SWITCHER;
+    if (g_str_has_prefix(app, "qyusers")) return QY_ICON_USERS;
+    if (g_str_has_prefix(app, "qydriver")) return QY_ICON_DRIVER;
+    if (g_str_has_prefix(app, "qygit")) return QY_ICON_FILES;
+    return QY_ICON_GRID;
 }

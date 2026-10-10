@@ -258,6 +258,9 @@ static void on_task_pill_leave(GtkButton *btn, gpointer ud) {
 
 /* 按窗口标题映射统一图标 id（任务 pill 图标） */
 static QyIconId task_icon_id(const char *title) {
+    /* qy_icon_for_app 统一映射兜底（未识别时回退到本地标题匹配） */
+    QyIconId r = qy_icon_for_app(title);
+    if (r != QY_ICON_GRID) return r;
     if (strstr(title, "文件") || strstr(title, "主文件夹")) return QY_ICON_FILES;
     if (strstr(title, "终端") || strstr(title, "Terminal")) return QY_ICON_TERM;
     if (strstr(title, "设置"))     return QY_ICON_SETTINGS;

@@ -118,8 +118,10 @@ static void on_icon_click(GtkButton *btn, gpointer ud) {
     gtk_widget_hide(menu_win);
 }
 
-/* 应用名 → 统一图标 id */
+/* 应用名 → 统一图标 id（优先 qy_icon_for_app 按命令映射，未识别时本地兜底） */
 static QyIconId app_icon_id(const AppEntry *a) {
+    QyIconId r = qy_icon_for_app(a->cmdline);
+    if (r != QY_ICON_GRID) return r;
     const char *n = a->name;
     if (strstr(n, "文件")) return QY_ICON_FILES;
     if (strstr(n, "图片")) return QY_ICON_IMAGE;
@@ -168,9 +170,10 @@ static GtkWidget *make_grid_icon(AppEntry *a) {
     GtkWidget *v = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
     GtkWidget *btn = gtk_button_new();
     gtk_button_set_relief(GTK_BUTTON(btn), GTK_RELIEF_NONE);
-    /* 图标画布: 56x56 圆角色块 */
+    add_class(btn, "qy-appmenu-item");
+    /* 图标画布: 18x18 圆角色块（release 233 统一应用项图标为 18px） */
     GtkWidget *ic = gtk_drawing_area_new();
-    gtk_widget_set_size_request(ic, 56, 56);
+    gtk_widget_set_size_request(ic, 18, 18);
     g_signal_connect(ic, "draw", G_CALLBACK(icon_draw_cb), a);
     GtkWidget *lb = gtk_label_new(TR(a->name));
     gtk_label_set_max_width_chars(GTK_LABEL(lb), 8);
@@ -208,8 +211,9 @@ static GtkWidget *make_freq_row(AppEntry *a) {
     GtkWidget *h = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
     GtkWidget *b = gtk_button_new();
     gtk_button_set_relief(GTK_BUTTON(b), GTK_RELIEF_NONE);
+    add_class(b, "qy-appmenu-item");
     GtkWidget *ic = gtk_drawing_area_new();
-    gtk_widget_set_size_request(ic, 26, 26);
+    gtk_widget_set_size_request(ic, 18, 18);
     g_signal_connect(ic, "draw", G_CALLBACK(freq_icon_draw_cb), a);
     GtkWidget *lb = gtk_label_new(TR(a->name));
     gtk_widget_set_halign(lb, GTK_ALIGN_START);
@@ -396,6 +400,7 @@ int main(int argc, char **argv) {
     /* 1. 搜索框 + 关闭按钮 */
     GtkWidget *search_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 4);
     search_entry = gtk_search_entry_new();
+    add_class(search_entry, "qy-appmenu-search");
     gtk_entry_set_placeholder_text(GTK_ENTRY(search_entry), TR("搜索应用..."));
     g_signal_connect(search_entry, "search-changed", G_CALLBACK(on_search_changed), NULL);
     g_signal_connect(search_entry, "activate", G_CALLBACK(on_search_activate), NULL);

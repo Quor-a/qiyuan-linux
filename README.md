@@ -2408,3 +2408,11 @@ ngs-about-v2.png`。
 - **任务栏**：任务 pill hover 显示关闭按钮（weston qy-winop close 机制）+ refresh_taskbar 签名对比防重建（仅窗口变化才销毁）
 - **全应用 CSS**：`.qy-app-surface` 面板、细滚动条（hover 橙）、treeview hover、`.qy-titlebar` 按钮（close hover 红）、`.qy-search-entry` 统一输入框
 - 审计字符归零；构建产物 `qydesktop 0.1.0-232`
+
+### UI 改版第 13 轮：55图标+应用图标映射统一+开始菜单样式（v0.1.0-233，2026-10 实测）
+
+- **qyicon 53→55**：新增 CLOCK（表盘+指针）、KEYBOARD（键盘线稿）；设置页日期时间/输入 tab 用上新图标
+- **qy_icon_for_app**：统一应用命令前缀→图标映射（browser/files/term/settings/search/calc/shot/clipboard/lock/setup/edit/monitor/network/store/media/view/welcome/switcher/users/driver/git），25 用例验证
+- **开始菜单**：应用项图标统一 18px、`.qy-appmenu-item` hover、搜索框 `.qy-appmenu-search` 样式
+- **Dock/开始菜单映射**：task_icon_id/app_icon_id 开头用 qy_icon_for_app 兜底
+- 审计字符归零；构建产物 `qydesktop 0.1.0-233`

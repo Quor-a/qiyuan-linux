@@ -859,3 +859,22 @@ treeview.view:hover {
 .qy-search-entry:focus {
     border-color: #E95420;
 }
+
+/* ---------- release 233 开始菜单增强 ---------- */
+.qy-appmenu-item {
+    border-radius: 8px;
+    padding: 6px 10px;
+}
+.qy-appmenu-item:hover {
+    background-color: rgba(255, 255, 255, 0.08);
+}
+.qy-appmenu-search {
+    background-color: #1b2430;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 8px;
+    color: #e6e9ef;
+    padding: 4px 10px;
+}
+.qy-appmenu-search:focus {
+    border-color: #E95420;
+}

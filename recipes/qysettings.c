@@ -2005,7 +2005,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_box_pack_start(GTK_BOX(vdt), l, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vdt), s, FALSE, FALSE, 0);
     }
-    gtk_notebook_append_page(GTK_NOTEBOOK(nb), vdt, tab_with_icon(TR("日期时间"), QY_ICON_SETTINGS));
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), vdt, tab_with_icon(TR("日期时间"), QY_ICON_CLOCK));
 
     /* 语言 */
     GtkWidget *vlang = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
@@ -3313,7 +3313,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_box_pack_start(GTK_BOX(in_row), g_input_combo, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(in_row), in_btn, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vin), in_row, FALSE, FALSE, 0);
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vin, tab_with_icon(TR("输入"), QY_ICON_GRID));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vin, tab_with_icon(TR("输入"), QY_ICON_KEYBOARD));
         if (env_in)
             g_timeout_add(1750, auto_input_apply, NULL);
     }

@@ -63,6 +63,8 @@ typedef enum {
     QY_ICON_ROTATE,    /* 旋转 */
     QY_ICON_FIT,       /* 适应窗口 */
     QY_ICON_OPEN,      /* 打开/展开 */
+    QY_ICON_CLOCK,     /* 时钟 */
+    QY_ICON_KEYBOARD, /* 键盘 */
     QY_ICON_COUNT
 } QyIconId;
 
@@ -79,5 +81,8 @@ void qy_icon_tile(cairo_t *cr, QyIconId id,
 
 /* 渲染为 GdkPixbuf（供 GtkImage / GtkIconView 使用） */
 GdkPixbuf *qy_icon_pixbuf(QyIconId id, int px, const GdkRGBA *bg);
+
+/* 应用名 → 统一图标映射（供启动器/任务栏/应用菜单复用） */
+QyIconId qy_icon_for_app(const char *app);
 
 #endif /* QYICON_H */
