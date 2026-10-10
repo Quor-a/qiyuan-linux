@@ -1,4 +1,4 @@
-/* qysearch.c — 启元全局搜索
+/* qysearch.c — 澜岫全局搜索
  * 顶部弹窗式搜索：应用 + /usr/bin 程序 实时匹配，点击运行。
  * 自动化: QYSEARCH_TERM=关键词 启动后自动搜索（用于自测截图）。
  */
@@ -195,7 +195,7 @@ static void activate(GtkApplication *app, gpointer ud) {
 }
 
 int main(int argc, char **argv) {
-    GtkApplication *app = gtk_application_new("com.qiyuan.search", G_APPLICATION_NON_UNIQUE);
+    GtkApplication *app = gtk_application_new("com.lanxiu.search", G_APPLICATION_NON_UNIQUE);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
     char *own_argv[2] = { argv[0], NULL };
     int rc = g_application_run(G_APPLICATION(app), 1, own_argv);

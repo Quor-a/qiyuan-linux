@@ -43,7 +43,7 @@ def package(ctx):
     d = os.path.join(ctx.destdir, "etc", "iwd")
     os.makedirs(d, exist_ok=True)
     with open(os.path.join(d, "main.conf"), "w") as f:
-        f.write("""# 由启元 Linux 生成
+        f.write("""# 由澜岫 Linux 生成
 [General]
 EnableNetworkConfiguration=true
 # 不自动连接所有已知网络：笔记本在多个已知热点之间

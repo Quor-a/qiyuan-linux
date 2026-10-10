@@ -1,7 +1,7 @@
-"""mo —— 墨语言：启元官方系统开发语言
+"""mo —— 墨语言：澜岫官方系统开发语言
 
 自举编译的静态类型语言，编译到原生 x86-64 ELF，零 libc 依赖。
-启元改造：编译器支持 /usr/lib/mo/ 系统标准库路径，
+澜岫改造：编译器支持 /usr/lib/mo/ 系统标准库路径，
 任何目录直接 `moc prog.mo prog.elf` 即可用标准库。
 
 用途：
@@ -15,11 +15,11 @@
 name = "mo"
 version = "1.10.0"
 release = 25
-summary = "墨语言——启元官方系统开发语言（自举编译器 + 标准库 + 工具链）"
-homepage = "https://github.com/Quor-a/qiyuan-linux"
+summary = "墨语言——澜岫官方系统开发语言（自举编译器 + 标准库 + 工具链）"
+homepage = "https://github.com/Quor-a/lanxiu-linux"
 license = "MIT"
 
-# 源码以本地仓库为准（qiyuan-work/mo），打包脚本从仓库根拿
+# 源码以本地仓库为准（lanxiu-work/mo），打包脚本从仓库根拿
 source = []
 sha256 = []
 checksum_pending = False
@@ -34,11 +34,11 @@ compression = "gz"
 
 
 def build(ctx):
-    # 本地源码配方：源码在 qiyuan-work/mo（qybuild 无外部 source 可下，
+    # 本地源码配方：源码在 lanxiu-work/mo（qybuild 无外部 source 可下，
     # 从固定位置同步进来）。改 src/mo/*.mo 后 cat 成 compiler.mo 再编。
     import os
     import shutil
-    mo_src = "/home/agentuser/qiyuan-work/mo"
+    mo_src = "/home/agentuser/lanxiu-work/mo"
     dst = str(ctx.srcdir)  # build_fn 的 Python cwd 是项目根，必须显式用 srcdir
     for item in ("src", "lib", "examples", "tools", "tests", "docs", "bench",
                  "Makefile", "build.sh", "verify_bootstrap.sh", "README.md",

@@ -1,4 +1,4 @@
-/* qysetup - 启元系统安装器 (GTK3 GUI 前端)
+/* qysetup - 澜岫系统安装器 (GTK3 GUI 前端)
  * 后端: /usr/bin/qyinstall <disk>（CLI 脚本，已实测）
  * 界面: 磁盘列表 → 确认 → 后台安装（VTE 风格日志区，禁止窗口关闭直到完成）
  */
@@ -91,7 +91,7 @@ static void on_install_exit(GPid pid, gint status, gpointer ud) {
     if (ok) {
         GtkWidget *dlg = gtk_message_dialog_new(GTK_WINDOW(win), GTK_DIALOG_MODAL,
             GTK_MESSAGE_INFO, GTK_BUTTONS_NONE,
-            "启元系统已成功安装！\n\n重新启动后将从硬盘引导，\n首次开机会出现初始配置向导。");
+            "澜岫系统已成功安装！\n\n重新启动后将从硬盘引导，\n首次开机会出现初始配置向导。");
         gtk_window_set_title(GTK_WINDOW(dlg), TR("安装完成"));
         gtk_dialog_add_buttons(GTK_DIALOG(dlg), TR("稍后重启"), GTK_RESPONSE_CANCEL, TR("立即重启"), GTK_RESPONSE_OK, NULL);
         gint r = gtk_dialog_run(GTK_DIALOG(dlg));
@@ -142,7 +142,7 @@ static void do_install(GtkWidget *w, gpointer ud) {
     /* 二次确认 */
     GtkWidget *dlg = gtk_message_dialog_new(GTK_WINDOW(win), GTK_DIALOG_MODAL,
         GTK_MESSAGE_WARNING, GTK_BUTTONS_OK_CANCEL,
-        "将把启元系统安装到 %s\n该磁盘上的所有数据将被清除！", dev);
+        "将把澜岫系统安装到 %s\n该磁盘上的所有数据将被清除！", dev);
     gtk_window_set_title(GTK_WINDOW(dlg), TR("确认安装"));
     gint resp = gtk_dialog_run(GTK_DIALOG(dlg));
     gtk_widget_destroy(dlg);
@@ -181,7 +181,7 @@ static void do_install(GtkWidget *w, gpointer ud) {
 static void activate(GtkApplication *app, gpointer ud) {
     qy_load_theme();
     win = gtk_application_window_new(app);
-    gtk_window_set_title(GTK_WINDOW(win), TR("启元系统安装器"));
+    gtk_window_set_title(GTK_WINDOW(win), TR("澜岫系统安装器"));
     gtk_window_set_default_size(GTK_WINDOW(win), 640, 480);
 
     GtkWidget *v = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
@@ -208,7 +208,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_scrolled_window_set_min_content_height(GTK_SCROLLED_WINDOW(scroll), 110);
     gtk_box_pack_start(GTK_BOX(v), scroll, FALSE, FALSE, 0);
 
-    btn_install = gtk_button_new_with_label(TR("安装启元到所选磁盘"));
+    btn_install = gtk_button_new_with_label(TR("安装澜岫到所选磁盘"));
     g_signal_connect(btn_install, "clicked", G_CALLBACK(do_install), NULL);
     gtk_box_pack_start(GTK_BOX(v), btn_install, FALSE, FALSE, 0);
 
@@ -232,7 +232,7 @@ static void activate(GtkApplication *app, gpointer ud) {
 }
 
 int main(int argc, char **argv) {
-    GtkApplication *app = gtk_application_new("org.qiyuan.qysetup", G_APPLICATION_NON_UNIQUE);
+    GtkApplication *app = gtk_application_new("org.lanxiu.qysetup", G_APPLICATION_NON_UNIQUE);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
     /* GUI 启动不传参数：安装走界面 */
     int rc = g_application_run(G_APPLICATION(app), 1, argv);

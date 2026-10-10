@@ -1,4 +1,4 @@
-/* qyswitcher.c — 启元窗口切换器（Alt-Tab）
+/* qyswitcher.c — 澜岫窗口切换器（Alt-Tab）
  * 弹出式窗口列表（X11 枚举），点击激活窗口。
  * 自动化: QYSWITCH_AUTO=1 启动后自动枚举；QYSWITCH_DISPLAY 指定 DISPLAY（默认 :0）。
  */
@@ -38,7 +38,7 @@ static void clear_rows(void) {
 
 static void on_row_clicked(GtkWidget *w, gpointer ud);
 
-/* 已知启元应用（用于检测运行中） */
+/* 已知澜岫应用（用于检测运行中） */
 static const char *known_apps[] = {
     "qyfiles", "qyedit", "qyterm", "qysettings", "qymon", "qynet",
     "qystore", "qybrowser", "qyshot", "qyclip", "qylock", "qysearch",
@@ -47,7 +47,7 @@ static const char *known_apps[] = {
 };
 #define NKNOWN ((int)(sizeof known_apps / sizeof known_apps[0]))
 
-/* 运行中启元应用 */
+/* 运行中澜岫应用 */
 static void add_running_apps(void) {
     gchar *out = NULL;
     if (!g_spawn_command_line_sync("pgrep -a -f /usr/bin/qy", &out, NULL, NULL, NULL) || !out) {
@@ -160,7 +160,7 @@ static void populate(void) {
         gtk_list_box_insert(GTK_LIST_BOX(listbox), row, -1);
     }
     g_strfreev(lines);
-    /* 运行中启元应用 */
+    /* 运行中澜岫应用 */
     add_running_apps();
     char st[128];
     g_snprintf(st, sizeof st, "%s %d · %s", TR("窗口"), n, TR("已运行应用"));

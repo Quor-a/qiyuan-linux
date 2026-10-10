@@ -1,5 +1,5 @@
 /*
- * qyicon.c — 启元统一 cairo 图标层
+ * qyicon.c — 澜岫统一 cairo 图标层
  * 风格与托盘线稿一致：24×24 逻辑坐标、1.5px 描边、圆帽圆角。
  * 供 qydesktop / qyappmenu 使用，替代「彩色块+字符」。
  */

@@ -1,6 +1,6 @@
-/* qylock.c — 启元锁屏
+/* qylock.c — 澜岫锁屏
  * 全屏锁屏：大时钟 + 日期 + 密码解锁。
- * 密码来自 /etc/qylockpass.conf 第一行（无文件时默认 qiyuan）。
+ * 密码来自 /etc/qylockpass.conf 第一行（无文件时默认 lanxiu）。
  * 自动化: QYLOCK_AUTO=密码 启动后自动输入并解锁（用于自测截图）。
  */
 #include <gtk/gtk.h>

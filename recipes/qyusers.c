@@ -1,4 +1,4 @@
-/* qyusers - 启元用户管理 (GTK3)
+/* qyusers - 澜岫用户管理 (GTK3)
  * 功能: 用户列表 (uid>=1000) / 新建用户 (调 qyuseradd) / 修改密码 (busybox chpasswd) / 删除用户
  * 提权: 经 qysudo 执行写操作 (wheel 用户密码校验)
  */
@@ -225,7 +225,7 @@ static void on_refresh_clicked(GtkButton *b, gpointer ud) {
 static void activate(GtkApplication *app, gpointer ud) {
     qy_load_theme();
     win = gtk_application_window_new(app);
-    gtk_window_set_title(GTK_WINDOW(win), TR("启元用户管理"));
+    gtk_window_set_title(GTK_WINDOW(win), TR("澜岫用户管理"));
     gtk_window_set_default_size(GTK_WINDOW(win), 520, 420);
     GtkWidget *v = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
     gtk_container_set_border_width(GTK_CONTAINER(v), 14);
@@ -259,7 +259,7 @@ static void activate(GtkApplication *app, gpointer ud) {
 }
 
 int main(int argc, char **argv) {
-    GtkApplication *app = gtk_application_new("com.qiyuan.users", G_APPLICATION_NON_UNIQUE);
+    GtkApplication *app = gtk_application_new("com.lanxiu.users", G_APPLICATION_NON_UNIQUE);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
     int rc = g_application_run(G_APPLICATION(app), argc, argv);
     g_object_unref(app);

@@ -1,4 +1,4 @@
-/* qymon — 启元系统监视器 v1
+/* qymon — 澜岫系统监视器 v1
  * 数据源: /proc/stat (CPU), /proc/meminfo (内存), /proc/loadavg, /proc/uptime
  * UI: GTK3 + GtkDrawingArea 实时曲线 (cairo), 1s 定时刷新
  * 架构: 单文件, 与 qyfiles 同款编译方式 (gcc + pkg-config gtk+-3.0)
@@ -307,7 +307,7 @@ static gboolean tick(gpointer ud) {
     /* 窗口标题实时显示 CPU 使用率 */
     GtkWidget *win = gtk_widget_get_toplevel(GTK_WIDGET(ud));
     if (win && GTK_IS_WINDOW(win)) {
-        gchar *ttl = g_strdup_printf("%s — CPU %d%%", TR("启元系统监视器"),
+        gchar *ttl = g_strdup_printf("%s — CPU %d%%", TR("澜岫系统监视器"),
                                      (int)(last_cpu * 100 + 0.5));
         gtk_window_set_title(GTK_WINDOW(win), ttl);
         if (title_label) gtk_label_set_text(GTK_LABEL(title_label), ttl);
@@ -430,7 +430,7 @@ static void on_proc_refresh(GtkWidget *w, gpointer ud) {
 static void activate(GtkApplication *app, gpointer ud) {
     qy_load_theme();
     GtkWidget *win = gtk_application_window_new(app);
-    gtk_window_set_title(GTK_WINDOW(win), TR("启元系统监视器"));
+    gtk_window_set_title(GTK_WINDOW(win), TR("澜岫系统监视器"));
     gtk_window_set_default_size(GTK_WINDOW(win), 640, 600);
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
@@ -440,7 +440,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_widget_set_margin_bottom(vbox, 8);
     gtk_container_add(GTK_CONTAINER(win), vbox);
 
-    /* 顶部标题: 启元系统监视器 — CPU xx% */
+    /* 顶部标题: 澜岫系统监视器 — CPU xx% */
     title_label = gtk_label_new(NULL);
     add_class(title_label, "qy-mon-title");
     gtk_label_set_xalign(GTK_LABEL(title_label), 0.0);
@@ -532,7 +532,7 @@ static void activate(GtkApplication *app, gpointer ud) {
 }
 
 int main(int argc, char **argv) {
-    GtkApplication *app = gtk_application_new("com.qiyuan.mon", G_APPLICATION_NON_UNIQUE);
+    GtkApplication *app = gtk_application_new("com.lanxiu.mon", G_APPLICATION_NON_UNIQUE);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
     char *own_argv[2] = { argv[0], NULL };
     int rc = g_application_run(G_APPLICATION(app), 1, own_argv);

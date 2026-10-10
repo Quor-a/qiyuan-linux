@@ -1,4 +1,4 @@
-/* qyview — 启元图片查看器 v1
+/* qyview — 澜岫图片查看器 v1
  * 数据源: GdkPixbuf (PNG/JPEG/BMP 等), cairo 缩放绘制
  * 功能: 打开单图 (argv[1]), 窗口自适应缩放, 滚轮缩放, 拖拽平移, 左右键切换同目录图片
  * 架构: 单文件 GTK3, 与 qyfiles 同款编译方式
@@ -276,7 +276,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     qy_load_theme();
     GtkWidget *win = gtk_application_window_new(app);
     g_win = GTK_WINDOW(win);
-    gtk_window_set_title(GTK_WINDOW(win), "启元图片查看器");
+    gtk_window_set_title(GTK_WINDOW(win), "澜岫图片查看器");
     qy_window_setup(GTK_WINDOW(win), 700, 500, 480, 360, FALSE);
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
@@ -365,7 +365,7 @@ static void activate(GtkApplication *app, gpointer ud) {
 }
 
 int main(int argc, char **argv) {
-    GtkApplication *app = gtk_application_new("com.qiyuan.view", G_APPLICATION_NON_UNIQUE);
+    GtkApplication *app = gtk_application_new("com.lanxiu.view", G_APPLICATION_NON_UNIQUE);
     g_signal_connect(app, "activate", G_CALLBACK(activate), argv + 1);
     char *own_argv[2] = { argv[0], NULL };
     int rc = g_application_run(G_APPLICATION(app), 1, own_argv);

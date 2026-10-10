@@ -1,5 +1,5 @@
 #!/bin/sh
-# 启元 live init: 挂 ISO → squashfs → overlay(tmpfs) → switch_root qyinit
+# 澜岫 live init: 挂 ISO → squashfs → overlay(tmpfs) → switch_root qyinit
 /bin/busybox mkdir -p /proc /sys /dev /newroot /run /media
 /bin/busybox mount -t proc proc /proc
 /bin/busybox mount -t sysfs sysfs /sys
@@ -20,7 +20,7 @@ echo "[live-init] 挂载 live 系统"
 /bin/busybox mkdir -p /tmp/upper/upper /tmp/upper/work /newroot
 /bin/busybox mount -t overlay overlay -o lowerdir=/ro,upperdir=/tmp/upper/upper,workdir=/tmp/upper/work /newroot || exec /bin/busybox sh
 for d in proc sys dev run; do /bin/busybox mkdir -p /newroot/$d; /bin/busybox mount --move /$d /newroot/$d; done
-echo "[live-init] switch_root 到启元系统"
+echo "[live-init] switch_root 到澜岫系统"
 exec /bin/busybox switch_root /newroot /usr/bin/qyinit
 echo "[live-init] switch_root 失败，救援 shell"
 exec /bin/busybox sh

@@ -1,4 +1,4 @@
-/* qysettings - 启元系统设置 (GTK3) */
+/* qysettings - 澜岫系统设置 (GTK3) */
 #include "qyl10n.h"
 #include "qytheme.h"
 #include <gtk/gtk.h>
@@ -396,7 +396,7 @@ static void on_wallpaper_apply(GtkWidget *w, gpointer ud) {
     if (name && name[0]) wallpaper_write(name);
 }
 
-/* 自动化验证: QY_SETTINGS_WALLPAPER=qiyuan.png 启动后写入 */
+/* 自动化验证: QY_SETTINGS_WALLPAPER=lanxiu.png 启动后写入 */
 static gboolean auto_wallpaper_apply(gpointer p) {
     (void)p;
     const char *env = g_getenv("QY_SETTINGS_WALLPAPER");
@@ -1785,8 +1785,8 @@ static void on_settings_search(GtkSearchEntry *se, gpointer ud) {
 static void activate(GtkApplication *app, gpointer ud) {
     qy_load_theme();
     GtkWidget *win = gtk_application_window_new(app);
-    gtk_window_set_title(GTK_WINDOW(win), TR("启元系统设置"));
-    qy_make_titlebar(GTK_WINDOW(win), TR("启元系统设置"));
+    gtk_window_set_title(GTK_WINDOW(win), TR("澜岫系统设置"));
+    qy_make_titlebar(GTK_WINDOW(win), TR("澜岫系统设置"));
     qy_window_setup(GTK_WINDOW(win), 620, 420, 560, 420, FALSE);
 
     GtkWidget *nb = gtk_notebook_new();
@@ -1809,20 +1809,20 @@ static void activate(GtkApplication *app, gpointer ud) {
     struct sysinfo si;
     sysinfo(&si);
     gchar *mem = g_strdup_printf("%.1f MB", si.totalram / 1024.0 / 1024.0);
-    gchar *osrel = read_first_line("/etc/qiyuan-release");
+    gchar *osrel = read_first_line("/etc/lanxiu-release");
     gchar *deskver = read_first_line("/usr/share/qydesktop-version");
     gchar *cpumodel = read_cpu_model();
     gchar *cpucores = g_strdup_printf("%ld", sysconf(_SC_NPROCESSORS_ONLN));
     gchar *uptime = read_uptime();
     gchar *load = read_load();
     GtkWidget *logo = gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(logo), "<span size='xx-large' weight='bold'>启元 Qiyuan</span>");
+    gtk_label_set_markup(GTK_LABEL(logo), "<span size='xx-large' weight='bold'>澜岫 LANXIU</span>");
     gtk_widget_set_halign(logo, GTK_ALIGN_CENTER);
     qy_add_class(logo, "qy-about-logo");
     gtk_box_pack_start(GTK_BOX(v1), logo, FALSE, FALSE, 8);
     gtk_box_pack_start(GTK_BOX(v1), row(TR("操作系统"), osrel), FALSE, FALSE, 0);
     {
-        gchar *platform = g_strdup_printf("启元 Linux %s", u.machine);
+        gchar *platform = g_strdup_printf("澜岫 Linux %s", u.machine);
         gtk_box_pack_start(GTK_BOX(v1), row(TR("系统平台"), platform), FALSE, FALSE, 0);
         g_free(platform);
     }
@@ -3639,7 +3639,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         settings_group(GTK_BOX(vwl), TR("壁纸设置"));
         gtk_box_pack_start(GTK_BOX(vwl), row(TR("壁纸"), TR("桌面背景图片")), FALSE, FALSE, 0);
         /* 当前壁纸 */
-        gchar *cur_wall = g_strdup("qiyuan.png");
+        gchar *cur_wall = g_strdup("lanxiu.png");
         gchar *content = NULL;
         gsize len = 0;
         if (g_file_get_contents(WALLPAPER_CONF, &content, &len, NULL)) {
@@ -3680,7 +3680,7 @@ static void activate(GtkApplication *app, gpointer ud) {
             g_dir_close(wdir);
         }
         if (wall_idx == 0) {
-            gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(g_wallpaper_combo), "qiyuan.png");
+            gtk_combo_box_text_append_text(GTK_COMBO_BOX_TEXT(g_wallpaper_combo), "lanxiu.png");
             cur_idx = 0;
         }
         gtk_combo_box_set_active(GTK_COMBO_BOX(g_wallpaper_combo), cur_idx);
@@ -3838,7 +3838,7 @@ static gboolean br_changed(GtkRange *r, gpointer ud) {
 
 
 int main(int argc, char **argv) {
-    GtkApplication *app = gtk_application_new("com.qiyuan.settings", G_APPLICATION_NON_UNIQUE);
+    GtkApplication *app = gtk_application_new("com.lanxiu.settings", G_APPLICATION_NON_UNIQUE);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
     int rc = g_application_run(G_APPLICATION(app), argc, argv);
     g_object_unref(app);

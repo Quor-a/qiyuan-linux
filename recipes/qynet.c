@@ -1,4 +1,4 @@
-/* qynet - 启元网络管理器 (GTK3)
+/* qynet - 澜岫网络管理器 (GTK3)
  * 显示网络接口列表: 接口名 / 状态 / IPv4 / MAC
  * 数据源: ip -o link show + ip -o -4 addr show（netlink，不依赖 /sys）
  * 连接: 无 IP 时 ip link up + udhcpc；已有 IP 显示已连接
@@ -234,7 +234,7 @@ int main(int argc, char **argv) {
     qy_load_theme();
 
     GtkWidget *win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(win), TR("启元网络管理器"));
+    gtk_window_set_title(GTK_WINDOW(win), TR("澜岫网络管理器"));
     gtk_window_set_default_size(GTK_WINDOW(win), 620, 360);
     g_signal_connect(win, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 

@@ -1,4 +1,4 @@
-/* qywelcome - 启元首启配置向导 (GTK3)
+/* qywelcome - 澜岫首启配置向导 (GTK3)
  * 装机后首次启动运行: 设置主机名 / 普通用户+密码 / 时区 → 应用 → 完成后标记 /etc/.qywelcomed
  * 触发: qydesktop.unit 启动前由 qyinit 调 (或 qydesktop 检测未标记则拉起)
  */
@@ -57,7 +57,7 @@ static void sysinfo_rows(GtkWidget *v) {
     }
 
     const char *rows[][2] = {
-        { TR("系统"), "启元 Linux" },
+        { TR("系统"), "澜岫 Linux" },
         { TR("内核"), kern },
         { TR("CPU 型号"), cpu },
         { TR("内存"), mem },
@@ -80,27 +80,27 @@ static gboolean auto_fill(gpointer p);   /* 前向声明 */
 static void activate(GtkApplication *app, gpointer ud) {
     qy_load_theme();
     win = gtk_application_window_new(app);
-    gtk_window_set_title(GTK_WINDOW(win), TR("欢迎使用启元 Linux"));
+    gtk_window_set_title(GTK_WINDOW(win), TR("欢迎使用澜岫 Linux"));
     gtk_window_set_default_size(GTK_WINDOW(win), 480, 420);
     gtk_container_set_border_width(GTK_CONTAINER(win), 16);
 
     GtkWidget *v = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
     GtkWidget *logo = gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(logo), "<span size='xx-large' weight='bold'>启元 Qiyuan</span>");
+    gtk_label_set_markup(GTK_LABEL(logo), "<span size='xx-large' weight='bold'>澜岫 LANXIU</span>");
     gtk_widget_set_halign(logo, GTK_ALIGN_CENTER);
     qy_add_class(logo, "qy-about-logo");
     gtk_box_pack_start(GTK_BOX(v), logo, FALSE, FALSE, 4);
 
     GtkWidget *title = gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(title),
-        TR2("<span size='x-large' weight='bold'>欢迎使用启元 Linux</span>\n只需几步，完成初始配置","<span size='x-large' weight='bold'>Welcome to Qiyuan Linux</span>\nA few steps to set up"));
+        TR2("<span size='x-large' weight='bold'>欢迎使用澜岫 Linux</span>\n只需几步，完成初始配置","<span size='x-large' weight='bold'>Welcome to LANXIU Linux</span>\nA few steps to set up"));
     gtk_widget_set_halign(title, GTK_ALIGN_CENTER);
 
     GtkWidget *grid = gtk_grid_new();
     gtk_grid_set_row_spacing(GTK_GRID(grid), 8);
     gtk_grid_set_column_spacing(GTK_GRID(grid), 10);
 
-    hn_e  = gtk_entry_new();  gtk_entry_set_text(GTK_ENTRY(hn_e), "qiyuan");
+    hn_e  = gtk_entry_new();  gtk_entry_set_text(GTK_ENTRY(hn_e), "lanxiu");
     un_e  = gtk_entry_new();
     pw_e  = gtk_entry_new();  gtk_entry_set_visibility(GTK_ENTRY(pw_e), FALSE);
     pw2_e = gtk_entry_new();  gtk_entry_set_visibility(GTK_ENTRY(pw2_e), FALSE);
@@ -143,12 +143,12 @@ static void activate(GtkApplication *app, gpointer ud) {
 /* 自动化验证: QYWELCOME_FILL=1 启动后自动填写表单 */
 static gboolean auto_fill(gpointer p) {
     (void)p;
-    gtk_entry_set_text(GTK_ENTRY(hn_e), "qiyuan");
+    gtk_entry_set_text(GTK_ENTRY(hn_e), "lanxiu");
     gtk_entry_set_text(GTK_ENTRY(un_e), "user");
     gtk_entry_set_text(GTK_ENTRY(pw_e), "123456");
     gtk_entry_set_text(GTK_ENTRY(pw2_e), "123456");
     gtk_entry_set_text(GTK_ENTRY(tz_e), "Asia/Shanghai");
-    g_printerr("QYWELCOMEDBG: filled host=qiyuan user=user tz=Asia/Shanghai\n");
+    g_printerr("QYWELCOMEDBG: filled host=lanxiu user=user tz=Asia/Shanghai\n");
     return G_SOURCE_REMOVE;
 }
 
@@ -165,7 +165,7 @@ static void on_finish_clicked(GtkButton *b, gpointer ud) {
     const char *pw2 = gtk_entry_get_text(GTK_ENTRY(pw2_e));
     const char *tz = gtk_entry_get_text(GTK_ENTRY(tz_e));
 
-    if (!*hn) hn = "qiyuan";
+    if (!*hn) hn = "lanxiu";
     if (!*un) { set_status(TR("用户名不能为空")); return; }
     if (strcmp(pw, pw2) != 0) { set_status(TR("两次密码不一致")); return; }
 
@@ -200,7 +200,7 @@ int main(int argc, char **argv) {
     FILE *f = fopen("/etc/.qywelcomed", "r");
     if (f) { fclose(f); return 0; }
 
-    GtkApplication *app = gtk_application_new("com.qiyuan.welcome", G_APPLICATION_NON_UNIQUE);
+    GtkApplication *app = gtk_application_new("com.lanxiu.welcome", G_APPLICATION_NON_UNIQUE);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
     int rc = g_application_run(G_APPLICATION(app), argc, argv);
     g_object_unref(app);

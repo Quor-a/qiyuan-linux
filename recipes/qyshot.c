@@ -1,4 +1,4 @@
-/* qyshot.c — 启元截图工具
+/* qyshot.c — 澜岫截图工具
  * 在 X11 显示后端下截取整个屏幕（gdk_get_default_root_window），
  * 支持保存 PNG / 复制到剪贴板 / 自动截图（QYSHOT_AUTO）。
  */
@@ -196,7 +196,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     (void)ud;
     qy_load_theme();
     GtkWidget *win = gtk_application_window_new(app);
-    gtk_window_set_title(GTK_WINDOW(win), TR("启元截图"));
+    gtk_window_set_title(GTK_WINDOW(win), TR("澜岫截图"));
     gtk_window_set_default_size(GTK_WINDOW(win), 640, 480);
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
@@ -283,7 +283,7 @@ int main(int argc, char **argv) {
     if (argc > 1 && (!strcmp(argv[1], "--window") || !strcmp(argv[1], "--region"))) {
         return capture_mode_screenshot(argv[1]);
     }
-    GtkApplication *app = gtk_application_new("com.qiyuan.shot", G_APPLICATION_NON_UNIQUE);
+    GtkApplication *app = gtk_application_new("com.lanxiu.shot", G_APPLICATION_NON_UNIQUE);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
     char *own_argv[2] = { argv[0], NULL };
     int rc = g_application_run(G_APPLICATION(app), 1, own_argv);

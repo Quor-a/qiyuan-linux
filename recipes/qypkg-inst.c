@@ -1,5 +1,5 @@
 /*
- * qypkg-inst — 启元 .qyp 包安装器 (v1.9.5)
+ * qypkg-inst — 澜岫 .qyp 包安装器 (v1.9.5)
  * 用法: qypkg-inst [-l] <pkg.qyp> [<pkg.qyp>...]
  *       qypkg-inst -r <name>       卸载 (读 /var/lib/qypkg/installed/<name>.files)
  * QYPKG 格式: 128B 头 (MAGIC "QYPKG\0\0\0" + <8sII6Q32s32s) + meta json + data tar + sig

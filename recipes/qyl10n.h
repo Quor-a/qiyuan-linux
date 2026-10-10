@@ -1,5 +1,5 @@
 /*
- * qyl10n.h — 启元 Linux 轻量多语言框架 (v1.9.1)
+ * qyl10n.h — 澜岫 Linux 轻量多语言框架 (v1.9.1)
  * 用法: 源文件顶部 #include "qyl10n.h"，中文字符串包 TR("...")。
  * 语言来源: 环境变量 QYLANG > /etc/qylang > 默认 zh。
  * 提供 zh 与 en 两张表，表外字符串原样返回（zh 直通）。

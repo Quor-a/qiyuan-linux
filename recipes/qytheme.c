@@ -1,5 +1,5 @@
-/* qytheme.c — 启元统一主题助手实现
- * 加载 /usr/share/themes/qiyuan/gtk-3.0/gtk.css（深色桌面主题），
+/* qytheme.c — 澜岫统一主题助手实现
+ * 加载 /usr/share/themes/lanxiu/gtk-3.0/gtk.css（深色桌面主题），
  * 并读取 /etc/qytheme.conf 的 accent= 加载强调色覆盖 CSS。
  * 提供便捷 CSS 类添加函数。
  */
@@ -11,7 +11,7 @@
 
 void qy_load_theme(void) {
     GtkCssProvider *p = gtk_css_provider_new();
-    if (gtk_css_provider_load_from_path(p, "/usr/share/themes/qiyuan/gtk-3.0/gtk.css", NULL)) {
+    if (gtk_css_provider_load_from_path(p, "/usr/share/themes/lanxiu/gtk-3.0/gtk.css", NULL)) {
         gtk_style_context_add_provider_for_screen(
             gdk_screen_get_default(), GTK_STYLE_PROVIDER(p),
             GTK_STYLE_PROVIDER_PRIORITY_USER);

@@ -1,4 +1,4 @@
-/* qysudo - 启元权限提升工具 (setuid root)
+/* qysudo - 澜岫权限提升工具 (setuid root)
  * 用法: qysudo <命令> [参数...]
  *       qysudo -n <命令> ...   免交互（不提示密码，仅供 NOPASSWD 白名单命中时）
  * 校验链: /etc/qysudoers（用户或 %组 授权）→ /etc/shadow 密码校验 → 以 root 执行

@@ -29,4 +29,4 @@ def build(ctx):
 
 
 def package(ctx):
-    ctx.run("mkdir -p {}/usr/share/qiyuan".format(ctx.destdir))
+    ctx.run("mkdir -p {}/usr/share/lanxiu".format(ctx.destdir))

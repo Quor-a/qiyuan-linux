@@ -1,10 +1,10 @@
 #!/bin/bash
-# mkiso.sh — 启元 ISO 重打（母本，派生改 VERSION 即可）
+# mkiso.sh — 澜岫 ISO 重打（母本，派生改 VERSION 即可）
 # 用法: VERSION=1.5.1 bash scripts/mkiso.sh
 set -e
 VERSION="${VERSION:?需要 VERSION=}"
 Q="$(cd "$(dirname "$0")/.." && pwd)"
-ISO=/home/agentuser/qiyuan-linux-$VERSION.iso
+ISO=/home/agentuser/lanxiu-linux-$VERSION.iso
 
 rm -rf /tmp/qyiso && mkdir -p /tmp/qyiso/live /tmp/qyiso/boot/grub
 cp $Q/var/sysroot/boot/vmlinuz-7.2.9 /tmp/qyiso/boot/vmlinuz
@@ -22,11 +22,11 @@ sudo mksquashfs $Q/var/sysroot /tmp/qyiso/live/rootfs.squashfs -comp $SQCOMP $([
 cat > /tmp/qyiso/boot/grub/grub.cfg <<'EOF'
 set timeout=3
 set default=0
-menuentry "Qiyuan Linux (live)" {
+menuentry "LANXIU Linux (live)" {
     linux /boot/vmlinuz console=ttyS0
     initrd /boot/initramfs.img
 }
-menuentry "Qiyuan Linux (rescue)" {
+menuentry "LANXIU Linux (rescue)" {
     linux /boot/vmlinuz console=ttyS0 single
     initrd /boot/initramfs.img
 }

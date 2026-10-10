@@ -1,4 +1,4 @@
-/* qyarc —— 启元压缩管理器（GTK3）
+/* qyarc —— 澜岫压缩管理器（GTK3）
  *
  * 设计稿 v1 → 实现 v1：
  *   工具栏: 打开 / 解压到… / 新建压缩包 / 删除
@@ -368,7 +368,7 @@ static void activate(GtkApplication *app, gpointer user_data)
     (void)user_data;
     qy_load_theme();
     GtkWidget *win = gtk_application_window_new(app);
-    gtk_window_set_title(GTK_WINDOW(win), TR("启元压缩管理器"));
+    gtk_window_set_title(GTK_WINDOW(win), TR("澜岫压缩管理器"));
     gtk_window_set_default_size(GTK_WINDOW(win), 720, 480);
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);

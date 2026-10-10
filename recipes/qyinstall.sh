@@ -1,5 +1,5 @@
 #!/bin/busybox sh
-# qyinstall — 启元安装器 v1 (CLI)
+# qyinstall — 澜岫安装器 v1 (CLI)
 # 用法: qyinstall /dev/vda
 # 说明: live 介质的 /media 挂载不随 switch_root 保留 → 安装器自行挂载 sr0
 set -e

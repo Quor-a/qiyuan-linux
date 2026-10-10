@@ -6,7 +6,7 @@
 name = "kernel"
 version = "7.2.9"
 release = 1
-summary = "Linux 内核（启元基线配置）"
+summary = "Linux 内核（澜岫基线配置）"
 homepage = ""
 license = "GPL-2.0"
 

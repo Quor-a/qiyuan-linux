@@ -1,4 +1,4 @@
-"""dejavu-fonts —— 启元 Linux 基础字体（TTF）。
+"""dejavu-fonts —— 澜岫 Linux 基础字体（TTF）。
 
 GTK/Pango 没有字体文件时文本测量会返回巨大 natural size，
 导致 Wayland 下 "taller than 65535" + Cairo surface 溢出崩溃。

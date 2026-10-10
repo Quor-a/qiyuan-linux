@@ -1,4 +1,4 @@
-/* qystore — 启元软件中心 (v1.9.5)
+/* qystore — 澜岫软件中心 (v1.9.5)
  * GTK3 GUI: 浏览 /usr/share/qyrepo/index.json (147 包离线仓库)
  * 搜索过滤 / 已装标记 (/var/lib/qypkg/installed/) / 安装·卸载按钮 (qysudo -n)
  */
@@ -391,7 +391,7 @@ int main(int argc, char **argv) {
     qy_load_theme();
 
     GtkWidget *win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(win), TR("启元软件中心"));
+    gtk_window_set_title(GTK_WINDOW(win), TR("澜岫软件中心"));
     gtk_window_set_default_size(GTK_WINDOW(win), 640, 480);
     g_signal_connect(win, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 

@@ -1,6 +1,6 @@
 /*
- * qyboot.c — 启元开机动画
- * 直接写 /dev/fb0 (DRM fbdev emulation 提供)：深蓝渐变背景 + 启元 Logo 圆角块 + 进度条
+ * qyboot.c — 澜岫开机动画
+ * 直接写 /dev/fb0 (DRM fbdev emulation 提供)：深蓝渐变背景 + 澜岫 Logo 圆角块 + 进度条
  * 由 qyinit 最先启动 (qyboot.unit)，qydesktop 起来后向其发 SIGTERM，动画淡出退出
  * gcc --sysroot=<sysroot> qyboot.c -o qyboot -O2
  */
@@ -95,7 +95,7 @@ int main(void)
     }
     draw_logo(W / 2, H / 2 - H / 12, H / 5);
 
-    /* 底部小字条: "Qiyuan Linux" 简化为横线装饰 */
+    /* 底部小字条: "LANXIU Linux" 简化为横线装饰 */
     int by = H * 4 / 5;
     rect(W/2 - W/8, by, W/2 + W/8, by + 2, 120, 140, 170);
 

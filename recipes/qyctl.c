@@ -1,4 +1,4 @@
-/* qyctl —— 启元 Linux 服务管理 CLI
+/* qyctl —— 澜岫 Linux 服务管理 CLI
  *
  * 设计原则（与 qyinit 同一哲学：小而可审计）：
  *   - 不依赖 dbus / polkit / systemd，一个静态逻辑的 C 文件
@@ -253,7 +253,7 @@ int main(int argc, char **argv)
     if (argc < 2) {
         fprintf(stderr,
             "用法: qyctl <list|status|start|stop|restart|enable|disable> [单元]\n"
-            "  启元 Linux 服务管理（无 dbus / polkit 依赖）\n");
+            "  澜岫 Linux 服务管理（无 dbus / polkit 依赖）\n");
         return 2;
     }
     const char *cmd = argv[1];

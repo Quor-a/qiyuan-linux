@@ -1,4 +1,4 @@
-/* qybrowser.c — 启元简易浏览器
+/* qybrowser.c — 澜岫简易浏览器
  * libcurl 下载网页 → 提取纯文本 → GtkTextView 渲染
  * 适合轻量桌面（无 WebKit）：快速查看网页文字内容。
  */
@@ -202,7 +202,7 @@ static gpointer fetch_thread(gpointer ud) {
         curl_easy_setopt(curl, CURLOPT_TIMEOUT, 15L);
         curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 8L);
         curl_easy_setopt(curl, CURLOPT_ERRORBUFFER, errbuf);
-        curl_easy_setopt(curl, CURLOPT_USERAGENT, "qybrowser/0.1 (Qiyuan Linux)");
+        curl_easy_setopt(curl, CURLOPT_USERAGENT, "qybrowser/0.1 (LANXIU Linux)");
         CURLcode res = curl_easy_perform(curl);
         if (res == CURLE_OK) {
             curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &code);
@@ -465,8 +465,8 @@ static void activate(GtkApplication *app, gpointer ud) {
     (void)ud;
     qy_load_theme();
     GtkWidget *win = gtk_application_window_new(app);
-    gtk_window_set_title(GTK_WINDOW(win), TR("启元浏览器"));
-    qy_make_titlebar(GTK_WINDOW(win), TR("启元浏览器"));
+    gtk_window_set_title(GTK_WINDOW(win), TR("澜岫浏览器"));
+    qy_make_titlebar(GTK_WINDOW(win), TR("澜岫浏览器"));
     qy_window_setup(GTK_WINDOW(win), 720, 520, 560, 420, FALSE);
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
@@ -576,7 +576,7 @@ static void activate(GtkApplication *app, gpointer ud) {
 
 int main(int argc, char **argv) {
     curl_global_init(CURL_GLOBAL_DEFAULT);
-    GtkApplication *app = gtk_application_new("com.qiyuan.browser", G_APPLICATION_NON_UNIQUE);
+    GtkApplication *app = gtk_application_new("com.lanxiu.browser", G_APPLICATION_NON_UNIQUE);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
     char *own_argv[2] = { argv[0], NULL };
     int rc = g_application_run(G_APPLICATION(app), 1, own_argv);

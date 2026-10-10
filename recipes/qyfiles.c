@@ -1,4 +1,4 @@
-/* qyfiles - 启元文件管理器 (GTK3) — v4: 目录搜索过滤 */
+/* qyfiles - 澜岫文件管理器 (GTK3) — v4: 目录搜索过滤 */
 #include "qyl10n.h"
 #include "qyicon.h"
 #include "qytheme.h"
@@ -25,7 +25,7 @@ static GdkPixbuf *load_icon_for(const char *name, gboolean isdir);
 /* v2.0 主题 + 工具栏状态按钮 */
 static void load_theme(void) {
     GtkCssProvider *p = gtk_css_provider_new();
-    if (gtk_css_provider_load_from_path(p, "/usr/share/themes/qiyuan/gtk-3.0/gtk.css", NULL)) {
+    if (gtk_css_provider_load_from_path(p, "/usr/share/themes/lanxiu/gtk-3.0/gtk.css", NULL)) {
         gtk_style_context_add_provider_for_screen(
             gdk_screen_get_default(), GTK_STYLE_PROVIDER(p),
             GTK_STYLE_PROVIDER_PRIORITY_USER);
@@ -940,8 +940,8 @@ static void on_home(GtkButton *b, gpointer ud) { chdir_to(g_get_home_dir()); }
 static void activate(GtkApplication *app, gpointer ud) {
     load_theme();
     GtkWidget *win = gtk_application_window_new(app);
-    gtk_window_set_title(GTK_WINDOW(win), TR("启元文件管理器"));
-    qy_make_titlebar(GTK_WINDOW(win), TR("启元文件管理器"));
+    gtk_window_set_title(GTK_WINDOW(win), TR("澜岫文件管理器"));
+    qy_make_titlebar(GTK_WINDOW(win), TR("澜岫文件管理器"));
     qy_window_setup(GTK_WINDOW(win), 920, 560, 720, 480, FALSE);
 
     GtkWidget *hpane = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
@@ -1183,7 +1183,7 @@ static void activate(GtkApplication *app, gpointer ud) {
 
 int main(int argc, char **argv) {
     g_argc = argc; g_argv = argv;
-    GtkApplication *app = gtk_application_new("com.qiyuan.files", G_APPLICATION_NON_UNIQUE);
+    GtkApplication *app = gtk_application_new("com.lanxiu.files", G_APPLICATION_NON_UNIQUE);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
     /* 只把 argv[0] 交给 GtkApplication: 否则 --trash 会被其命令行解析器判为
        "Unknown option" 而直接退出 (自启/调试场景静默失败根因) */

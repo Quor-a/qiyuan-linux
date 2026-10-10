@@ -31,7 +31,7 @@ from pathlib import Path
 
 
 def build(ctx):
-    # 启元补丁: 顶栏时钟支持 clock-format-string (自定义 strftime, 用于中文日期)
+    # 澜岫补丁: 顶栏时钟支持 clock-format-string (自定义 strftime, 用于中文日期)
     import shutil as _sh
     _sh.copy(Path(__file__).parent.parent / "qypatches" / "patch-weston-clock.py", Path(ctx.srcdir) / "patch-weston-clock.py")
     ctx.run("python3 patch-weston-clock.py")

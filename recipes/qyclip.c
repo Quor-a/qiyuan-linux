@@ -1,4 +1,4 @@
-/* qyclip.c — 启元剪贴板管理器
+/* qyclip.c — 澜岫剪贴板管理器
  * 监听剪贴板 owner-change，保存文本历史，点击条目可复制回剪贴板。
  * 自动化: QYCLIP_AUTO=文本 启动后模拟复制该文本（用于截图/自测）。
  */
@@ -130,7 +130,7 @@ static void activate(GtkApplication *app, gpointer ud) {
 }
 
 int main(int argc, char **argv) {
-    GtkApplication *app = gtk_application_new("com.qiyuan.clip", G_APPLICATION_NON_UNIQUE);
+    GtkApplication *app = gtk_application_new("com.lanxiu.clip", G_APPLICATION_NON_UNIQUE);
     g_signal_connect(app, "activate", G_CALLBACK(activate), NULL);
     char *own_argv[2] = { argv[0], NULL };
     int rc = g_application_run(G_APPLICATION(app), 1, own_argv);

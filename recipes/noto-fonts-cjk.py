@@ -1,4 +1,4 @@
-"""noto-fonts-cjk —— 启元 Linux 中文字体（Noto Sans CJK）。
+"""noto-fonts-cjk —— 澜岫 Linux 中文字体（Noto Sans CJK）。
 
 只有 DejaVu（西文）时 GTK/Pango 中文渲染为 tofu 方框。
 Noto Sans CJK 覆盖简繁日韩四种字形，Pango 经 fontconfig 自动回退。

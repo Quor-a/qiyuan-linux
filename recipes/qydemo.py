@@ -7,9 +7,9 @@
 name = "qydemo"
 version = "0.2.0"
 release = 1
-summary = "启元构建系统演示命令行工具"
+summary = "澜岫构建系统演示命令行工具"
 description = "调用 libqydemo 打印版本与运算结果，用于端到端验证整套链路。"
-homepage = "https://example.invalid/qiyuan"
+homepage = "https://example.invalid/lanxiu"
 license = "MIT"
 
 source = ["tests/demo/qydemo"]

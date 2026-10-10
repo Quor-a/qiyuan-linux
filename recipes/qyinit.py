@@ -1,4 +1,4 @@
-"""qyinit —— 启元 Linux 的 1 号进程与服务管理器。
+"""qyinit —— 澜岫 Linux 的 1 号进程与服务管理器。
 
 一个真正的 init 该做的事：挂载早期文件系统、创建设备节点、按依赖顺序启动
 服务、回收孤儿进程、处理关机信号、按策略重启崩溃的服务。
@@ -9,7 +9,7 @@
 name = "qyinit"
 version = "0.1.0"
 release = 1
-summary = "启元 Linux 初始化与服务管理（PID 1）"
+summary = "澜岫 Linux 初始化与服务管理（PID 1）"
 description = "挂载早期文件系统、按依赖顺序启动服务、回收孤儿进程、处理关机流程。"
 license = "MIT"
 

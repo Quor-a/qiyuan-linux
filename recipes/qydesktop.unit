@@ -1,5 +1,5 @@
 [Unit]
-Description=Qiyuan Desktop shell (GTK3)
+Description=LANXIU Desktop shell (GTK3)
 ExecStart=/usr/bin/start-qydesktop.sh
 Restart=on-failure
 After=weston.unit

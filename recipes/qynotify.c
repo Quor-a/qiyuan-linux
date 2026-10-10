@@ -1,4 +1,4 @@
-/* qynotify.c — 启元通知发送 CLI
+/* qynotify.c — 澜岫通知发送 CLI
  * 用法: qynotify <标题> <消息>
  * 写入 /tmp/qynotif/latest.msg（qydesktop 顶栏气泡读取），并记录日志。
  */

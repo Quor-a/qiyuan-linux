@@ -1,4 +1,4 @@
-/* qydriver.c — 启元驱动管理器 (GTK3)
+/* qydriver.c — 澜岫驱动管理器 (GTK3)
  * 显示已加载内核模块（/proc/modules）+ USB 设备（/sys/bus/usb/devices）
  * 数据源：/proc/modules（模块名/大小/使用数/依赖）、
  *         /sys/bus/usb/devices 下各设备的 product/idVendor/idProduct 文件
@@ -201,9 +201,9 @@ int main(int argc, char **argv) {
     qy_load_theme();
 
     GtkWidget *win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(win), TR("启元驱动管理器"));
+    gtk_window_set_title(GTK_WINDOW(win), TR("澜岫驱动管理器"));
     gtk_window_set_default_size(GTK_WINDOW(win), 680, 420);
-    qy_make_titlebar(GTK_WINDOW(win), TR("启元驱动管理器"));
+    qy_make_titlebar(GTK_WINDOW(win), TR("澜岫驱动管理器"));
     g_signal_connect(win, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);

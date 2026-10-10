@@ -1,4 +1,4 @@
-/* qynotifd.c — 启元通知/设置守护进程
+/* qynotifd.c — 澜岫通知/设置守护进程
  * 1) 监控 /etc/qy*.conf 变化：为每个开关写入发送"设置已更改"通知
  *    （让 qysettings 的空壳开关有消费端）
  * 2) 消费 qyautostart.conf：内容每行作为命令启动

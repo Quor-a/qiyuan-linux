@@ -1,4 +1,4 @@
-/* qymedia.c — 启元音乐播放器
+/* qymedia.c — 澜岫音乐播放器
  * 播放 WAV（ALSA aplay 后台），支持播放/暂停/继续/停止/打开文件。
  * 自动化: QYMEDIA_AUTO=WAV路径 启动后自动加载并播放。
  */
@@ -152,7 +152,7 @@ static gboolean auto_play(gpointer p) {
 static void build_ui(void) {
     qy_load_theme();
     GtkWidget *win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(win), TR("启元音乐"));
+    gtk_window_set_title(GTK_WINDOW(win), TR("澜岫音乐"));
     qy_window_setup(GTK_WINDOW(win), 480, 320, 360, 260, FALSE);
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);

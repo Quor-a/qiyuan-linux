@@ -1,4 +1,4 @@
-/* qyappmenu - 启元开始菜单 (ArcMenu 风格: 搜索+固定网格+常用列表+用户区) */
+/* qyappmenu - 澜岫开始菜单 (ArcMenu 风格: 搜索+固定网格+常用列表+用户区) */
 #include "qyl10n.h"
 #include "qyicon.h"
 #include "qytheme.h"
@@ -59,7 +59,7 @@ static void launch_cmd(const char *cmd) {
 /* ---------- 主题 ---------- */
 static void load_theme(void) {
     GtkCssProvider *p = gtk_css_provider_new();
-    if (gtk_css_provider_load_from_path(p, "/usr/share/themes/qiyuan/gtk-3.0/gtk.css", NULL)) {
+    if (gtk_css_provider_load_from_path(p, "/usr/share/themes/lanxiu/gtk-3.0/gtk.css", NULL)) {
         gtk_style_context_add_provider_for_screen(
             gdk_screen_get_default(), GTK_STYLE_PROVIDER(p),
             GTK_STYLE_PROVIDER_PRIORITY_USER);
@@ -71,15 +71,15 @@ static void add_class(GtkWidget *w, const char *cls) {
     gtk_style_context_add_class(gtk_widget_get_style_context(w), cls);
 }
 
-/* ---------- 常用列表持久化: ~/.config/qiyuan/appmenu-freq ---------- */
-#define FREQ_FILE ".config/qiyuan/appmenu-freq"
+/* ---------- 常用列表持久化: ~/.config/lanxiu/appmenu-freq ---------- */
+#define FREQ_FILE ".config/lanxiu/appmenu-freq"
 
 static char *freq_path(void) {
     return g_build_filename(g_get_home_dir(), FREQ_FILE, NULL);
 }
 
 static void freq_save(void) {
-    char *dir = g_build_filename(g_get_home_dir(), ".config/qiyuan", NULL);
+    char *dir = g_build_filename(g_get_home_dir(), ".config/lanxiu", NULL);
     g_mkdir_with_parents(dir, 0700);
     g_free(dir);
     char *path = freq_path();

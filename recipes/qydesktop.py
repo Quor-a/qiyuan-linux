@@ -1,4 +1,4 @@
-"""qydesktop —— 启元桌面 shell（GTK3 单窗口桌面：顶栏 + Dock + 壁纸桌面）
+"""qydesktop —— 澜岫桌面 shell（GTK3 单窗口桌面：顶栏 + Dock + 壁纸桌面）
 
 源码：recipes/qydesktop.c、recipes/qytheme.css、recipes/weston.ini（随仓库自带）
 许可证：MIT
@@ -6,8 +6,8 @@
 
 name = "qydesktop"
 version = "0.1.0"
-release = 236
-summary = "启元桌面 shell（GTK3 单窗口 + 主题）"
+release = 237
+summary = "澜岫桌面 shell（GTK3 单窗口 + 主题）"
 license = "MIT"
 
 source = []
@@ -196,8 +196,8 @@ def package(ctx):
     ctx.run("mkdir -p {}/usr/share/applications".format(ctx.destdir))
     ctx.install_file("qystore.desktop", "usr/share/applications/qystore.desktop")
     # v2.0: 桌面主题 CSS（qydesktop 启动时加载）+ weston 配置
-    ctx.run("mkdir -p {}/usr/share/themes/qiyuan/gtk-3.0".format(ctx.destdir))
-    ctx.install_file("qytheme.css", "usr/share/themes/qiyuan/gtk-3.0/gtk.css")
+    ctx.run("mkdir -p {}/usr/share/themes/lanxiu/gtk-3.0".format(ctx.destdir))
+    ctx.install_file("qytheme.css", "usr/share/themes/lanxiu/gtk-3.0/gtk.css")
     ctx.run("mkdir -p {}/etc/xdg/weston".format(ctx.destdir))
     ctx.install_file("weston.ini", "etc/xdg/weston/weston.ini")
     # v2.x: 桌面版本文件（qysettings 关于页显示）

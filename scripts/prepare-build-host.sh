@@ -1,7 +1,7 @@
 #!/bin/bash
 # prepare-build-host.sh — 构建机准备（幂等，可在任意构建机重跑）
 #
-# 为什么需要这个脚本：启元的构建环境把 sysroot 里的 .pc 文件通过
+# 为什么需要这个脚本：澜岫的构建环境把 sysroot 里的 .pc 文件通过
 # PKG_CONFIG_SYSROOT_DIR 前缀成 sysroot 路径。当某个重包（如
 # gobject-introspection）**尚未自举、暂由宿主提供**时，宿主 .pc 里的
 # 工具变量也会被前缀，于是

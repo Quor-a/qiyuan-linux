@@ -35,7 +35,7 @@ def build(ctx):
     if ctx.configure_args():
         ctx.run("./Configure linux-aarch64 --prefix=/usr "
                 "--openssldir=/etc/ssl --libdir=lib shared zlib-dynamic "
-                "CC=aarch64-qiyuan-linux-gnu-gcc")
+                "CC=aarch64-lanxiu-linux-gnu-gcc")
     else:
         ctx.run("./config --prefix=/usr --openssldir=/etc/ssl "
                 "--libdir=lib shared zlib-dynamic")

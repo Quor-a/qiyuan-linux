@@ -1,5 +1,5 @@
 /*
- * qyicon.h — 启元统一 cairo 图标层
+ * qyicon.h — 澜岫统一 cairo 图标层
  * 与托盘/通知铃铛同源：1.5px 线宽、圆帽圆角、玻璃底 + 单一强调色。
  * 供 qydesktop / qyappmenu / qyfiles 等复用，替代「彩色块+字符」。
  */

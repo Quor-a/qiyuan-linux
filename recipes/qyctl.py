@@ -1,9 +1,9 @@
-"""qyctl —— 启元服务管理 CLI（无 dbus/polkit 依赖）。"""
+"""qyctl —— 澜岫服务管理 CLI（无 dbus/polkit 依赖）。"""
 
 name = "qyctl"
 version = "0.1.0"
 release = 1
-summary = "启元 Linux 服务管理 CLI"
+summary = "澜岫 Linux 服务管理 CLI"
 description = "list/status/start/stop/restart/enable/disable；与 qyinit 通过 /run/qyinit/units/<name>.pid 契约协作。"
 license = "MIT"
 

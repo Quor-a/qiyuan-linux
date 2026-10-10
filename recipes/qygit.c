@@ -1,4 +1,4 @@
-/* qygit.c — 启元 Git 工具 (GTK3)
+/* qygit.c — 澜岫 Git 工具 (GTK3)
  * 显示仓库状态与最近提交，支持刷新 / 提交 / 推送。
  * 调用 /usr/bin/git（随 qydesktop 包内置）。
  * 自动化：QYGIT_REPO=/path 启动后自动显示仓库状态（日志 QYGITDBG）
@@ -108,9 +108,9 @@ int main(int argc, char **argv) {
     qy_load_theme();
 
     GtkWidget *win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(win), TR("启元 Git 工具"));
+    gtk_window_set_title(GTK_WINDOW(win), TR("澜岫 Git 工具"));
     gtk_window_set_default_size(GTK_WINDOW(win), 720, 460);
-    qy_make_titlebar(GTK_WINDOW(win), TR("启元 Git 工具"));
+    qy_make_titlebar(GTK_WINDOW(win), TR("澜岫 Git 工具"));
     g_signal_connect(win, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);

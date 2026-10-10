@@ -1,4 +1,4 @@
-/* qydesktop - 启元桌面 shell v2.0（单一全屏桌面窗口）
+/* qydesktop - 澜岫桌面 shell v2.0（单一全屏桌面窗口）
  *
  * v2.0 架构变化：把 顶栏 + 左侧 Dock + 壁纸桌面图标 合并进**一个全屏
  * DESKTOP 窗口**，彻底规避 Wayland 下多窗口 DOCK 定位失效（gtk_window_move
@@ -20,7 +20,7 @@
  *
  * 任务栏数据源：weston 合成器补丁每 500ms 写的 /tmp/xdg/qy-windows，
  * 点击窗口按钮写 /tmp/xdg/qy-focus 让合成器激活对应窗口。
- * 主题：/usr/share/themes/qiyuan/gtk-3.0/gtk.css（GTK CSS，qytheme.css）。
+ * 主题：/usr/share/themes/lanxiu/gtk-3.0/gtk.css（GTK CSS，qytheme.css）。
  */
 #include "qyl10n.h"
 #include "qyicon.h"
@@ -36,8 +36,8 @@
 #define QY_WINDOWS  "/tmp/xdg/qy-windows"
 #define QY_FOCUS    "/tmp/xdg/qy-focus"
 #define QY_WINOP    "/tmp/xdg/qy-winop"
-#define QY_CSS      "/usr/share/themes/qiyuan/gtk-3.0/gtk.css"
-#define QY_WALL     "/usr/share/backgrounds/qiyuan.png"
+#define QY_CSS      "/usr/share/themes/lanxiu/gtk-3.0/gtk.css"
+#define QY_WALL     "/usr/share/backgrounds/lanxiu.png"
 
 #define SCREEN_W  1280
 #define SCREEN_H  800
@@ -581,7 +581,7 @@ static void menu_about(GtkMenuItem *mi, gpointer ud) {
     (void)mi; (void)ud;
     GtkWidget *dlg = gtk_message_dialog_new(NULL, GTK_DIALOG_DESTROY_WITH_PARENT,
                                             GTK_MESSAGE_INFO, GTK_BUTTONS_OK,
-                                            "%s", TR("启元 Linux 桌面"));
+                                            "%s", TR("澜岫 Linux 桌面"));
     /* 系统信息: 发行版 / 内核 / 内存 */
     gchar *os = NULL;
     g_file_get_contents("/etc/os-release", &os, NULL, NULL);
@@ -670,7 +670,7 @@ static gboolean desk_button_press(GtkWidget *w, GdkEventButton *ev, gpointer ud)
         add_class(mi, "qy-menu-item");
         g_signal_connect(mi, "activate", G_CALLBACK(menu_refresh_wallpaper), NULL);
         gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
-        mi = gtk_menu_item_new_with_label(TR("关于启元"));
+        mi = gtk_menu_item_new_with_label(TR("关于澜岫"));
         add_class(mi, "qy-menu-item");
         g_signal_connect(mi, "activate", G_CALLBACK(menu_about), NULL);
         gtk_menu_shell_append(GTK_MENU_SHELL(menu), mi);
@@ -1002,7 +1002,7 @@ static gboolean auto_set_volume(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
-/* 品牌 logo：玻璃 tile + 启元星线稿（cairo，禁字符） */
+/* 品牌 logo：玻璃 tile + 澜岫星线稿（cairo，禁字符） */
 static gboolean app_logo_draw_cb(GtkWidget *w, cairo_t *cr, gpointer ud) {
     (void)ud;
     GtkAllocation al;

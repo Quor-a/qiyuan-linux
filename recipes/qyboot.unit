@@ -1,5 +1,5 @@
 [Unit]
-Description=Qiyuan boot splash
+Description=LANXIU boot splash
 ExecStart=/usr/bin/qyboot
 After=udevd
 Restart=no

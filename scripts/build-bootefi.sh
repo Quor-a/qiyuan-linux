@@ -7,12 +7,12 @@ terminal_input serial console
 terminal_output serial console
 set timeout=2
 set default=0
-menuentry "Qiyuan Linux" {
+menuentry "LANXIU Linux" {
     search --no-floppy --label --set=root qyroot
     linux ($root)/boot/vmlinuz-6.16.1 root=LABEL=qyroot console=ttyS0
     initrd ($root)/boot/initramfs.img
 }
-menuentry "Qiyuan Linux (rescue)" {
+menuentry "LANXIU Linux (rescue)" {
     search --no-floppy --label --set=root qyroot
     linux ($root)/boot/vmlinuz-6.16.1 root=LABEL=qyroot console=ttyS0 single
     initrd ($root)/boot/initramfs.img

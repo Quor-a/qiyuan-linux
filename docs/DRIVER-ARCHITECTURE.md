@@ -1,4 +1,4 @@
-# 启元 Linux 硬件驱动架构
+# 澜岫 Linux 硬件驱动架构
 
 > 状态：2026-10-08 起草。本文是**产品蓝图的可执行形式**——每一项都对应
 > 代码里的模块或内核配置项，不是愿望清单。
@@ -40,8 +40,8 @@
    │            │            │
    ▼            ▼            ▼
 内核驱动层：内核 config 片段（kernel-config/*.fragment）
-  ├ qiyuan-net-bus.fragment      有线网/WiFi/蓝牙/USB/NVMe
-  └ qiyuan-peripherals.fragment  触摸屏/显示/文件系统/虚拟机/移动设备
+  ├ lanxiu-net-bus.fragment      有线网/WiFi/蓝牙/USB/NVMe
+  └ lanxiu-peripherals.fragment  触摸屏/显示/文件系统/虚拟机/移动设备
 ```
 
 ## 三、能力矩阵（对应产品需求）

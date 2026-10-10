@@ -8,9 +8,9 @@
 name = "libqydemo"
 version = "0.2.0"
 release = 1
-summary = "启元构建系统演示共享库"
+summary = "澜岫构建系统演示共享库"
 description = "提供版本查询与加法运算的最小共享库，用于验证构建链路。"
-homepage = "https://example.invalid/qiyuan"
+homepage = "https://example.invalid/lanxiu"
 license = "MIT"
 
 source = ["tests/demo/libqydemo"]

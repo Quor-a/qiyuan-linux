@@ -27,4 +27,4 @@ def build(ctx):
 
 
 def package(ctx):
-    ctx.run("mkdir -p {}/etc/qyinit.d {}/usr/share/qiyuan".format(ctx.destdir))
+    ctx.run("mkdir -p {}/etc/qyinit.d {}/usr/share/lanxiu".format(ctx.destdir))

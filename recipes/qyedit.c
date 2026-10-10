@@ -1,4 +1,4 @@
-/* qyedit - 启元文本编辑器 (GTK3, 打开/编辑/保存, 中文界面) */
+/* qyedit - 澜岫文本编辑器 (GTK3, 打开/编辑/保存, 中文界面) */
 #include "qyl10n.h"
 #include "qytheme.h"
 #include "qyicon.h"
@@ -144,7 +144,7 @@ static void on_mark_set(GtkTextBuffer *b, GtkTextIter *loc, GtkTextMark *mark, g
 }
 
 static void set_title(void) {
-    gchar *t = g_strdup_printf(TR("%s - 启元文本编辑器"), current_path ? g_path_get_basename(current_path) : TR("未命名"));
+    gchar *t = g_strdup_printf(TR("%s - 澜岫文本编辑器"), current_path ? g_path_get_basename(current_path) : TR("未命名"));
     gtk_window_set_title(GTK_WINDOW(win), t);
     g_free(t);
 }

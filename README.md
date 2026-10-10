@@ -1,4 +1,4 @@
-# 启元 Linux（Qiyuan Linux）
+# 澜岫 Linux（LANXIU Linux）
 
 一个从零开始的自建 Linux 发行版工程。工具链自己控制，包格式与包管理器自己实现，
 构建配方自己定义，软件以上游源码为输入。
@@ -161,8 +161,8 @@ KGDB…）写成清单，每次构建强制校验。这份清单本身就是发�
 
 ```bash
 ./bin/qyrelease bump --version 0.1.0-rc.2 --bump promote   # → 0.1.0
-./bin/qyrelease manifest --dir var/release --sign var/repo/keys/qiyuan
-./bin/qyrelease verify  --dir var/release --pubkey var/repo/keys/qiyuan.pub
+./bin/qyrelease manifest --dir var/release --sign var/repo/keys/lanxiu
+./bin/qyrelease verify  --dir var/release --pubkey var/repo/keys/lanxiu.pub
 ./bin/qyrelease changelog --version 0.1.0
 ```
 
@@ -212,16 +212,16 @@ glibc-2.42、linux-6.16.1。其余条目在 `bootstrap/versions.json` 中标为 
 ## 二、马上可以跑
 
 ```bash
-cd qiyuan
+cd lanxiu
 
 # 生成签名密钥（只需一次）
-./bin/qybuild --gen-key var/repo/keys/qiyuan
+./bin/qybuild --gen-key var/repo/keys/lanxiu
 
 # 构建全部配方（含依赖求解、sysroot 依赖安装、签名入库）
-./bin/qybuild all --sign var/repo/keys/qiyuan
+./bin/qybuild all --sign var/repo/keys/lanxiu
 
 # 查看仓库
-./bin/qyrepo list --pubkey var/repo/keys/qiyuan.pub
+./bin/qyrepo list --pubkey var/repo/keys/lanxiu.pub
 
 # 安装到某个根（/ 就是装到本机，也可以指向任意目录或挂载的系统）
 ./bin/qypkg --root /tmp/qyroot install qydemo
@@ -300,7 +300,7 @@ python3 bootstrap/bootstrap.py run --from gcc-p1   # 断了从某阶段继续
 ## 五、目录结构
 
 ```
-qiyuan/
+lanxiu/
 ├── qyos/            内核模块（格式/配方/沙箱/依赖/构建/仓库/包管理）
 ├── bin/             qybuild · qypkg · qyrepo
 ├── recipes/         构建配方（*.py）
@@ -340,9 +340,9 @@ qiyuan/
 - **Dock**：圆角半透明面板 + 4 个品牌色圆角图标（文件/终端/设置/软件中心）+
   运行指示灯（`/proc` comm 轮询）+ 底部应用网格
 - **桌面图标**：主文件夹/回收站/软件中心/终端/设置（彩色圆形按钮 + 白色标签，点击拉起应用）
-- **右键菜单**：新建文件夹 / 打开终端 / 刷新壁纸 / 关于启元
+- **右键菜单**：新建文件夹 / 打开终端 / 刷新壁纸 / 关于澜岫
 - **主题**：新增 `recipes/qytheme.css`（GTK CSS 深色主题，品牌橙 `#E95420` + 紫 `#77216F`），
-  安装到 `/usr/share/themes/qiyuan/gtk-3.0/gtk.css`，qydesktop 启动时加载
+  安装到 `/usr/share/themes/lanxiu/gtk-3.0/gtk.css`，qydesktop 启动时加载
 - **weston 配置**：`recipes/weston.ini` 纳入仓库，`panel-position=none` 禁用重复的
   weston 面板，顶栏统一由 qydesktop 提供
 - **多语言**：qyl10n 表新增 15 个桌面词条（文件/软件中心/主文件夹/回收站/关机/重启…）
@@ -404,7 +404,7 @@ sysroot 工具链，PASS）。
 ### 任务栏优化：重复窗口去重 + 焦点高亮（v0.1.0-14，2026-10 实测）
 
 - **去重**：同一应用打开多个窗口时，任务栏只显示一个按钮（`taskbar_parse` 按标题去重），
-  避免「欢迎使用启元 Linux」等首启/向导窗口刷屏
+  避免「欢迎使用澜岫 Linux」等首启/向导窗口刷屏
 - **焦点高亮（点击反馈）**：点击任务栏按钮后该按钮高亮 3 秒（`qy-bar-btn-active`：
   橙色半透明底 + 橙色底边）；同时保留读 `/tmp/xdg/qy-focus` 的同步高亮（weston 消费
   该一次性文件，故以本地反馈为主）
@@ -441,7 +441,7 @@ sysroot 工具链，PASS）。
   生成全新壁纸**，每次右键都有新图案
 - **测试钩子**：`QY_WALL_SEED=N` 环境变量启动即用指定种子生成（演示/截图/回归用），
   壁纸文件缺失时自动回退到程序化生成
-- 默认启动仍加载品牌壁纸 `qiyuan.png`，行为不变
+- 默认启动仍加载品牌壁纸 `lanxiu.png`，行为不变
 
 构建产物：`qydesktop 0.1.0-18`。验证：seed1 与 seed2 截图的亮度直方图差异 17.8 万像素
 分桶、颜色数 8702/8222——不同种子确为不同壁纸。
@@ -449,7 +449,7 @@ sysroot 工具链，PASS）。
 ### 开始菜单常用列表持久化（v0.1.0-19，2026-10 实测）
 
 - **缺陷修复**：qyappmenu 每次以独立进程启动，原先「常用」列表只在当前进程内累计——
-  实际上永远是空的。现改为持久化到 `~/.config/qiyuan/appmenu-freq`（`freq_load`/
+  实际上永远是空的。现改为持久化到 `~/.config/lanxiu/appmenu-freq`（`freq_load`/
   `freq_save`），启动时载入历史启动次数，「常用」区真正可用
 - **写入时机**：点网格图标或常用行启动应用时立即保存
 - **文件格式**：`应用名 次数`（UTF-8 行），跨启动累积
@@ -595,7 +595,7 @@ ngs-about-v2.png`。
 
 ### 开始菜单：无常用记录时自动隐藏「常用」区（v0.1.0-32，2026-10 实测）
 
-- 首次使用（无 `~/.config/qiyuan/appmenu-freq`）时，菜单只显示「固定」分类网格，
+- 首次使用（无 `~/.config/lanxiu/appmenu-freq`）时，菜单只显示「固定」分类网格，
   **不显示空的「常用」标题**，避免空白区域
 - 一旦有应用启动记录（`launches > 0`），「常用」标题自动出现并展示常用应用
 - 验证：无记录时菜单高度较短；写入 2 条常用记录后菜单变高、「常用」标题出现
@@ -642,7 +642,7 @@ ngs-about-v2.png`。
 
 ### 系统设置：关于页品牌 Logo（v0.1.0-38，2026-10 实测）
 
-- 「关于」页顶部新增 **品牌 Logo 区**：橙色圆角块 + 白色粗体「启元 Qiyuan」
+- 「关于」页顶部新增 **品牌 Logo 区**：橙色圆角块 + 白色粗体「澜岫 LANXIU」
   （新增 `qy-about-logo` 主题类），信息行下方展示系统详情
 - 验证：qysettings 关于页顶部可检出橙色 `#E95420` Logo 色块
 
@@ -652,7 +652,7 @@ ngs-about-v2.png`。
 
 ### 图片查看器：窗口标题显示当前文件名（v0.1.0-39，2026-10 实测）
 
-- **qyview 窗口标题**由固定「启元图片查看器」改为当前图片文件名
+- **qyview 窗口标题**由固定「澜岫图片查看器」改为当前图片文件名
   （切换上/下一张时同步更新），任务栏按钮随文件名变化
 - 验证：`qyview /root/Pictures/test.png` 启动后，qy-windows 中窗口标题为 `test.png`
 
@@ -669,16 +669,16 @@ ngs-about-v2.png`。
 
 ![系统监视器 v4](docs/screenshots/qymon-v4.png)
 
-### 顶栏「启元」品牌 Logo 按钮（v0.1.0-41，2026-10 实测）
+### 顶栏「澜岫」品牌 Logo 按钮（v0.1.0-41，2026-10 实测）
 
-- **开始菜单按钮品牌化**：由符号 `⊞` 改为橙色圆角「启元」白色粗体 Logo
+- **开始菜单按钮品牌化**：由符号 `⊞` 改为橙色圆角「澜岫」白色粗体 Logo
   （新增 `qy-logo-btn` / `qy-logo-text` 主题类），悬停加深橙色
 - 保留原有点击打开应用菜单、tooltip「显示应用」功能
-- 验证：顶栏左上可检出橙色 `#E95420` Logo 块 + 白色「启元」文字
+- 验证：顶栏左上可检出橙色 `#E95420` Logo 块 + 白色「澜岫」文字
 
 构建产物：`qydesktop 0.1.0-41`。
 
-![顶栏「启元」品牌 Logo 按钮](docs/screenshots/desktop-logo-btn.png)
+![顶栏「澜岫」品牌 Logo 按钮](docs/screenshots/desktop-logo-btn.png)
 
 ### 开始菜单键盘友好增强（v0.1.0-42，2026-10 实测）
 
@@ -704,7 +704,7 @@ ngs-about-v2.png`。
 
 ### 首启向导：品牌 Logo 区（v0.1.0-44，2026-10 实测）
 
-- **qywelcome 顶部新增「启元 Qiyuan」橙色圆角 Logo**（与设置页关于页一致），
+- **qywelcome 顶部新增「澜岫 LANXIU」橙色圆角 Logo**（与设置页关于页一致），
   其下为欢迎标题、配置表单与本机信息卡片
 - 验证：qywelcome 窗口顶部可检出橙色 `#E95420` Logo 块
 
@@ -933,7 +933,7 @@ ngs-about-v2.png`。
 
 ### 系统监视器：标题栏/顶部实时显示 CPU（v0.1.0-76，2026-10 实测）
 
-- 窗口标题实时更新：`启元系统监视器 — CPU xx%`（任务栏/Alt-Tab 可见）
+- 窗口标题实时更新：`澜岫系统监视器 — CPU xx%`（任务栏/Alt-Tab 可见）
 - 内容区顶部新增标题标签（`qy-mon-title`），每秒同步显示该标题
 - 实测：标题标签完整渲染 6 汉字 + 破折号 + CPU 百分比（x57-210），
   位于内容区顶部（窗口 y142-154）；大数字/曲线/信息栏不受影响
@@ -943,10 +943,10 @@ ngs-about-v2.png`。
 
 ### 系统设置：关于页新增「系统平台」（v0.1.0-77，2026-10 实测）
 
-- 关于页在「操作系统」下新增「系统平台」行，显示 `启元 Linux <架构>`
+- 关于页在「操作系统」下新增「系统平台」行，显示 `澜岫 Linux <架构>`
   （uname machine，如 x86_64），便于区分发行版与硬件平台
 - l10n：`系统平台 → Platform`
-- 实测：关于页第二行完整渲染「系统平台：启元 Linux x86_64」
+- 实测：关于页第二行完整渲染「系统平台：澜岫 Linux x86_64」
   （y332-345，左标签 x215-280 + 右值 x324-560）
 
 构建产物：`qydesktop 0.1.0-77`。
@@ -1525,11 +1525,11 @@ ngs-about-v2.png`。
 - 「壁纸」说明 + 「当前壁纸」显示（读 /etc/qywallpaper.conf）
 - 「壁纸」下拉：列出 /usr/share/backgrounds/ 下 .png/.jpg 壁纸 + 应用按钮
 - 应用后写 /etc/qywallpaper.conf（wallpaper=文件名）
-- 自动化：`QY_SETTINGS_WALLPAPER=qiyuan.png` 启动后自动写入
+- 自动化：`QY_SETTINGS_WALLPAPER=lanxiu.png` 启动后自动写入
 - l10n：桌面背景图片/当前壁纸（壁纸已有）
 - 实测：`QY_SETTINGS_PAGE=37` 直达壁纸页
   （QYSETTINGS_DEBUG: set page=37 total=38），
-  当前壁纸+下拉+按钮渲染正常，qywallpaper.conf 写入 qiyuan.png
+  当前壁纸+下拉+按钮渲染正常，qywallpaper.conf 写入 lanxiu.png
 
 构建产物：`qydesktop 0.1.0-127`。
 
@@ -1562,14 +1562,14 @@ ngs-about-v2.png`。
 
 补全「壁纸页」闭环（此前仅写入配置，桌面未应用）：
 - qydesktop 启动时优先读取 /etc/qywallpaper.conf 的 `wallpaper=` 路径
-- 指定壁纸加载失败才回退系统默认 qiyuan.png → 程序化渐变
+- 指定壁纸加载失败才回退系统默认 lanxiu.png → 程序化渐变
 - 实测：配置 `wallpaper=/usr/share/backgrounds/wall2.png`（蓝色渐变）
   启动桌面后背景变为蓝色渐变（蓝色像素 592248 占屏 58%），
   采样 (100,100)=(49,98,200)、(1279,799)=(34,68,170)，壁纸真实生效
 
 构建产物：`qydesktop 0.1.0-133`。
 
-### 启元浏览器 qybrowser：libcurl 简易浏览器（v0.1.0-134，2026-10 实测）
+### 澜岫浏览器 qybrowser：libcurl 简易浏览器（v0.1.0-134，2026-10 实测）
 
 按「浏览器」需求，实现轻量网页查看器（chroot 无 WebKit 时用 libcurl）：
 - 地址栏输入 URL，libcurl 下载 → HTML 纯文本提取 → GtkTextView 渲染
@@ -1617,7 +1617,7 @@ ngs-about-v2.png`。
 
 ### 截图工具 qyshot（v0.1.0-142，2026-10 实测）
 
-按「截图工具」需求，新增启元截图：
+按「截图工具」需求，新增澜岫截图：
 - 纯 X11 辅助程序 qyshot-capture（XGetImage 抓根窗口 → 24-bit BMP）
 - qyshot 解析 BMP 构造 GdkPixbuf（gdk-pixbuf 无 BMP 加载器时自解析）
 - 全屏截图/保存 PNG/复制到剪贴板，启动器可直达
@@ -1628,7 +1628,7 @@ ngs-about-v2.png`。
 
 ### 剪贴板管理器 qyclip（v0.1.0-145，2026-10 实测）
 
-按「剪贴板」需求，新增启元剪贴板：
+按「剪贴板」需求，新增澜岫剪贴板：
 - 监听剪贴板 owner-change，保存文本历史（去重，最多 50 条）
 - 点击历史条目复制回剪贴板；「清空历史」一键清空
 - 启动器可直达；自动化 QYCLIP_AUTO=文本 模拟复制
@@ -1639,11 +1639,11 @@ ngs-about-v2.png`。
 
 ### 锁屏 qylock（v0.1.0-148，2026-10 实测）
 
-按「锁屏」需求，新增启元锁屏：
+按「锁屏」需求，新增澜岫锁屏：
 - 全屏锁屏：96px 大时钟 + 日期 + 密码解锁
-- 密码来自 /etc/qylockpass.conf（默认 qiyuan），错误提示重试
+- 密码来自 /etc/qylockpass.conf（默认 lanxiu），错误提示重试
 - 启动器可直达；自动化 QYLOCK_AUTO=密码 验证解锁
-- 实测：锁屏深色全屏 + 中央大时钟（7308 亮像素），QYLOCK_AUTO=qiyuan 解锁退出 exit=0
+- 实测：锁屏深色全屏 + 中央大时钟（7308 亮像素），QYLOCK_AUTO=lanxiu 解锁退出 exit=0
 
 构建产物：`qydesktop 0.1.0-148`。
 
@@ -1659,7 +1659,7 @@ ngs-about-v2.png`。
 
 ### 全局搜索 qysearch（v0.1.0-151，2026-10 实测）
 
-按「全局搜索」需求，新增启元全局搜索：
+按「全局搜索」需求，新增澜岫全局搜索：
 - 弹窗式搜索：应用 + /usr/bin 程序实时匹配，点击运行
 - 自动化 QYSEARCH_TERM=关键词；实测 QYSEARCH_TERM=qy 匹配 37 项
 - 修复：窗口显示后插入的列表行需显式 show（qysearch 结果列表正常渲染，19 文本行簇）
@@ -1669,7 +1669,7 @@ ngs-about-v2.png`。
 
 ### 音乐播放器 qymedia（v0.1.0-152，2026-10 实测）
 
-按「音视频播放」需求，新增启元音乐播放器：
+按「音视频播放」需求，新增澜岫音乐播放器：
 - 打开 WAV 音频（aplay ALSA 后台播放），播放/暂停/继续/停止
 - 自动化 QYMEDIA_AUTO=WAV路径 自动加载播放
 - 实测：QYMEDIA_AUTO=/tmp/test.wav 播放器 UI 正常，
@@ -1682,7 +1682,7 @@ ngs-about-v2.png`。
 
 按「工作区/Alt-Tab」需求：
 - Alt-Tab 由 weston 14 合成器内置（mod+Tab 循环窗口）
-- 新增窗口总览 qyswitcher：X11 窗口列表 + 运行中启元应用，点击切换/启动
+- 新增窗口总览 qyswitcher：X11 窗口列表 + 运行中澜岫应用，点击切换/启动
 - qysw-x11 辅助程序：枚举/激活 X 窗口（XRaiseWindow + XSetInputFocus）
 - 自动化 QYSWITCH_AUTO / QYSWITCH_DISPLAY；实测运行中应用列表正常显示
 - 启动器新增窗口总览（系统类）
@@ -1823,7 +1823,7 @@ ngs-about-v2.png`。
 ### 桌面右键菜单自动化验证（v0.1.0-174，2026-10 实测）
 
 针对排查报告"UI 与美术细节/桌面交互"：
-- **已有桌面右键菜单**（9 项：新建文件夹/打开终端/文件管理器/系统设置/系统监视/回收站/刷新壁纸/关于启元）**补充自动化验证**：`QYDESKTOP_RIGHTCLICK=1` 启动后模拟桌面右键弹出菜单
+- **已有桌面右键菜单**（9 项：新建文件夹/打开终端/文件管理器/系统设置/系统监视/回收站/刷新壁纸/关于澜岫）**补充自动化验证**：`QYDESKTOP_RIGHTCLICK=1` 启动后模拟桌面右键弹出菜单
 - 实测日志 `QYDESKTOPDBG: desktop right-click menu`，截图中菜单在桌面右上区域可见（深色主题菜单 + 文字）
 - 桌面任意空白处右键即可弹出，菜单项点击直达对应应用
 
@@ -1880,11 +1880,11 @@ ngs-about-v2.png`。
 
 构建产物：`qydesktop 0.1.0-179`。
 
-### 关于启元：系统信息对话框（v0.1.0-180，2026-10 实测）
+### 关于澜岫：系统信息对话框（v0.1.0-180，2026-10 实测）
 
 针对排查报告"UI 与美术细节/系统信息"：
-- **"关于启元"对话框增强**：显示发行版（`/etc/os-release` PRETTY_NAME）、内核版本（`uname -r`）、内存大小（`/proc/meminfo MemTotal`）
-- 桌面右键菜单 → 关于启元 即可打开
+- **"关于澜岫"对话框增强**：显示发行版（`/etc/os-release` PRETTY_NAME）、内核版本（`uname -r`）、内存大小（`/proc/meminfo MemTotal`）
+- 桌面右键菜单 → 关于澜岫 即可打开
 - **自动化**：`QYDESKTOP_ABOUT=1` 启动后自动弹出关于窗口 → 日志 `QYDESKTOPDBG: about shown`，4 秒后自动关闭（供截图）
 - 实测日志正常输出，截图中关于窗口可见
 
@@ -1944,7 +1944,7 @@ ngs-about-v2.png`。
 
 构建产物：`qydesktop 0.1.0-186`。
 
-### 新增应用：启元计算器（v0.1.0-187，2026-10 实测）
+### 新增应用：澜岫计算器（v0.1.0-187，2026-10 实测）
 
 针对排查报告"应用生态/体验细节"：
 - **新增桌面计算器 qycalc**：GTK 应用，支持数字/小数、四则运算与括号，含优先级（自研表达式解析器，无外部依赖）
@@ -1986,7 +1986,7 @@ ngs-about-v2.png`。
 
 针对排查报告"系统能力/装机体验"：
 - **qywelcome 首启向导支持自动化验证**：`QYWELCOME_FILL=1` 启动后自动填写主机名/用户名/密码/时区
-- 实测日志 `QYWELCOMEDBG: filled host=qiyuan user=user tz=Asia/Shanghai`，截图中表单各字段已填充
+- 实测日志 `QYWELCOMEDBG: filled host=lanxiu user=user tz=Asia/Shanghai`，截图中表单各字段已填充
 - 为装机向导的自测/截图提供稳定入口
 
 构建产物：`qydesktop 0.1.0-191`。
@@ -1998,7 +1998,7 @@ ngs-about-v2.png`。
 - **自动登录不再重置密码**：移除 start-qydesktop.sh 中 `chpasswd 用户名:用户名` 的隐患
 - **wayland socket 收紧**：/tmp/xdg 由 777 改为 755，socket 属主改为 root:用户 且 660
 - **qyarc 命令注入修复**：压缩包/文件名/解压目录全部经 g_shell_quote 转义（8 处）
-- **qylock 取消默认密码**：无 /etc/qylockpass.conf 时提示先配置，不再默认为 qiyuan
+- **qylock 取消默认密码**：无 /etc/qylockpass.conf 时提示先配置，不再默认为 lanxiu
 - **autostart 白名单**：仅允许启动预置 qy* 应用，防 conf 被篡改后执行任意命令
 - **防火墙逻辑修正**：启用=默认 DROP+放行回环/已建立；关闭=清空并恢复 ACCEPT
 - **qyedit 查找**：工具栏「查找」按钮 + QYEDIT_FIND 自动化；实测 `find 'gamma' line=3`
@@ -2113,7 +2113,7 @@ ngs-about-v2.png`。
 ### 全局快捷键守护（v0.1.0-204，2026-10 实测）
 
 针对快捷键审计"全仓 0 处全局快捷键"：
-- **weston 不支持自定义命令绑定**（只有硬编码组合），启元采用 **qynotifd evdev 守护**方案：root 直接读 /dev/input/event*，Wayland 下也能捕获全局按键
+- **weston 不支持自定义命令绑定**（只有硬编码组合），澜岫采用 **qynotifd evdev 守护**方案：root 直接读 /dev/input/event*，Wayland 下也能捕获全局按键
 - **配置在 weston.ini 的 [bindings] 段**（用户可见可编辑），qynotifd 用 GKeyFile 读取
 - **默认绑定**（8 项）：
   - Super → qyappmenu（松开触发，防组合误触）
@@ -2241,7 +2241,7 @@ ngs-about-v2.png`。
 
 针对快捷键审计"weston.ini [keyboard] 段: 0 / xkb 配置: 0"：
 - **新增 [keyboard] 段**：`keymap_rules=evdev`、`keymap_layout=us`（weston 原生支持，xkb 配置从 0 到 1）
-- 快捷键审计"系统级 22 项 + 媒体键 11 项"的承载路径已完整：weston.ini [keyboard]（布局）+ [bindings]（启元快捷键守护）
+- 快捷键审计"系统级 22 项 + 媒体键 11 项"的承载路径已完整：weston.ini [keyboard]（布局）+ [bindings]（澜岫快捷键守护）
 
 构建产物：`qydesktop 0.1.0-216`。
 
@@ -2350,10 +2350,10 @@ ngs-about-v2.png`。
 - 编译：15 个应用全部 rc=0；构建产物 `qydesktop 0.1.0-226`
 
 ### ISO 实测（v0.1.0-226，QEMU）
-- 构建：`VERSION=1.5.1 bash scripts/mkiso.sh`（先跑 build-live-initramfs/build-bootefi/build-install-initramfs）→ `qiyuan-linux-1.5.1.iso`（453MB）
-- 运行：`qemu-system-x86_64 -m 3072 -cdrom qiyuan-linux-1.5.1.iso -boot d -accel tcg -vga none -device virtio-gpu-pci,xres=1280,yres=800 -monitor unix:/tmp/qymon.sock,server,nowait -serial file:/tmp/qy-serial.log`
-- 结果：ISO 引导 Linux 6.16.1 → live 自动拉起启元桌面（qywelcome/qyfiles/qymon 运行）；`screendump` 1280×800 真实桌面
-- 截图：`docs/screenshots/226-live-{desktop,qy-menu,qy-screen3}.png`；打包 `/home/agentuser/qiyuan-live-226-test.tar.gz`
+- 构建：`VERSION=1.5.1 bash scripts/mkiso.sh`（先跑 build-live-initramfs/build-bootefi/build-install-initramfs）→ `lanxiu-linux-1.5.1.iso`（453MB）
+- 运行：`qemu-system-x86_64 -m 3072 -cdrom lanxiu-linux-1.5.1.iso -boot d -accel tcg -vga none -device virtio-gpu-pci,xres=1280,yres=800 -monitor unix:/tmp/qymon.sock,server,nowait -serial file:/tmp/qy-serial.log`
+- 结果：ISO 引导 Linux 6.16.1 → live 自动拉起澜岫桌面（qywelcome/qyfiles/qymon 运行）；`screendump` 1280×800 真实桌面
+- 截图：`docs/screenshots/226-live-{desktop,qy-menu,qy-screen3}.png`；打包 `/home/agentuser/lanxiu-live-226-test.tar.gz`
 
 ### UI 改版第 7 轮：GRID 图标 + 锁屏细节 + 通知未读点（v0.1.0-227，2026-10 实测）
 
@@ -2436,3 +2436,11 @@ ngs-about-v2.png`。
 - **HeaderBar 样式**：headerbar #141a24 底 + 底边 1px、title 14px/600、按钮 28×28（close hover 红）
 - **任务栏**：pill padding 2×4 收紧，图标↔标题 4px / 标题↔关闭 2px
 - 审计字符归零；构建产物 `qydesktop 0.1.0-236`
+
+### 品牌原创：澜岫 LANXIU OS（v0.1.0-237，2026-10 实测）
+
+- **全面去品牌化**：原「启元/Qiyuan」为常见词有商标冲突风险，联网排查后原创 **「澜岫 LANXIU」**（无已知商标）
+- 全库替换：启元 196 / Qiyuan 32 / qiyuan 68 → 澜岫 / LANXIU / lanxiu（recipes/README/docs/scripts）
+- 品牌资产：`docs/brand/lanxiu-logo.svg/png`、`lanxiu-brand.svg/png`（山脊+涟漪+上升三角，深蓝底+品牌橙）
+- Slogan：自由如澜 · 坚固如岫（FREEDOM FLOWS · THE PEAK STANDS）
+- 18 应用编译全部 rc=0；构建产物 `qydesktop 0.1.0-237`；后续 ISO 前缀 `lanxiu-linux-*`
