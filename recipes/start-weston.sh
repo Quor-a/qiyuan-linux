@@ -8,7 +8,7 @@ echo BRANCH-TEST > /tmp/branch
 # v0.1.0-240: seatd/udev 输入就绪处理
 # weston DRM 后端经 libseat 打开 /dev/input 设备，必须先有 seatd。
 # 若 qyinit 未拉起 seatd（或早期崩溃/重启中），在此兜底启动。
-if [ -x /usr/bin/seatd ] && [ ! -S /run/seatd.sock ]; then
+if [ -x /usr/bin/seatd ] && ! /bin/busybox pidof seatd >/dev/null 2>&1 && [ ! -S /run/seatd.sock ]; then
     /usr/bin/seatd -g video > /tmp/seatd.log 2>&1 &
     echo "SEATD-STARTED" >> /tmp/branch
 fi
@@ -26,7 +26,7 @@ fi
 
 # 确保输入设备节点已创建且可访问（root 通常无权限问题，显式放行更稳）
 /usr/bin/udevadm trigger --type=devices --action=add 2>/dev/null
-/usr/bin/udevadm settle --timeout=10 2>/dev/null
+/usr/bin/udevadm settle --timeout=5 2>/dev/null
 /bin/busybox chmod 666 /dev/input/event* 2>/dev/null
 
 # v0.1.0-136: 解析设置中心写入的自定义分辨率 (weston.ini [output] mode=)

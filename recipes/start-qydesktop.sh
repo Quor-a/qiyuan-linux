@@ -11,7 +11,15 @@ export WAYLAND_DISPLAY=wayland-1
 export GIO_MODULE_DIR=/usr/lib/x86_64-linux-gnu/gio/modules
 export GDK_PIXBUF_MODULE_FILE=/usr/lib/x86_64-linux-gnu/gdk-pixbuf-2.0/2.10.0/loaders.cache
 export GLIBC_TUNABLES=glibc.malloc.check=0:glibc.malloc.tcache_count=0
-sleep 2
+# v0.1.0-240: 等待 weston 的 Wayland socket 就绪。
+# weston 启动前需先等 seatd socket + udev 设备就绪（release 240 新增），
+# TCG 下可能 10-30s；固定 sleep 2 会在 socket 出现前就启动 qydesktop，
+# 导致 "cannot open display" 直接退出、桌面只剩壁纸。改为轮询（最多 90s）。
+i=0
+while [ $i -lt 90 ] && [ ! -S "$XDG_RUNTIME_DIR/wayland-1" ]; do
+    sleep 1
+    i=$((i+1))
+done
 H=$(getent passwd $(id -u) | cut -d: -f6)
 [ -z "$H" ] && H=/root
 # 回收站样本
