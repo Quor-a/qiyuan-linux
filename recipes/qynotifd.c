@@ -587,22 +587,53 @@ static void watch_input_device(const char *path) {
     g_printerr("QYSHORTCUTS: watching %s\n", path);
 }
 
-static void shortcut_watch_start(void) {
+/* 已监听设备注册表：防止重扫时重复 open 同一 event 节点 */
+#define QYSHORTCUT_MAX_DEV 32
+static int watched_dev_idx[QYSHORTCUT_MAX_DEV];
+static int n_watched_dev = 0;
+
+/* 扫描 /dev/input/event*：boot 早期设备可能尚未出现，需定时重试；
+ * 同时兼容真实系统上的热插拔（USB 键鼠后插）。 */
+static void shortcut_watch_scan(void) {
     if (!key_state) {
         key_state = g_new0(gboolean, KEY_MAX);
         load_bindings();
     }
-    int watched = 0;
-    for (int i = 0; i < 32; i++) {
+    for (int i = 0; i < QYSHORTCUT_MAX_DEV; i++) {
         gchar *path = g_strdup_printf("/dev/input/event%d", i);
-        if (g_file_test(path, G_FILE_TEST_EXISTS)) {
-            watch_input_device(path);
-            watched++;
+        int exists = g_file_test(path, G_FILE_TEST_EXISTS);
+        int known = -1;
+        for (int j = 0; j < n_watched_dev; j++) {
+            if (watched_dev_idx[j] == i) { known = j; break; }
+        }
+        if (exists) {
+            if (known < 0) {
+                watch_input_device(path);
+                watched_dev_idx[n_watched_dev++] = i;
+                g_printerr("QYSHORTCUTS: added event%d\n", i);
+            }
+        } else if (known >= 0) {
+            /* 设备已移除：仅清注册表；旧 fd 由 G_IO_HUP 触发 watch 移除并关闭 */
+            watched_dev_idx[known] = watched_dev_idx[--n_watched_dev];
+            g_printerr("QYSHORTCUTS: removed event%d\n", i);
         }
         g_free(path);
     }
-    if (!watched)
-        g_printerr("QYSHORTCUTS: 无输入设备（真实系统将自动监听）\n");
+    g_printerr("QYSHORTCUTS: watched=%d\n", n_watched_dev);
+}
+
+static gboolean shortcut_rescan_cb(gpointer ud) {
+    (void)ud;
+    shortcut_watch_scan();
+    return G_SOURCE_CONTINUE;
+}
+
+static void shortcut_watch_start(void) {
+    shortcut_watch_scan();
+    /* 关键修复（release 240）：boot 早期 /dev/input/event* 尚未出现时，
+     * 旧实现只扫一次（找到 0 设备且不重试）导致全局快捷键永久失效。
+     * 改为每 3 秒重扫，直到设备就绪；同时覆盖热插拔场景。 */
+    g_timeout_add_seconds(3, shortcut_rescan_cb, NULL);
 }
 
 int main(int argc, char **argv) {

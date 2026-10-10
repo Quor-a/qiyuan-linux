@@ -1,4 +1,5 @@
 [Unit]
-Description=Weston compositor (headless)
+Description=Weston compositor (DRM)
+After=seatd
 ExecStart=/usr/bin/start-weston.sh
 Restart=on-failure

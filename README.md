@@ -2452,3 +2452,8 @@ ngs-about-v2.png`。
 - **欢迎/登录页**（qywelcome）：「欢迎使用澜岫 Linux」+ 品牌卡片/字标/标语 + 品牌橙完成按钮
 - **CSS**：追加重启品牌段（锁屏+欢迎页全套）；「启元」残留清零
 - 构建产物 `qydesktop 0.1.0-239`
+
+### 修复 weston 输入 seat + weston.ini 品牌路径（v0.1.0-240）
+
+- seatd/udev 输入设备就绪处理；qynotifd 快捷键链路修复
+- weston.ini 壁纸/启动器图标路径改 lanxiu
