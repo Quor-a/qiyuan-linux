@@ -868,11 +868,23 @@ def gen_maintainer_manual() -> str:
                         ("qysensor", "传感器与平台控制"),
                         ("qyshell", "桌面外壳"),
                         ("qyproc", "进程与资源"),
-                        ("qysensor", "传感器与平台控制")):
+                        ("qydrv", "驱动管理")):
         w(f"### {tool}（{title}）")
         w("")
         w("```")
         w(cmd_help(tool))
+        w("```")
+        w("")
+    # 其余非 qy 前缀的 bin（mount/umount/kill/dmesg 等 util-linux 工具封装）
+    # 也要有章节——测试会核对 bin/ 下每个文件都有 "### <name>"。
+    # 之前这里是硬编码清单，新增工具就会漏——改为扫描 bin/ 补全。
+    for b in sorted(p.name for p in (ROOT / "bin").glob("*") if p.is_file()):
+        if b.startswith("qy"):
+            continue
+        w(f"### {b}（系统工具）")
+        w("")
+        w("```")
+        w(strip_ansi(sh(f"./bin/{b}", "--help"))[:2000])
         w("```")
         w("")
     w("---")
