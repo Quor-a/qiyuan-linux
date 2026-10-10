@@ -37,8 +37,12 @@ bootstrap_stage = 1
 
 
 def build(ctx):
+    # 交叉编译时必须带上 --host/--build/--with-sysroot（ctx.configure_args()
+    # 由 builder 按 target_arch 生成）。漏掉的话 configure 以为在做原生构建，
+    # 会选 x86_64 的 sysdeps 目录，然后用 aarch64 编译器去编——必炸。
     ctx.run("mkdir -p build && cd build && ../configure "
-            "--prefix=/usr "
+            + " ".join(ctx.configure_args())
+            + " --prefix=/usr "
             "--disable-werror "
             "--enable-kernel=5.15 "
             "--enable-stack-protector=strong "

@@ -226,6 +226,8 @@ def build_main(argv=None) -> int:
         b.build_all(force=a.force, keep=a.keep,
                     include_bootstrap=getattr(a, "include_bootstrap", False))
     else:
+        # 定向构建不跳过任何包（用户点名要谁就编谁）；重包依赖已由
+        # build_many 的 installed 过滤处理（交叉时 glibc 由 sysroot 提供）。
         b.build_many(targets, force=a.force, keep=a.keep)
     return 0
 

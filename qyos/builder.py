@@ -697,7 +697,10 @@ class Builder:
             return order
         kept, skipped = [], []
         for n in order:
-            if getattr(self.recipes.get(n), "requires_build_machine", False):
+            # 只跳过"需要真实构建机**且尚未编出来**"的重包。已编出的重包
+            # （file/gawk 之类）是正常包，不该被跳过——之前用裸属性判断，
+            # 于是 `qybuild file` 在本机也会被静默跳过。
+            if self._is_unbuilt_heavy(n):
                 skipped.append(n)
             else:
                 kept.append(n)
@@ -711,7 +714,16 @@ class Builder:
         u = Universe(broken=self._cycle_plan().broken_deps)
         for r in self.recipes.values():
             u.add(r)
-        order = u.resolve(names)
+        # 交叉编译时 glibc 由目标 sysroot 提供，不该出现在构建序列里；
+        # 原生构建时也接受"仓库里已有"的重包（pkg_path 命中即视为已满足）。
+        installed = {}
+        for r in self.recipes.values():
+            if getattr(r, "requires_build_machine", False):
+                if self.pkg_path(r).exists():
+                    installed[r.name] = True
+                elif self.cross is not None:
+                    installed[r.name] = True   # sysroot 提供
+        order = u.resolve(names, installed=installed)
         order = self._filter_heavy(order)
         if not order:
             util.log("warn", "没有可构建的包")
