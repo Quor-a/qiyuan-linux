@@ -55,4 +55,8 @@ echo "===SETUP===" > /dev/console
 echo "QYFILES-LAUNCHED" > /dev/console
 ( sleep 2; ls -la "$H/.local/share/Trash/files/" > /dev/console 2>&1; echo "===TRASH-DUMP==="; cat "$H/.local/share/Trash/info/"*.trashinfo > /dev/console 2>&1 ) &
 echo "===END===" > /dev/console
-sleep 600
+# v0.1.0-240: 桌面服务保持运行（原 600s 后脚本正常退出，qyinit 视为服务结束，
+# 实测会导致桌面进程连带退出、只剩壁纸）。改为常驻循环，桌面可持续工作。
+while true; do
+    sleep 3600
+done
