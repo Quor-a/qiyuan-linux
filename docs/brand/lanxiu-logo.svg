@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<rect width="512" height="512" rx="96" fill="#0B1020"/>
+<!-- 山脊基线（岫） -->
+<polyline points="96,368 208,296 288,344 416,272" fill="none" stroke="#e6e9ef" stroke-width="14" stroke-linecap="round" stroke-linejoin="round"/>
+<!-- 两道涟漪（澜） -->
+<path d="M128,220 Q160,196 192,220 T256,220 T320,220" fill="none" stroke="#E95420" stroke-width="12" stroke-linecap="round"/>
+<path d="M96,260 Q128,236 160,260 T224,260 T288,260" fill="none" stroke="#E95420" stroke-width="10" stroke-linecap="round" opacity="0.7"/>
+<!-- 中央上升三角（自由/启动） -->
+<polygon points="256,120 216,208 296,208" fill="none" stroke="#E95420" stroke-width="12" stroke-linejoin="round"/>
+</svg>

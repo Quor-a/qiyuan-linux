@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="800" viewBox="0 0 1280 800">
+<rect width="1280" height="800" fill="#0B1020"/>
+<rect x="40" y="40" width="1200" height="720" rx="28" fill="#111724" stroke="rgba(255,255,255,0.08)" stroke-width="2"/>
+<!-- Logo -->
+<polyline points="300,420 380,360 440,396 540,340" fill="none" stroke="#e6e9ef" stroke-width="12" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M320,330 Q344,312 368,330 T416,330 T464,330" fill="none" stroke="#E95420" stroke-width="10" stroke-linecap="round"/>
+<path d="M296,362 Q320,344 344,362 T392,362 T440,362" fill="none" stroke="#E95420" stroke-width="8" stroke-linecap="round" opacity="0.7"/>
+<polygon points="420,250 390,312 450,312" fill="none" stroke="#E95420" stroke-width="10" stroke-linejoin="round"/>
+<!-- 字标 -->
+<text x="640" y="360" font-family="Noto Sans CJK SC, WenQuanYi Zen Hei, sans-serif" font-size="96" font-weight="700" fill="#e6e9ef">澜岫</text>
+<text x="640" y="432" font-family="DejaVu Sans, sans-serif" font-size="40" font-weight="600" letter-spacing="10" fill="#E95420">LANXIU OS</text>
+<line x1="640" y1="470" x2="640" y2="480" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+<text x="640" y="520" font-family="Noto Sans CJK SC, sans-serif" font-size="26" fill="#9aa3b2">自由如澜 · 坚固如岫</text>
+<text x="640" y="560" font-family="DejaVu Sans, sans-serif" font-size="18" fill="#5b6472" letter-spacing="2">FREEDOM FLOWS · THE PEAK STANDS</text>
+</svg>
