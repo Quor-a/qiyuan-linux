@@ -35,6 +35,7 @@
 
 #define QY_WINDOWS  "/tmp/xdg/qy-windows"
 #define QY_FOCUS    "/tmp/xdg/qy-focus"
+#define QY_WINOP    "/tmp/xdg/qy-winop"
 #define QY_CSS      "/usr/share/themes/qiyuan/gtk-3.0/gtk.css"
 #define QY_WALL     "/usr/share/backgrounds/qiyuan.png"
 
@@ -239,6 +240,22 @@ static void on_task_clicked(GtkButton *btn, gpointer ud) {
     if (f) { fprintf(f, "%u", id); fclose(f); }
 }
 
+/* 任务 pill 关闭按钮：写 /tmp/xdg/qy-winop，weston 合成器补丁消费后关闭窗口 */
+static void on_task_close_clicked(GtkButton *btn, gpointer ud) {
+    guint id = GPOINTER_TO_UINT(ud);
+    FILE *f = fopen(QY_WINOP, "w");
+    if (f) { fprintf(f, "%u close\n", id); fclose(f); }
+}
+
+/* hover 显示/隐藏任务 pill 的关闭按钮（GTK CSS 无 opacity，用 visible 切换） */
+static void on_task_pill_enter(GtkButton *btn, gpointer ud) {
+    gtk_widget_set_visible(GTK_WIDGET(ud), TRUE);
+}
+
+static void on_task_pill_leave(GtkButton *btn, gpointer ud) {
+    gtk_widget_set_visible(GTK_WIDGET(ud), FALSE);
+}
+
 /* 按窗口标题映射统一图标 id（任务 pill 图标） */
 static QyIconId task_icon_id(const char *title) {
     if (strstr(title, "文件") || strstr(title, "主文件夹")) return QY_ICON_FILES;
@@ -266,9 +283,6 @@ static guint read_focus(void) {
 
 static void refresh_taskbar(void) {
     if (!taskbar_box) return;
-    GList *ch = gtk_container_get_children(GTK_CONTAINER(taskbar_box));
-    for (GList *it = ch; it; it = it->next) gtk_widget_destroy(GTK_WIDGET(it->data));
-    g_list_free(ch);
 
     WinInfo wins[16];
     int n = taskbar_parse(wins, 16);
@@ -280,10 +294,43 @@ static void refresh_taskbar(void) {
             if (wins[i].id == focus) t = wins[i].title;
         gtk_label_set_text(GTK_LABEL(active_title), t);
     }
+
+    /* 签名对比：窗口列表拼接 "id:title" 未变化时直接复用现有 pill，
+     * 避免每 500ms 重建导致 hover 关闭按钮丢失。 */
+    static char sig[2048] = "";
+    char new_sig[2048] = "";
+    for (int i = 0; i < n; i++) {
+        char item[128];
+        g_snprintf(item, sizeof item, "%u:%s\n", wins[i].id, wins[i].title);
+        g_strlcat(new_sig, item, sizeof new_sig);
+    }
+    if (strcmp(sig, new_sig) == 0) {
+        /* 不重建：仅就地更新激活高亮 */
+        GList *ch = gtk_container_get_children(GTK_CONTAINER(taskbar_box));
+        for (GList *it = ch; it; it = it->next) {
+            GtkWidget *b = GTK_WIDGET(it->data);
+            guint id = GPOINTER_TO_UINT(g_object_get_data(G_OBJECT(b), "qy-win-id"));
+            gboolean act = (id == active_id && now < active_until) || id == focus;
+            if (act)
+                add_class(b, "qy-task-pill-active");
+            else
+                gtk_style_context_remove_class(gtk_widget_get_style_context(b),
+                                             "qy-task-pill-active");
+        }
+        g_list_free(ch);
+        return;
+    }
+    g_strlcpy(sig, new_sig, sizeof sig);
+
+    GList *ch = gtk_container_get_children(GTK_CONTAINER(taskbar_box));
+    for (GList *it = ch; it; it = it->next) gtk_widget_destroy(GTK_WIDGET(it->data));
+    g_list_free(ch);
+
     for (int i = 0; i < n; i++) {
         GtkWidget *b = gtk_button_new();
         gtk_button_set_relief(GTK_BUTTON(b), GTK_RELIEF_NONE);
         add_class(b, "qy-task-pill");
+        g_object_set_data(G_OBJECT(b), "qy-win-id", GUINT_TO_POINTER(wins[i].id));
         GtkWidget *hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
         gtk_container_add(GTK_CONTAINER(b), hb);
         GdkPixbuf *pb = qy_icon_pixbuf(task_icon_id(wins[i].title), 22, NULL);
@@ -293,6 +340,25 @@ static void refresh_taskbar(void) {
         GtkWidget *tl = gtk_label_new(wins[i].title);
         add_class(tl, "qy-task-label");
         gtk_box_pack_start(GTK_BOX(hb), tl, FALSE, FALSE, 0);
+
+        /* 右侧小关闭按钮：默认隐藏，hover pill（或按钮自身）时显示，
+         * 点击写 /tmp/xdg/qy-winop 让 weston 关闭对应窗口。 */
+        GtkWidget *close = gtk_button_new();
+        gtk_button_set_relief(GTK_BUTTON(close), GTK_RELIEF_NONE);
+        add_class(close, "qy-task-close");
+        GdkPixbuf *cpb = qy_icon_pixbuf(QY_ICON_CLOSE, 12, NULL);
+        gtk_container_add(GTK_CONTAINER(close), gtk_image_new_from_pixbuf(cpb));
+        g_object_unref(cpb);
+        gtk_widget_set_no_show_all(close, TRUE);
+        gtk_widget_set_visible(close, FALSE);
+        gtk_box_pack_start(GTK_BOX(hb), close, FALSE, FALSE, 0);
+        g_signal_connect(close, "clicked", G_CALLBACK(on_task_close_clicked),
+                       GUINT_TO_POINTER(wins[i].id));
+        g_signal_connect(b, "enter", G_CALLBACK(on_task_pill_enter), close);
+        g_signal_connect(b, "leave", G_CALLBACK(on_task_pill_leave), close);
+        g_signal_connect(close, "enter", G_CALLBACK(on_task_pill_enter), close);
+        g_signal_connect(close, "leave", G_CALLBACK(on_task_pill_leave), close);
+
         gtk_widget_set_tooltip_text(b, wins[i].title);
         if ((wins[i].id == active_id && now < active_until) ||
             wins[i].id == focus)

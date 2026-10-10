@@ -2401,3 +2401,10 @@ ngs-about-v2.png`。
 - **清理**：qyboot font_qi/font_A/font_6x8 死代码、qypkg-inst meta_off、qy_rounded_rect 改 static；qyboot 编译行补 qyicon.c
 - **Dock 悬停**：`.qy-dock-icon:hover` 背景提亮 + 阴影
 - 审计字符归零；构建产物 `qydesktop 0.1.0-231`
+
+### UI 改版第 12 轮：设置页导航图标+任务栏关闭+全应用CSS统一（v0.1.0-232，2026-10 实测）
+
+- **设置页**：39 个导航 tab 全部加 16px cairo 图标（tab_with_icon + tab_label_text 修复搜索）
+- **任务栏**：任务 pill hover 显示关闭按钮（weston qy-winop close 机制）+ refresh_taskbar 签名对比防重建（仅窗口变化才销毁）
+- **全应用 CSS**：`.qy-app-surface` 面板、细滚动条（hover 橙）、treeview hover、`.qy-titlebar` 按钮（close hover 红）、`.qy-search-entry` 统一输入框
+- 审计字符归零；构建产物 `qydesktop 0.1.0-232`

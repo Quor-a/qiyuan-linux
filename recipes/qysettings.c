@@ -1722,6 +1722,37 @@ static void on_accel_close(GtkAccelGroup *ag, GObject *a, guint keyval,
     gtk_widget_destroy(GTK_WIDGET(ud));
 }
 
+/* 带图标的左侧导航 tab：小图标 + 标题（qy_icon_pixbuf 线稿） */
+static GtkWidget *tab_with_icon(const char *title, QyIconId icon) {
+    GtkWidget *hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+    GtkWidget *img = gtk_image_new_from_pixbuf(qy_icon_pixbuf(icon, 16, NULL));
+    GtkWidget *lbl = gtk_label_new(title);
+    gtk_box_pack_start(GTK_BOX(hb), img, FALSE, FALSE, 0);
+    gtk_box_pack_start(GTK_BOX(hb), lbl, FALSE, FALSE, 0);
+    gtk_widget_show_all(hb);
+    return hb;
+}
+
+/* 从 tab 控件取标题文本（兼容「图标+文字」的 hbox tab） */
+static const char *tab_label_text(GtkWidget *w) {
+    if (!w) return NULL;
+    if (GTK_IS_LABEL(w))
+        return gtk_label_get_text(GTK_LABEL(w));
+    if (GTK_IS_BOX(w)) {
+        GList *kids = gtk_container_get_children(GTK_CONTAINER(w));
+        const char *t = NULL;
+        for (GList *l = kids; l; l = l->next) {
+            if (GTK_IS_LABEL(l->data)) {
+                t = gtk_label_get_text(GTK_LABEL(l->data));
+                break;
+            }
+        }
+        g_list_free(kids);
+        return t;
+    }
+    return NULL;
+}
+
 /* 设置页搜索：输入关键词，切换标签名包含关键词的第一个页面 */
 static void on_settings_search(GtkSearchEntry *se, gpointer ud) {
     const char *needle = gtk_entry_get_text(GTK_ENTRY(se));
@@ -1732,7 +1763,7 @@ static void on_settings_search(GtkSearchEntry *se, gpointer ud) {
         GtkWidget *page = gtk_notebook_get_nth_page(GTK_NOTEBOOK(nb), i);
         GtkWidget *lbl = gtk_notebook_get_tab_label(GTK_NOTEBOOK(nb), page);
         if (!lbl) continue;
-        const char *title = gtk_label_get_text(GTK_LABEL(lbl));
+        const char *title = tab_label_text(lbl);
         if (title && g_strrstr(title, needle)) {
             gtk_notebook_set_current_page(GTK_NOTEBOOK(nb), i);
             g_printerr("QYSETTINGSSEARCH: %s -> %s\n", needle, title);
@@ -1814,7 +1845,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(btn_hb), b_files, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v1), btn_hb, FALSE, FALSE, 10);
 
-    gtk_notebook_append_page(GTK_NOTEBOOK(nb), v1, gtk_label_new(TR("关于")));
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), v1, tab_with_icon(TR("关于"), QY_ICON_SETTINGS));
 
     /* 显示 */
     GtkWidget *v2 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
@@ -1868,7 +1899,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         if (env_res)
             g_timeout_add(600, auto_res_apply, res_combo);
     }
-    gtk_notebook_append_page(GTK_NOTEBOOK(nb), v2, gtk_label_new(TR("显示")));
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), v2, tab_with_icon(TR("显示"), QY_ICON_MONITOR));
 
     /* 字体 */
     GtkWidget *v3 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
@@ -1876,7 +1907,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(v3), row(TR("西文字体"), "DejaVu Sans 2.37"), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v3), row(TR("中文字体"), "Noto Sans CJK"), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v3), row(TR("字体回退"), "fontconfig"), FALSE, FALSE, 0);
-    gtk_notebook_append_page(GTK_NOTEBOOK(nb), v3, gtk_label_new(TR("字体")));
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), v3, tab_with_icon(TR("字体"), QY_ICON_SETTINGS));
 
     /* 服务 */
     GtkWidget *v4 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
@@ -1885,7 +1916,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(v4), row(TR("会话管理"), "seatd"), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v4), row(TR("设备管理"), "eudev"), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v4), row(TR("单元目录"), "/etc/qyinit.d"), FALSE, FALSE, 0);
-    gtk_notebook_append_page(GTK_NOTEBOOK(nb), v4, gtk_label_new(TR("服务")));
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), v4, tab_with_icon(TR("服务"), QY_ICON_SETTINGS));
 
     /* 声音 (ALSA amixer Master) */
     GtkWidget *v5 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
@@ -1895,7 +1926,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(v5), gtk_label_new(TR("输出音量 (Master)")), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v5), vol, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v5), row(TR("音频后端"), "ALSA (amixer)"), FALSE, FALSE, 0);
-    gtk_notebook_append_page(GTK_NOTEBOOK(nb), v5, gtk_label_new(TR("声音")));
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), v5, tab_with_icon(TR("声音"), QY_ICON_VOLUME));
 
     /* 显示: 亮度 (backlight 探测) */
     GtkWidget *v6 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
@@ -1933,7 +1964,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         }
         gtk_range_set_value(GTK_RANGE(vol), v0);
     }
-    gtk_notebook_append_page(GTK_NOTEBOOK(nb), v6, gtk_label_new(TR("亮度")));
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), v6, tab_with_icon(TR("亮度"), QY_ICON_MONITOR));
 
     /* 日期时间（每秒刷新） */
     GtkWidget *vdt = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
@@ -1974,7 +2005,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_box_pack_start(GTK_BOX(vdt), l, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vdt), s, FALSE, FALSE, 0);
     }
-    gtk_notebook_append_page(GTK_NOTEBOOK(nb), vdt, gtk_label_new(TR("日期时间")));
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), vdt, tab_with_icon(TR("日期时间"), QY_ICON_SETTINGS));
 
     /* 语言 */
     GtkWidget *vlang = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
@@ -2011,7 +2042,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_box_pack_start(GTK_BOX(vlang), bzh, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vlang), ben, FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(vlang), gtk_label_new(TR("切换后重新启动生效 / Takes effect after reboot")), FALSE, FALSE, 0);
-    gtk_notebook_append_page(GTK_NOTEBOOK(nb), vlang, gtk_label_new(TR("语言")));
+    gtk_notebook_append_page(GTK_NOTEBOOK(nb), vlang, tab_with_icon(TR("语言"), QY_ICON_SETTINGS));
 
     /* 驱动页: 已加载内核模块 (/proc/modules) */
     {
@@ -2043,7 +2074,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_text_buffer_set_text(db, txt, -1);
         g_free(txt);
         g_string_free(s, TRUE);
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vdrv, gtk_label_new(TR("驱动")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vdrv, tab_with_icon(TR("驱动"), QY_ICON_DRIVER));
     }
 
     /* 存储页: df -kP 磁盘占用（挂载点/容量/已用/进度条） */
@@ -2083,7 +2114,7 @@ static void activate(GtkApplication *app, gpointer ud) {
             }
             pclose(df);
         }
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vst, gtk_label_new(TR("存储")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vst, tab_with_icon(TR("存储"), QY_ICON_FILES));
     }
 
     /* 电源页: 熄屏时间（写 weston.ini [core] idle-time=） */
@@ -2134,7 +2165,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_box_pack_start(GTK_BOX(po_row), idle_combo, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(po_row), b_idle, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vpo), po_row, FALSE, FALSE, 0);
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vpo, gtk_label_new(TR("电源")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vpo, tab_with_icon(TR("电源"), QY_ICON_POWER));
         /* 自动化验证: 启动后自动应用 */
         if (env_idle)
             g_timeout_add(700, auto_idle_apply, GINT_TO_POINTER(cur_idx));
@@ -2231,7 +2262,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_box_pack_start(GTK_BOX(vnet), row(TR("MAC 地址"), mac), FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vnet), row(TR("默认网关"), gw), FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vnet), row(TR("DNS 服务器"), dns), FALSE, FALSE, 0);
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vnet, gtk_label_new(TR("网络")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vnet, tab_with_icon(TR("网络"), QY_ICON_NETWORK));
     }
 
     /* 隐私页: 应用权限开关（写 /etc/qyperm.conf） */
@@ -2272,7 +2303,7 @@ static void activate(GtkApplication *app, gpointer ud) {
             gtk_box_pack_start(GTK_BOX(vpr), r, FALSE, FALSE, 0);
         }
         g_perm_loading = 0;
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vpr, gtk_label_new(TR("隐私")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vpr, tab_with_icon(TR("隐私"), QY_ICON_LOCK));
         /* 自动化验证: 启动后把配置写入文件 */
         if (g_getenv("QY_SETTINGS_PERM"))
             g_timeout_add(800, auto_perm_apply, NULL);
@@ -2329,7 +2360,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         }
         gtk_container_add(GTK_CONTAINER(ap_scroll), ap_list);
         gtk_box_pack_start(GTK_BOX(vap), ap_scroll, TRUE, TRUE, 0);
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vap, gtk_label_new(TR("应用程序")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vap, tab_with_icon(TR("应用程序"), QY_ICON_GRID));
     }
 
     /* 专注助手页: 免打扰模式开关（写 /etc/qyfocus.conf） */
@@ -2359,7 +2390,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_box_pack_start(GTK_BOX(fo_row), fo_l, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(fo_row), fo_sw, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vfo), fo_row, FALSE, FALSE, 0);
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vfo, gtk_label_new(TR("专注")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vfo, tab_with_icon(TR("专注"), QY_ICON_SETTINGS));
         if (env_f)
             g_timeout_add(900, auto_focus_apply, NULL);
     }
@@ -2419,7 +2450,7 @@ static void activate(GtkApplication *app, gpointer ud) {
             gtk_box_pack_start(GTK_BOX(vno), r, FALSE, FALSE, 0);
         }
         g_notif_loading = 0;
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vno, gtk_label_new(TR("通知")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vno, tab_with_icon(TR("通知"), QY_ICON_SETTINGS));
         if (g_getenv("QY_SETTINGS_NOTIF"))
             g_timeout_add(950, auto_notif_apply, NULL);
     }
@@ -2523,7 +2554,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_box_pack_start(GTK_BOX(tz_row), tz_combo, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vfw), tz_row, FALSE, FALSE, 0);
 
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vfw, gtk_label_new(TR("防火墙")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vfw, tab_with_icon(TR("防火墙"), QY_ICON_LOCK));
         if (env_fw)
             g_timeout_add(1000, auto_firewall_apply, NULL);
         if (env_ssh)
@@ -2551,7 +2582,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_box_pack_start(GTK_BOX(px_row), px_entry, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(px_row), px_btn, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vpx), px_row, FALSE, FALSE, 0);
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vpx, gtk_label_new(TR("代理")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vpx, tab_with_icon(TR("代理"), QY_ICON_NETWORK));
         if (g_getenv("QY_SETTINGS_PROXY"))
             g_timeout_add(1050, auto_proxy_apply, NULL);
     }
@@ -2633,7 +2664,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         }
         gtk_container_add(GTK_CONTAINER(dev_scroll), dev_list);
         gtk_box_pack_start(GTK_BOX(vdev), dev_scroll, TRUE, TRUE, 0);
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vdev, gtk_label_new(TR("设备")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vdev, tab_with_icon(TR("设备"), QY_ICON_SETTINGS));
     }
 
     /* 多任务页: 分屏/贴靠/虚拟桌面开关（写 /etc/qymultitask.conf） */
@@ -2686,7 +2717,7 @@ static void activate(GtkApplication *app, gpointer ud) {
             gtk_box_pack_start(GTK_BOX(vmt), r, FALSE, FALSE, 0);
         }
         g_multi_loading = 0;
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vmt, gtk_label_new(TR("多任务")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vmt, tab_with_icon(TR("多任务"), QY_ICON_SWITCHER));
         if (g_getenv("QY_SETTINGS_MULTI"))
             g_timeout_add(1100, auto_multi_apply, NULL);
     }
@@ -2771,7 +2802,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_box_pack_start(GTK_BOX(ap_row2), ap_btn, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vap2), ap_row2, FALSE, FALSE, 0);
         g_autoplay_loading = 0;
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vap2, gtk_label_new(TR("自动播放")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vap2, tab_with_icon(TR("自动播放"), QY_ICON_PLAY));
         if (env_ap)
             g_timeout_add(1150, auto_autoplay_apply, NULL);
     }
@@ -2825,7 +2856,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         GtkWidget *ms_hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
         gtk_box_pack_start(GTK_BOX(ms_hb), ms_btn, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vms), ms_hb, FALSE, FALSE, 0);
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vms, gtk_label_new(TR("鼠标")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vms, tab_with_icon(TR("鼠标"), QY_ICON_SETTINGS));
         if (env_ms)
             g_timeout_add(1200, auto_mouse_apply, NULL);
     }
@@ -2841,7 +2872,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         GtkWidget *nr_hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
         gtk_box_pack_start(GTK_BOX(nr_hb), nr_btn, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vnr), nr_hb, FALSE, FALSE, 0);
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vnr, gtk_label_new(TR("网络重置")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vnr, tab_with_icon(TR("网络重置"), QY_ICON_NETWORK));
         if (g_getenv("QY_SETTINGS_NETRESET"))
             g_timeout_add(1250, auto_net_reset, NULL);
     }
@@ -2866,7 +2897,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_box_pack_start(GTK_BOX(dl_row), g_disp_combo, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(dl_row), dl_btn, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vd), dl_row, FALSE, FALSE, 0);
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vd, gtk_label_new(TR("多显示器")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vd, tab_with_icon(TR("多显示器"), QY_ICON_MONITOR));
         if (g_getenv("QY_SETTINGS_DISPLAY"))
             g_timeout_add(1300, auto_display_apply, NULL);
     }
@@ -2926,7 +2957,7 @@ static void activate(GtkApplication *app, gpointer ud) {
             gtk_widget_set_halign(empty, GTK_ALIGN_START);
             gtk_box_pack_start(GTK_BOX(vbt), empty, FALSE, FALSE, 0);
         }
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vbt, gtk_label_new(TR("蓝牙")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vbt, tab_with_icon(TR("蓝牙"), QY_ICON_NETWORK));
         if (env_bt)
             g_timeout_add(1350, auto_bt_apply, NULL);
     }
@@ -2982,7 +3013,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         GtkWidget *tp_hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
         gtk_box_pack_start(GTK_BOX(tp_hb), tp_btn, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vtp), tp_hb, FALSE, FALSE, 0);
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vtp, gtk_label_new(TR("触摸板")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vtp, tab_with_icon(TR("触摸板"), QY_ICON_SETTINGS));
         if (env_tp)
             g_timeout_add(1400, auto_touchpad_apply, NULL);
     }
@@ -3011,7 +3042,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_box_pack_start(GTK_BOX(gfx_row), g_gfx_combo, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(gfx_row), gfx_btn, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vg), gfx_row, FALSE, FALSE, 0);
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vg, gtk_label_new(TR("图形")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vg, tab_with_icon(TR("图形"), QY_ICON_MONITOR));
         if (env_gfx)
             g_timeout_add(1450, auto_graphics_apply, NULL);
     }
@@ -3052,7 +3083,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_box_pack_start(GTK_BOX(rdp_row), rdp_sw, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vrd), rdp_row, FALSE, FALSE, 0);
         g_rdp_loading = 0;
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vrd, gtk_label_new(TR("远程桌面")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vrd, tab_with_icon(TR("远程桌面"), QY_ICON_MONITOR));
         if (env_rdp)
             g_timeout_add(1500, auto_rdp_apply, NULL);
     }
@@ -3084,7 +3115,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_box_pack_start(GTK_BOX(pj_row), g_proj_combo, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(pj_row), pj_btn, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vpj), pj_row, FALSE, FALSE, 0);
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vpj, gtk_label_new(TR("投影")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vpj, tab_with_icon(TR("投影"), QY_ICON_MONITOR));
         if (env_pj)
             g_timeout_add(1550, auto_project_apply, NULL);
     }
@@ -3140,7 +3171,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_box_pack_start(GTK_BOX(pf_row), g_hdr_combo, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(pf_row), pf_btn, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vhd), pf_row, FALSE, FALSE, 0);
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vhd, gtk_label_new("HD Color"));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vhd, tab_with_icon("HD Color", QY_ICON_MONITOR));
         if (env_hdr)
             g_timeout_add(1600, auto_hdr_apply, NULL);
     }
@@ -3158,7 +3189,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         GtkWidget *pr_hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
         gtk_box_pack_start(GTK_BOX(pr_hb), pr_btn, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vpr), pr_hb, FALSE, FALSE, 0);
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vpr, gtk_label_new(TR("打印机")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vpr, tab_with_icon(TR("打印机"), QY_ICON_SETTINGS));
         if (g_getenv("QY_SETTINGS_PRINTER"))
             g_timeout_add(1650, auto_printer_apply, NULL);
     }
@@ -3224,7 +3255,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_box_pack_start(GTK_BOX(m_row), m_sw, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vmt), m_row, FALSE, FALSE, 0);
         g_metered_loading = 0;
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vmt, gtk_label_new(TR("流量计费")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vmt, tab_with_icon(TR("流量计费"), QY_ICON_NETWORK));
         if (env_mt)
             g_timeout_add(1700, auto_metered_apply, NULL);
     }
@@ -3282,7 +3313,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_box_pack_start(GTK_BOX(in_row), g_input_combo, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(in_row), in_btn, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vin), in_row, FALSE, FALSE, 0);
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vin, gtk_label_new(TR("输入")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vin, tab_with_icon(TR("输入"), QY_ICON_GRID));
         if (env_in)
             g_timeout_add(1750, auto_input_apply, NULL);
     }
@@ -3328,7 +3359,7 @@ static void activate(GtkApplication *app, gpointer ud) {
             gtk_box_pack_start(GTK_BOX(vpn), p_row, FALSE, FALSE, 0);
         }
         g_pen_loading = 0;
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vpn, gtk_label_new(TR("笔和Ink")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vpn, tab_with_icon(TR("笔和Ink"), QY_ICON_EDIT));
         if (g_getenv("QY_SETTINGS_PEN"))
             g_timeout_add(1800, auto_pen_apply, NULL);
     }
@@ -3385,7 +3416,7 @@ static void activate(GtkApplication *app, gpointer ud) {
             gtk_box_pack_start(GTK_BOX(r), sw, FALSE, FALSE, 0);
             gtk_box_pack_start(GTK_BOX(vst), r, FALSE, FALSE, 0);
         }
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vst, gtk_label_new(TR("启动项")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vst, tab_with_icon(TR("启动项"), QY_ICON_GRID));
         if (g_getenv("QY_SETTINGS_AUTOSTART"))
             g_timeout_add(1850, auto_autostart_apply, NULL);
     }
@@ -3485,7 +3516,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_box_pack_start(GTK_BOX(wf_row), wf_sw, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vwf), wf_row, FALSE, FALSE, 0);
         g_wifi_loading = 0;
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vwf, gtk_label_new(TR("WiFi")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vwf, tab_with_icon(TR("WiFi"), QY_ICON_NETWORK));
         if (env_wf)
             g_timeout_add(1900, auto_wifi_apply, NULL);
     }
@@ -3551,7 +3582,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_box_pack_start(GTK_BOX(dc_row), g_win_combo, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(dc_row), dc_btn, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vwb), dc_row, FALSE, FALSE, 0);
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vwb, gtk_label_new(TR("窗口行为")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vwb, tab_with_icon(TR("窗口行为"), QY_ICON_SWITCHER));
         if (g_getenv("QY_SETTINGS_WIN"))
             g_timeout_add(1950, auto_win_apply, NULL);
     }
@@ -3632,7 +3663,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_box_pack_start(GTK_BOX(wl_row), g_wallpaper_combo, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(wl_row), wl_btn, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vwl), wl_row, FALSE, FALSE, 0);
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vwl, gtk_label_new(TR("壁纸")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vwl, tab_with_icon(TR("壁纸"), QY_ICON_IMAGE));
         if (env_wl)
             g_timeout_add(2000, auto_wallpaper_apply, NULL);
     }
@@ -3690,7 +3721,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         gtk_box_pack_start(GTK_BOX(ac_row), g_accent_combo, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(ac_row), ac_btn, FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vth), ac_row, FALSE, FALSE, 0);
-        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vth, gtk_label_new(TR("主题色")));
+        gtk_notebook_append_page(GTK_NOTEBOOK(nb), vth, tab_with_icon(TR("主题色"), QY_ICON_MONITOR));
         if (env_ac)
             g_timeout_add(2050, auto_accent_apply, NULL);
     }

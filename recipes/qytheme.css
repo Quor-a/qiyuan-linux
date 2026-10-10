@@ -498,6 +498,24 @@ notebook tab:checked {
     background-color: rgba(255, 138, 61, 0.30);
 }
 
+/* 任务 pill 右侧关闭按钮（GTK CSS 无 opacity，显示/隐藏由 enter/leave 回调切 visible） */
+.qy-task-close {
+    background: transparent;
+    border: none;
+    border-radius: 9px;
+    padding: 1px;
+    min-width: 16px;
+    min-height: 16px;
+    color: #c9cdd4;
+}
+.qy-task-close:hover {
+    background-color: rgba(255, 255, 255, 0.18);
+    color: #ffffff;
+}
+.qy-task-pill:hover .qy-task-close {
+    color: #e5e7eb;
+}
+
 /* ---------- 系统监视器 ---------- */
 .qy-mon-title {
     font-size: 13px;
@@ -784,4 +802,60 @@ switch slider {
     border-radius: 50%;
     min-width: 18px;
     min-height: 18px;
+}
+
+/* ---------- release 232 全应用视觉统一（仅追加，不删除既有规则） ---------- */
+/* 应用内容区统一面板（供后续应用接入，本次仅定义） */
+.qy-app-surface {
+    background-color: #0d1117;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* 滚动条细化（在既有 scrollbar 规则之上追加微调） */
+scrollbar {
+    background: transparent;
+    border: none;
+}
+scrollbar slider {
+    background-color: rgba(255, 255, 255, 0.14);
+    border-radius: 4px;
+    min-width: 6px;
+    min-height: 6px;
+}
+scrollbar slider:hover {
+    background-color: rgba(233, 84, 32, 0.6);
+}
+
+/* 列表/树 hover 微调 */
+treeview.view:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+/* 窗口标题栏按钮（headerbar / .qy-titlebar） */
+.qy-titlebar button {
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    min-width: 28px;
+    min-height: 28px;
+}
+.qy-titlebar button:hover {
+    background-color: rgba(255, 255, 255, 0.10);
+}
+.qy-titlebar button.close:hover {
+    background-color: #c9441a;
+    color: #ffffff;
+}
+
+/* 统一搜索/输入框（qy-search-entry） */
+.qy-search-entry {
+    background-color: #1b2430;
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 8px;
+    color: #e6e9ef;
+    padding: 4px 10px;
+}
+.qy-search-entry:focus {
+    border-color: #E95420;
 }
