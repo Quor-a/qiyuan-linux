@@ -111,9 +111,14 @@ class BootImage:
     def os_version_field(self) -> int:
         """把版本号编进 header 的 os_version 字段。
 
-        位布局：7 位年偏移(2000起) | 4 位月 | 7 位补丁级别 | 11 位版本号。
+        AOSP 位布局（system/tools/mkbootimg/include/bootimg/bootimg.h）：
+            os_version = A[31:25] B[24:18] C[17:11] (Y-2000)[10:4] M[3:0]
+        即 Android 版本三段各占 7 位放在高 21 位，patch level 的
+        「年偏移 + 月」占低 11 位（无日）。
+
         填错不会报错，但 AVB/dm-verity 校验会失败，设备直接不启动——
         而且报错信息在 bootloader 阶段，普通用户根本看不到。
+        因此这里必须逐位对齐 AOSP，不能自创布局。
         """
         if not self.os_version:
             return 0
@@ -126,20 +131,25 @@ class BootImage:
             # 保证同一版本每次构建出一样的镜像（可复现）
             h = int(hashlib.sha256(self.os_version.encode()).hexdigest()[:8], 16)
             return h & 0x7FFFFFFF
+
+        import datetime
+        today = datetime.date.today()
         if a < 100:
-            # 单个数字是 Android 版本号（Android 13），不是年份。
-            # 塞进低 14 位的 version 段，年份填构建当年——
-            # 若误当年份解释会得到负数，max(0,…) 一夹就变成 0，
-            # 于是所有镜像的 os_version 都是 0，AVB 校验全挂。
-            import datetime
-            year = datetime.date.today().year - 2000
+            # 单个数字是 Android 版本号（Android 13 = A），不是年份。
+            # 三段都进版本区；patch level 用构建当年的年月。
+            major, minor, patch = a, b, c
+            year, month = today.year - 2000, today.month
         else:
-            year = a - 2000
-            a = 0
-        year = max(0, min(127, year))
-        month = max(0, min(15, b))
-        patch = max(0, min(127, c))
-        return (year << 25) | (month << 21) | (patch << 14) | max(0, min(0x3FFF, a))
+            # 形如 "2026.10"：按 patch level 的年.月 解释，版本区留空。
+            major = minor = patch = 0
+            year, month = a - 2000, b
+
+        major = max(0, min(0x7f, major))
+        minor = max(0, min(0x7f, minor))
+        patch = max(0, min(0x7f, patch))
+        year = max(0, min(0x7f, year))
+        month = max(0, min(0x0f, month))
+        return (major << 25) | (minor << 18) | (patch << 11) | (year << 4) | month
 
 
 def build_boot_image(img: BootImage) -> bytes:
@@ -218,6 +228,18 @@ def parse_boot_image(data: bytes) -> dict:
     d["cmdline"] = d["cmdline"].rstrip(b"\0").decode(errors="replace")
     d["id"] = d["id"].hex()
     d["extra_cmdline"] = d["extra_cmdline"].rstrip(b"\0").decode(errors="replace")
+    # os_version 按 AOSP 布局解码回可读形式
+    ov = d["os_version"]
+    if ov:
+        major = (ov >> 25) & 0x7f
+        minor = (ov >> 18) & 0x7f
+        patch = (ov >> 11) & 0x7f
+        year = 2000 + ((ov >> 4) & 0x7f)
+        month = ov & 0x0f
+        d["os_version_decoded"] = (f"{major}.{minor}.{patch}"
+                                   f" (patch {year}-{month:02d})")
+    else:
+        d["os_version_decoded"] = ""
     return d
 
 
@@ -492,22 +514,26 @@ def src_line(dev: str, mount: str, fs: str, opts: str) -> str:
 # ---------------------------------------------------------------- 内核片段
 
 ANDROID_KERNEL_ITEMS = [
-    ("CONFIG_ANDROID", "y", "Android 核心特性开关"),
     ("CONFIG_ANDROID_BINDER_IPC", "y", "Binder IPC（安卓的基础 IPC 机制）"),
     ("CONFIG_ANDROID_BINDERFS", "y", "Binder 设备文件系统"),
     ("CONFIG_ANDROID_BINDER_DEVICES", '"binder,hwbinder,vndbinder"',
      "三个 binder 设备，缺一个硬件服务就起不来"),
-    ("CONFIG_ASHMEM", "y", "匿名共享内存（旧版安卓依赖）"),
-    ("CONFIG_ANDROID_LOW_MEMORY_KILLER", "y",
-     "低内存杀进程——手机内存小，没有它会被 OOM 拖死"),
-    ("CONFIG_STAGING", "y", " staging 驱动（很多安卓驱动在这里）"),
-    ("CONFIG_ION", "y", "ION 内存分配器（相机/显示/视频依赖）"),
-    ("CONFIG_SYNC", "y", "同步框架（图形缓冲同步）"),
-    ("CONFIG_SW_SYNC", "y", "软件同步"),
+    # 注意：以下旧符号在 5.x 后已从上游内核删除，写了会被 kbuild 报未知选项：
+    #   CONFIG_ANDROID / CONFIG_ASHMEM / CONFIG_ION / CONFIG_SYNC
+    #   CONFIG_ANDROID_LOW_MEMORY_KILLER / CONFIG_SCHED_TUNE
+    # 它们的功能已由下列现代等价物承担（内存共享走 memfd + DMA-BUF heaps，
+    # 低内存回收走 PSI + lmkd 用户态守护）。
+    ("CONFIG_DMABUF_HEAPS", "y", "DMA-BUF heaps——ION 的现代替代（相机/显示/视频）"),
+    ("CONFIG_DMABUF_HEAPS_SYSTEM", "y", "系统堆（通用图形缓冲）"),
+    ("CONFIG_DMABUF_HEAPS_CMA", "y", "CMA 堆（需要连续物理内存的硬件）"),
+    ("CONFIG_SYNC_FILE", "y", "dma-fence 同步框架（旧 CONFIG_SYNC 的替代）"),
+    ("CONFIG_STAGING", "y", "staging 驱动（很多安卓驱动在这里）"),
+    ("CONFIG_SW_SYNC", "y", "软件同步（同步框架的调试与兼容层）"),
     ("CONFIG_UEVENT_HELPER", "n", "关闭，安卓用 netlink 而非调用 helper"),
     ("CONFIG_FW_LOADER_USER_HELPER", "n", "固件加载走内核直读"),
     ("CONFIG_NET_SCHED", "y", "网络调度（省电与流量控制依赖）"),
-    ("CONFIG_IP_NF_TARGET_MASQUERADE", "y", "网络共享需要"),
+    ("CONFIG_NETFILTER_XT_TARGET_MASQUERADE", "y",
+     "网络共享需要（旧符号 IP_NF_TARGET_MASQUERADE 已并入 xt_MASQUERADE）"),
     ("CONFIG_USB_CONFIGFS", "y", "USB gadget（adb/mtp/快充都靠它）"),
     ("CONFIG_CONFIGFS_FS", "y", "configfs（USB gadget 依赖）"),
     ("CONFIG_SQUASHFS", "y", "只读压缩文件系统（安卓常用）"),
@@ -527,7 +553,6 @@ ANDROID_KERNEL_ITEMS = [
     ("CONFIG_PSI", "y", "压力失速信息——安卓靠它做内存回收决策"),
     ("CONFIG_MEMCG", "y", "内存 cgroup（安卓的进程优先级靠它）"),
     ("CONFIG_CPUSETS", "y", "CPU 亲和（大小核调度依赖）"),
-    ("CONFIG_SCHED_TUNE", "y", "调度调优"),
     ("CONFIG_ZRAM", "y", "内存压缩——手机内存小，这是标配"),
     ("CONFIG_ZSMALLOC", "y", "zram 的分配器"),
     ("CONFIG_INPUT_TOUCHSCREEN", "y", "触控屏"),
@@ -539,9 +564,9 @@ def gen_kernel_fragment() -> str:
     """生成 android 内核配置片段。"""
     L = ["# 安卓设备适配片段 —— 由 qyos/android.py 生成",
          "#",
-         "# 与桌面内核的差别主要在：Binder IPC、ION 内存、dm-verity、",
+         "# 与桌面内核的差别主要在：Binder IPC、DMA-BUF heaps、dm-verity、",
          "# SELinux 强制、zram、省电与大小核调度。",
-         "# 缺 Binder 或缺 ION，设备能起但硬件服务全废（相机/显示/音频）。",
+         "# 缺 Binder 或缺图形内存堆，设备能起但硬件服务全废（相机/显示/音频）。",
          ""]
     for k, v, why in ANDROID_KERNEL_ITEMS:
         # 注释放单独一行而不是行内：不是所有解析器都剥行内注释，

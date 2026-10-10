@@ -147,12 +147,12 @@ txt = (Path("kernel/config") / "android.fragment").read_text()
 items = K.parse_fragment(txt)
 cfg = {}
 cfg, _ = K.merge(cfg, [items])
-# 关键项必须在
+# 关键项必须在（ION 已被上游删除，改用 DMA-BUF heaps）
 for k in ("CONFIG_ANDROID_BINDER_IPC", "CONFIG_ANDROID_BINDERFS",
-          "CONFIG_ION", "CONFIG_DM_VERITY", "CONFIG_SECURITY_SELINUX",
+          "CONFIG_DMABUF_HEAPS", "CONFIG_DM_VERITY", "CONFIG_SECURITY_SELINUX",
           "CONFIG_ZRAM", "CONFIG_USB_CONFIGFS"):
     assert cfg.get(k) == "y", f"缺 {k}"
-print("  Binder/ION/dm-verity/SELinux/zram/USB gadget 均在")
+print("  Binder/DMA-BUF heaps/dm-verity/SELinux/zram/USB gadget 均在")
 # 行内注释不能被当成值（会静默失效）
 bad = [k for k, v in cfg.items() if "#" in str(v)]
 assert not bad, f"值里混入了注释: {bad}"

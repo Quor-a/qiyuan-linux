@@ -1,0 +1,87 @@
+# 安卓设备适配片段 —— 启元 Linux 移动形态内核基线
+#
+# 与桌面内核的差别主要在：Binder IPC、DMA-BUF heaps、dm-verity、
+# SELinux 强制、zram、省电与大小核调度。
+# 缺 Binder 或缺图形内存堆，设备能起但硬件服务全废（相机/显示/音频）。
+#
+# 注意：CONFIG_ANDROID / CONFIG_ION / CONFIG_ASHMEM / CONFIG_SYNC /
+# CONFIG_ANDROID_LOW_MEMORY_KILLER / CONFIG_SCHED_TUNE 这些符号
+# 在 5.x 后已从上游内核删除——写了 kbuild 报未知选项或被静默忽略。
+# 它们的功能由现代等价物承担：
+#   ION → DMA-BUF heaps（Android 12 起官方替代）
+#   ASHMEM → memfd + DMA-BUF heaps
+#   LOW_MEMORY_KILLER → PSI + 用户态 lmkd 守护
+#   SCHED_TUNE → cgroup v2 + core scheduling
+
+# Binder IPC（安卓的基础 IPC 机制）
+CONFIG_ANDROID_BINDER_IPC=y
+# Binder 设备文件系统
+CONFIG_ANDROID_BINDERFS=y
+# 三个 binder 设备，缺一个硬件服务就起不来
+CONFIG_ANDROID_BINDER_DEVICES="binder,hwbinder,vndbinder"
+# DMA-BUF heaps——ION 的现代替代（相机/显示/视频）
+CONFIG_DMABUF_HEAPS=y
+# 系统堆（通用图形缓冲）
+CONFIG_DMABUF_HEAPS_SYSTEM=y
+# CMA 堆（需要连续物理内存的硬件）
+CONFIG_DMABUF_HEAPS_CMA=y
+# dma-fence 同步框架（旧 CONFIG_SYNC 的替代）
+CONFIG_SYNC_FILE=y
+# staging 驱动（很多安卓驱动在这里）
+CONFIG_STAGING=y
+# 软件同步（同步框架的调试与兼容层）
+CONFIG_SW_SYNC=y
+# 网络调度（省电与流量控制依赖）
+CONFIG_NET_SCHED=y
+# 网络共享需要（旧符号 IP_NF_TARGET_MASQUERADE 已并入 xt_MASQUERADE）
+CONFIG_NETFILTER_XT_TARGET_MASQUERADE=y
+# USB gadget（adb/mtp/快充都靠它）
+CONFIG_USB_CONFIGFS=y
+# configfs（USB gadget 依赖）
+CONFIG_CONFIGFS_FS=y
+# 只读压缩文件系统（安卓常用）
+CONFIG_SQUASHFS=y
+# squashfs 的 xz 压缩
+CONFIG_SQUASHFS_XZ=y
+# EROFS，安卓上常见的只读文件系统
+CONFIG_EROFS_FS=y
+# EROFS 扩展属性
+CONFIG_EROFS_FS_XATTR=y
+# tmpfs 扩展属性（安卓的 /dev 需要）
+CONFIG_TMPFS_XATTR=y
+# SELinux——安卓强制开启
+CONFIG_SECURITY_SELINUX=y
+# SELinux 不能 permissive，正式版必须 enforcing
+# CONFIG_SECURITY_SELINUX_DEVELOP is not set
+# 不允许用内核参数关掉 SELinux
+# CONFIG_SECURITY_SELINUX_BOOTPARAM is not set
+# dm-verity，verified boot 的基础
+CONFIG_DM_VERITY=y
+# 校验根哈希签名
+CONFIG_DM_VERITY_VERIFY_ROOTHASH_SIG=y
+# device mapper
+CONFIG_MD=y
+CONFIG_BLK_DEV_DM=y
+# loop 设备（动态分区挂载用）
+CONFIG_BLK_DEV_LOOP=y
+# 压力失速信息——安卓靠它做内存回收决策
+CONFIG_PSI=y
+# 内存 cgroup（安卓的进程优先级靠它）
+CONFIG_MEMCG=y
+# CPU 亲和（大小核调度依赖）
+CONFIG_CPUSETS=y
+# 内存压缩——手机内存小，这是标配
+CONFIG_ZRAM=y
+# zram 的分配器
+CONFIG_ZSMALLOC=y
+# 触控屏
+CONFIG_INPUT_TOUCHSCREEN=y
+# 电源调节器（手机 SoC 必需）
+CONFIG_REGULATOR=y
+
+# 必须关闭：安卓不靠 uevent helper 做热插拔，
+# 留着它会在早期用户空间卡住几十秒
+# CONFIG_UEVENT_HELPER is not set
+# CONFIG_UEVENT_HELPER_PATH is not set
+# 固件加载走内核直读
+# CONFIG_FW_LOADER_USER_HELPER is not set

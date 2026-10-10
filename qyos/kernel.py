@@ -68,13 +68,17 @@ ARCH_REQUIRED = {
     "aarch64": ["CONFIG_ARM64", "CONFIG_64BIT", "CONFIG_OF"],
 }
 
-# 安卓设备必需项。缺 Binder/ION 时设备能起来但硬件服务全废
+# 安卓设备必需项。缺 Binder/DMA-BUF heaps 时设备能起来但硬件服务全废
 # （相机、显示、音频都不能用），且不报错——最难排查的一类问题。
+#
+# 注意：CONFIG_ANDROID / CONFIG_ION / CONFIG_ASHMEM / CONFIG_SYNC 这些旧符号
+# 在 5.x 之后已从上游内核删除，再写进片段会被 kbuild 报未知选项。
+# 图形内存共享现在走 DMA-BUF heaps（ION 的官方替代，Android 12 起）。
 ANDROID_REQUIRED = [
-    ("CONFIG_ANDROID", "Android 核心特性开关，不开则后续特性不生效"),
     ("CONFIG_ANDROID_BINDER_IPC", "Binder IPC，安卓的基础进程通信机制"),
     ("CONFIG_ANDROID_BINDERFS", "Binder 设备文件系统"),
-    ("CONFIG_ION", "ION 内存分配器，相机/显示/视频编解码都依赖它"),
+    ("CONFIG_DMABUF_HEAPS", "DMA-BUF heaps，ION 的现代替代，"
+                            "相机/显示/视频编解码都依赖它"),
     ("CONFIG_DM_VERITY", "verified boot 的基础，缺了设备无法通过校验启动"),
     ("CONFIG_SECURITY_SELINUX", "安卓强制 SELinux，缺了无法启动到正常状态"),
     ("CONFIG_ZRAM", "内存压缩，手机内存小，这是标配"),
@@ -86,8 +90,8 @@ ANDROID_REQUIRED = [
 
 # 逻辑矛盾：单项都合法但组合起来不成立
 CONTRADICTIONS = [
-    ("CONFIG_ANDROID_BINDER_IPC", "y", "CONFIG_ANDROID", None,
-     "开了 Binder 却没开 CONFIG_ANDROID，Binder 不会真正生效"),
+    ("CONFIG_ANDROID_BINDERFS", "y", "CONFIG_ANDROID_BINDER_IPC", None,
+     "开了 binderfs 却没开 Binder IPC，设备节点建不出来"),
     ("CONFIG_DM_VERITY", "y", "CONFIG_MD", None,
      "dm-verity 依赖 device mapper（CONFIG_MD/BLK_DEV_DM）"),
     ("CONFIG_DM_VERITY_VERIFY_ROOTHASH_SIG", "y", "CONFIG_DM_VERITY", None,

@@ -1,0 +1,23 @@
+# 安全加固片段 —— 所有启元形态共用
+#
+# 这些项不改变功能，只关掉攻击面。缺了不会立刻出问题，
+# 所以最容易被忽略——写进片段，每次构建强制检查。
+
+# 内核栈保护
+CONFIG_STACKPROTECTOR=y
+# 强化的栈保护
+CONFIG_STACKPROTECTOR_STRONG=y
+# 内核地址随机化前提
+CONFIG_RELOCATABLE=y
+# 内核地址空间随机化（KASLR）
+CONFIG_RANDOMIZE_BASE=y
+# 内核代码段不可写
+CONFIG_STRICT_KERNEL_RWX=y
+# 模块代码段不可写
+CONFIG_STRICT_MODULE_RWX=y
+# 禁止映射低地址，阻断空指针解引用利用
+CONFIG_DEFAULT_MMAP_MIN_ADDR=65536
+# 限制非特权用户读内核日志
+CONFIG_SECURITY_DMESG_RESTRICT=y
+# 不使用（应为 n，让内核自己收集熵）
+# CONFIG_RANDOM_TRUST_BOOTLOADER is not set
