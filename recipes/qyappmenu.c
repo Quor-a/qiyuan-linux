@@ -170,6 +170,8 @@ static GtkWidget *make_grid_icon(AppEntry *a) {
     GtkWidget *v = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
     GtkWidget *btn = gtk_button_new();
     gtk_button_set_relief(GTK_BUTTON(btn), GTK_RELIEF_NONE);
+    /* weston 输入焦点修复（release 238）：应用网格按钮可获焦，支持方向键导航 */
+    gtk_widget_set_can_focus(btn, TRUE);
     add_class(btn, "qy-appmenu-item");
     /* 图标画布: 18x18 圆角色块（release 233 统一应用项图标为 18px） */
     GtkWidget *ic = gtk_drawing_area_new();
@@ -211,6 +213,8 @@ static GtkWidget *make_freq_row(AppEntry *a) {
     GtkWidget *h = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
     GtkWidget *b = gtk_button_new();
     gtk_button_set_relief(GTK_BUTTON(b), GTK_RELIEF_NONE);
+    /* weston 输入焦点修复（release 238）：常用列表按钮可获焦 */
+    gtk_widget_set_can_focus(b, TRUE);
     add_class(b, "qy-appmenu-item");
     GtkWidget *ic = gtk_drawing_area_new();
     gtk_widget_set_size_request(ic, 18, 18);
@@ -389,6 +393,9 @@ int main(int argc, char **argv) {
     menu_win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_widget_set_name(GTK_WIDGET(menu_win), "qyappmenu-win");
     gtk_window_set_decorated(GTK_WINDOW(menu_win), FALSE);
+    /* weston 输入焦点修复（release 238）：开始菜单显式接受键盘焦点，
+     * 保证 Escape/方向键/回车等按键事件能到达菜单窗口。 */
+    gtk_window_set_accept_focus(GTK_WINDOW(menu_win), TRUE);
     gtk_window_set_default_size(GTK_WINDOW(menu_win), 460, 420);
     gtk_window_move(GTK_WINDOW(menu_win), 6, 32);
     g_signal_connect(menu_win, "key-press-event", G_CALLBACK(on_menu_keypress), NULL);

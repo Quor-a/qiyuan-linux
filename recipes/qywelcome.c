@@ -83,6 +83,10 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_window_set_title(GTK_WINDOW(win), TR("欢迎使用澜岫 Linux"));
     gtk_window_set_default_size(GTK_WINDOW(win), 480, 420);
     gtk_container_set_border_width(GTK_CONTAINER(win), 16);
+    /* weston 输入焦点修复（release 238）：欢迎向导启动时不抢桌面键盘焦点，
+     * 避免 qydesktop 无法接收 VNC/sendkey 输入。 */
+    gtk_window_set_accept_focus(GTK_WINDOW(win), FALSE);
+    gtk_window_set_focus_visible(GTK_WINDOW(win), FALSE);
 
     GtkWidget *v = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
     GtkWidget *logo = gtk_label_new(NULL);

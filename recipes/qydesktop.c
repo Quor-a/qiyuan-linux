@@ -1230,6 +1230,10 @@ static void build_desktop(void) {
                   desktop_icon(QY_ICON_IMAGE, "c-view", TR("图片查看"), "qyview"), x, y + dy * 6);
 
     gtk_widget_show_all(win);
+    /* weston 输入焦点修复（release 238）：桌面窗口显示后主动 present 并获取焦点，
+     * 确保 VNC/sendkey 的键盘输入（含 Escape 关闭菜单）能到达桌面壳层。 */
+    gtk_window_present(GTK_WINDOW(win));
+    gtk_window_activate_focus(GTK_WINDOW(win));
 }
 
 /* ---------- 入口 ---------- */
