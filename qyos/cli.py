@@ -656,6 +656,8 @@ def pkg_main(argv=None) -> int:
     sp = sub.add_parser("assemble", help="组装可启动的根文件系统")
     sp.add_argument("packages", nargs="*")
     sp.add_argument("--no-devnodes", action="store_true")
+    sp.add_argument("--arch", default=None,
+                    help="异架构 rootfs（如 aarch64，配对应仓库）")
     sp = sub.add_parser("bootcheck", help="检查根目录能否启动")
     sp = sub.add_parser("manifest", help="生成根目录完整清单")
     sp.add_argument("--out", help="清单输出路径")
@@ -712,7 +714,8 @@ def pkg_main(argv=None) -> int:
         from qyos import system as SY
         res = SY.assemble(Path(a.root), a.packages, Path(a.repo), pubkey,
                           allow_unsigned=a.allow_unsigned,
-                          make_devnodes=not getattr(a, "no_devnodes", False))
+                          make_devnodes=not getattr(a, "no_devnodes", False),
+                          arch=getattr(a, "arch", None))
         print()
         print(rootfs_report(res["check"]))
         return 0 if res["bootable"] else 1

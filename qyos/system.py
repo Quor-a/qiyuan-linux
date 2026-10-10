@@ -20,17 +20,20 @@ from . import util
 
 
 def assemble(root: Path, packages: list, repo_dir: Path,
-             pubkey: Path | None = None, allow_unsigned: bool = False,
-             make_devnodes: bool = True, version: str = "0.1") -> dict:
+             pubkey=None, allow_unsigned: bool = False,
+             make_devnodes: bool = True, version: str = "0.1",
+             arch: str | None = None) -> dict:
     """组装一个可启动的根文件系统。
 
     顺序很重要：filesystem 必须先装（搭骨架），其余按依赖来。
+    arch 非 None 时组装异架构 rootfs（如 aarch64，供安卓 Termux proot）。
     """
     root = Path(root)
     root.mkdir(parents=True, exist_ok=True)
     util.log("ok", f"组装根文件系统到 {root}")
 
-    mgr = PM.Manager(root, repo_dir, pubkey, allow_unsigned=allow_unsigned)
+    mgr = PM.Manager(root, repo_dir, pubkey, allow_unsigned=allow_unsigned,
+                     arch=arch)
 
     # 1. 先装骨架包（没有它，/etc /usr 这些目录都不存在）
     have_fs = "filesystem" in mgr.db.installed()

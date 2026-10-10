@@ -322,19 +322,50 @@ class Manager:
                 if getattr(f, "config", False):
                     continue
                 if f.type == "dir":
+                    # 目录被多包共享。若目标位置是 FHS 合并布局 symlink
+                    # （/bin→/usr/bin 等），绝不能摘链——那是 filesystem 包
+                    # 建的 usr-merge 结构；包内容实际要落到链接目标里。
+                    if dst.is_symlink():
+                        real = Path(os.path.realpath(dst))
+                        real.mkdir(parents=True, exist_ok=True)
+                        continue
                     dst.mkdir(parents=True, exist_ok=True)
-                    try:
-                        os.chmod(dst, f.mode)
-                    except OSError:
-                        pass
-                    continue
                 dst.parent.mkdir(parents=True, exist_ok=True)
                 if dst.exists() or dst.is_symlink():
+                    if f.type == "dir":
+                        # 目录撞已存在的真目录：共享即可，绝不 rmtree——
+                        # root/var 里可能有 qypkg 自己的 staging，rmtree
+                        # 等于把正在进行的安装连锅端（历史事故根因）。
+                        # 但要把目录权限修正到包记录值：此前残留的坏权限
+                        # （如被成环事故 chmod 成 644 的 usr/lib）会让后续
+                        # 文件 move 全部 Permission denied。
+                        try:
+                            os.chmod(dst, f.mode | 0o700)
+                        except OSError:
+                            pass
+                        continue
                     # 覆盖前先快照，系统级回滚靠这个
                     if t is not None:
                         t.backup(f.path)
+                    if f.type == "symlink" and dst.is_dir() and not dst.is_symlink():
+                        # 兼容 symlink（glibc usr/lib→../lib）撞实体真目录：
+                        # 真目录是实体，跳过 symlink 落盘（落了必成环）
+                        continue
                     if dst.is_symlink() or dst.is_file():
                         dst.unlink()
+                    elif f.type == "symlink":
+                        # FHS 合并布局：包里 bin/sbin/lib 是 symlink（→usr/*），
+                        # 目标位置却是他包留下的真目录（busybox 带 bin/）——
+                        # 把内容并进链接目标再删真目录，不能 rmtree 吞掉整棵
+                        # 命令树（历史上 filesystem 包安装毁库就是这个坑）。
+                        tgt = getattr(f, "target", "") or ""
+                        link_target = (self.root / tgt.lstrip("/") if tgt.startswith("/")
+                                       else dst.parent / tgt)
+                        link_target.mkdir(parents=True, exist_ok=True)
+                        for child in dst.iterdir():
+                            if not (link_target / child.name).exists():
+                                shutil.move(str(child), str(link_target / child.name))
+                        shutil.rmtree(dst)
                     else:
                         shutil.rmtree(dst)
                 elif t is not None:

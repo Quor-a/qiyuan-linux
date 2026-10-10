@@ -30,7 +30,8 @@ compression = "gz"
 def build(ctx):
     # init 在 switch_root 时 /usr 尚未就绪，动态链接器找不到 libc 会直接
     # panic（"Attempted to kill init"）。README 硬规矩：早期 init 强制静态。
-    ctx.run("make CC=gcc PREFIX=/usr LDFLAGS=-static")
+    # 交叉编译时 ctx.env 注入了 CC=aarch64-...-gcc，别覆盖成 gcc
+    ctx.run("make PREFIX=/usr LDFLAGS=-static")
 
 
 def package(ctx):
