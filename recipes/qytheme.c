@@ -70,9 +70,7 @@ GtkWidget *qy_make_titlebar(GtkWindow *win, const char *title) {
     gtk_header_bar_set_show_close_button(GTK_HEADER_BAR(hb), TRUE);
     if (title && title[0])
         gtk_header_bar_set_title(GTK_HEADER_BAR(hb), title);
-    gtk_window_set_titlebar(win, hb);
-    g_printerr("QYTHEMEDBG: titlebar=%s\n", title ? title : "");
-    return hb;
+    gtk_window_set_titlebar(win, hb);return hb;
 }
 
 /* 图标按钮：无边框，内嵌 qy_icon_pixbuf 线稿图标，可选 tooltip 与 CSS 类。
