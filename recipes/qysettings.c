@@ -1777,6 +1777,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     qy_load_theme();
     GtkWidget *win = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(win), TR("启元系统设置"));
+    qy_make_titlebar(GTK_WINDOW(win), TR("启元系统设置"));
     qy_window_setup(GTK_WINDOW(win), 620, 420, 560, 420, FALSE);
 
     GtkWidget *nb = gtk_notebook_new();

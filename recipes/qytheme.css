@@ -498,18 +498,18 @@ notebook tab:checked {
     background-color: rgba(255, 138, 61, 0.30);
 }
 
-/* 任务 pill 右侧关闭按钮（GTK CSS 无 opacity，显示/隐藏由 enter/leave 回调切 visible） */
+/* 任务 pill 关闭按钮（release 235 起始终可见，默认轻量透明，hover 才白底） */
 .qy-task-close {
     background: transparent;
     border: none;
     border-radius: 9px;
-    padding: 1px;
+    padding: 2px;
     min-width: 16px;
     min-height: 16px;
-    color: #c9cdd4;
+    color: #9aa3b2;
 }
 .qy-task-close:hover {
-    background-color: rgba(255, 255, 255, 0.18);
+    background-color: rgba(255, 255, 255, 0.15);
     color: #ffffff;
 }
 .qy-task-pill:hover .qy-task-close {

@@ -2422,3 +2422,10 @@ ngs-about-v2.png`。
 - **`.qy-app-surface` 面板**：接入 qyfiles（主内容区）/qybrowser（内容 paned）/qyview（图片区）/qymedia（播放区）/qyshot（预览区）；qysettings 已有 notebook 面板样式跳过
 - **浏览器**：地址栏 entry 加 `.qy-search-entry` 统一输入框；状态栏加 `.qy-browser-status`（顶部 1px 分隔 + 次要色）
 - 审计字符归零；构建产物 `qydesktop 0.1.0-234`
+
+### UI 改版第 15 轮：全应用HeaderBar+图标视图间距+任务栏关闭稳定（v0.1.0-235，2026-10 实测）
+
+- **HeaderBar 统一**：qy_make_titlebar 接入 qyfiles/qybrowser（含书签窗）/qysettings（CSD 标题栏 + 关闭按钮）；移除 QYTHEMEDBG 调试输出
+- **文件管理器**：GtkIconView 网格 8px 间距（item_padding 4 / spacing / column / row 8）
+- **任务栏**：pill 关闭按钮改为始终可见（删除 enter/leave 切换，避免 hover 闪烁），轻样式透明底 hover 白底
+- 审计字符归零；构建产物 `qydesktop 0.1.0-235`

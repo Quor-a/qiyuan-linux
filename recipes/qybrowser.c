@@ -379,6 +379,7 @@ static void on_bm_list_clicked(GtkWidget *b, gpointer ud) {
 static void show_bookmarks_window(void) {
     GtkWidget *win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(win), TR("书签"));
+    qy_make_titlebar(GTK_WINDOW(win), TR("书签"));
     gtk_window_set_default_size(GTK_WINDOW(win), 420, 320);
     GtkWidget *v = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
     gtk_container_set_border_width(GTK_CONTAINER(v), 8);
@@ -465,6 +466,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     qy_load_theme();
     GtkWidget *win = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(win), TR("启元浏览器"));
+    qy_make_titlebar(GTK_WINDOW(win), TR("启元浏览器"));
     qy_window_setup(GTK_WINDOW(win), 720, 520, 560, 420, FALSE);
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);

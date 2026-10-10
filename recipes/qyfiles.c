@@ -941,6 +941,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     load_theme();
     GtkWidget *win = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(win), TR("启元文件管理器"));
+    qy_make_titlebar(GTK_WINDOW(win), TR("启元文件管理器"));
     qy_window_setup(GTK_WINDOW(win), 920, 560, 720, 480, FALSE);
 
     GtkWidget *hpane = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
@@ -1089,6 +1090,11 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_icon_view_set_pixbuf_column(GTK_ICON_VIEW(icon_view), 3);
     gtk_icon_view_set_item_width(GTK_ICON_VIEW(icon_view), 100);
     gtk_icon_view_set_selection_mode(GTK_ICON_VIEW(icon_view), GTK_SELECTION_MULTIPLE);
+    /* release 235: 统一图标间距（内边距 4，行列间距 8） */
+    gtk_icon_view_set_item_padding(GTK_ICON_VIEW(icon_view), 4);
+    gtk_icon_view_set_spacing(GTK_ICON_VIEW(icon_view), 8);
+    gtk_icon_view_set_column_spacing(GTK_ICON_VIEW(icon_view), 8);
+    gtk_icon_view_set_row_spacing(GTK_ICON_VIEW(icon_view), 8);
     g_signal_connect(icon_view, "item-activated", G_CALLBACK(on_icon_activated), NULL);
     GtkWidget *scroll_icon = gtk_scrolled_window_new(NULL, NULL);
     gtk_container_add(GTK_CONTAINER(scroll_icon), icon_view);

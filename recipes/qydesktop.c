@@ -247,15 +247,6 @@ static void on_task_close_clicked(GtkButton *btn, gpointer ud) {
     if (f) { fprintf(f, "%u close\n", id); fclose(f); }
 }
 
-/* hover 显示/隐藏任务 pill 的关闭按钮（GTK CSS 无 opacity，用 visible 切换） */
-static void on_task_pill_enter(GtkButton *btn, gpointer ud) {
-    gtk_widget_set_visible(GTK_WIDGET(ud), TRUE);
-}
-
-static void on_task_pill_leave(GtkButton *btn, gpointer ud) {
-    gtk_widget_set_visible(GTK_WIDGET(ud), FALSE);
-}
-
 /* 按窗口标题映射统一图标 id（任务 pill 图标） */
 static QyIconId task_icon_id(const char *title) {
     /* qy_icon_for_app 统一映射兜底（未识别时回退到本地标题匹配） */
@@ -344,7 +335,7 @@ static void refresh_taskbar(void) {
         add_class(tl, "qy-task-label");
         gtk_box_pack_start(GTK_BOX(hb), tl, FALSE, FALSE, 0);
 
-        /* 右侧小关闭按钮：默认隐藏，hover pill（或按钮自身）时显示，
+        /* 右侧小关闭按钮：始终可见（release 235 起不再 hover 才显示），
          * 点击写 /tmp/xdg/qy-winop 让 weston 关闭对应窗口。 */
         GtkWidget *close = gtk_button_new();
         gtk_button_set_relief(GTK_BUTTON(close), GTK_RELIEF_NONE);
@@ -352,15 +343,11 @@ static void refresh_taskbar(void) {
         GdkPixbuf *cpb = qy_icon_pixbuf(QY_ICON_CLOSE, 12, NULL);
         gtk_container_add(GTK_CONTAINER(close), gtk_image_new_from_pixbuf(cpb));
         g_object_unref(cpb);
-        gtk_widget_set_no_show_all(close, TRUE);
-        gtk_widget_set_visible(close, FALSE);
+        gtk_widget_set_no_show_all(close, FALSE);
+        gtk_widget_set_visible(close, TRUE);
         gtk_box_pack_start(GTK_BOX(hb), close, FALSE, FALSE, 0);
         g_signal_connect(close, "clicked", G_CALLBACK(on_task_close_clicked),
                        GUINT_TO_POINTER(wins[i].id));
-        g_signal_connect(b, "enter", G_CALLBACK(on_task_pill_enter), close);
-        g_signal_connect(b, "leave", G_CALLBACK(on_task_pill_leave), close);
-        g_signal_connect(close, "enter", G_CALLBACK(on_task_pill_enter), close);
-        g_signal_connect(close, "leave", G_CALLBACK(on_task_pill_leave), close);
 
         gtk_widget_set_tooltip_text(b, wins[i].title);
         if ((wins[i].id == active_id && now < active_until) ||
