@@ -81,7 +81,8 @@ static void activate(GtkApplication *app, gpointer ud) {
     qy_load_theme();
     win = gtk_application_window_new(app);
     gtk_window_set_title(GTK_WINDOW(win), TR("欢迎使用澜岫 Linux"));
-    gtk_window_set_default_size(GTK_WINDOW(win), 480, 420);
+    gtk_window_set_default_size(GTK_WINDOW(win), 520, 470);
+    gtk_widget_set_name(win, "qywelcome-win");
     gtk_container_set_border_width(GTK_CONTAINER(win), 16);
     /* weston 输入焦点修复（release 238）：欢迎向导启动时不抢桌面键盘焦点，
      * 避免 qydesktop 无法接收 VNC/sendkey 输入。 */
@@ -89,16 +90,24 @@ static void activate(GtkApplication *app, gpointer ud) {
     gtk_window_set_focus_visible(GTK_WINDOW(win), FALSE);
 
     GtkWidget *v = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
+    qy_add_class(v, "qy-welcome-card");
     GtkWidget *logo = gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(logo), "<span size='xx-large' weight='bold'>澜岫 LANXIU</span>");
     gtk_widget_set_halign(logo, GTK_ALIGN_CENTER);
-    qy_add_class(logo, "qy-about-logo");
+    qy_add_class(logo, "qy-welcome-logo");
     gtk_box_pack_start(GTK_BOX(v), logo, FALSE, FALSE, 4);
 
     GtkWidget *title = gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(title),
         TR2("<span size='x-large' weight='bold'>欢迎使用澜岫 Linux</span>\n只需几步，完成初始配置","<span size='x-large' weight='bold'>Welcome to LANXIU Linux</span>\nA few steps to set up"));
     gtk_widget_set_halign(title, GTK_ALIGN_CENTER);
+    qy_add_class(title, "qy-welcome-title");
+
+    /* 品牌标语（仅视觉） */
+    GtkWidget *slogan = gtk_label_new("自由如澜 · 坚固如岫");
+    gtk_widget_set_halign(slogan, GTK_ALIGN_CENTER);
+    qy_add_class(slogan, "qy-welcome-slogan");
+    gtk_box_pack_start(GTK_BOX(v), slogan, FALSE, FALSE, 2);
 
     GtkWidget *grid = gtk_grid_new();
     gtk_grid_set_row_spacing(GTK_GRID(grid), 8);
@@ -123,14 +132,17 @@ static void activate(GtkApplication *app, gpointer ud) {
 
     GtkWidget *hint = gtk_label_new(TR("用户将加入 wheel 组，可用 qysudo 提权"));
     gtk_widget_set_halign(hint, GTK_ALIGN_START);
+    qy_add_class(hint, "qy-welcome-hint");
 
     GtkWidget *fin = gtk_button_new_with_label(TR("完成配置"));
+    qy_add_class(fin, "qy-welcome-btn");
     g_signal_connect(fin, "clicked", G_CALLBACK(on_finish_clicked), NULL);
     gtk_widget_set_halign(fin, GTK_ALIGN_END);
 
     status_lb = gtk_label_new("");
 
     gtk_box_pack_start(GTK_BOX(v), title, FALSE, FALSE, 4);
+    gtk_box_pack_start(GTK_BOX(v), slogan, FALSE, FALSE, 2);
     gtk_box_pack_start(GTK_BOX(v), grid, TRUE, TRUE, 4);
     gtk_box_pack_start(GTK_BOX(v), hint, FALSE, FALSE, 0);
     sysinfo_rows(v);

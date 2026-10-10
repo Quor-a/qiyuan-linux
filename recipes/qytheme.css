@@ -1,4 +1,4 @@
-/* qytheme.css — 启元桌面主题 v3.1
+/* qytheme.css — 澜岫桌面主题 v3.1
  * 设计方向：暖夜深色玻璃拟态（Industrial Dark）
  * 色板令牌（GTK @define-color，供后续引用）：
  *   qy_bg #0d1117 · qy_panel #1b2430 · qy_panel_alt #141b24
@@ -612,7 +612,7 @@ notebook tab:checked {
     border-radius: 12px;
 }
 
-/* ---------- 顶栏「启元」品牌 Logo 按钮（玻璃 tile） ---------- */
+/* ---------- 顶栏「澜岫」品牌 Logo 按钮（玻璃 tile） ---------- */
 .qy-logo-btn {
     background-color: transparent;
     background-image: none;
@@ -920,4 +920,149 @@ headerbar button.close:hover {
  * 与内部 pack padding（图标↔标题 4px、标题↔关闭 2px）配合。 */
 .qy-task-pill {
     padding: 2px 4px;
+}
+
+/* ============================================================
+ * release 239 — 澜岫品牌视觉：锁屏 / 欢迎页（仅追加，不改旧规则）
+ * 品牌令牌: 深蓝底 #0B1020 · 面板 #111724 · 品牌橙 #E95420
+ *          文字 #e6e9ef · 次要 #9aa3b2 · 边框 rgba(255,255,255,0.08)
+ * ============================================================ */
+
+/* ---------- 锁屏品牌化 ---------- */
+/* 深蓝渐变底（qylock.c 窗口同时挂 .qy-lock-screen 与 #qylock-win） */
+.qy-lock-screen,
+#qylock-win {
+    background-color: #0B1020;
+    background-image: linear-gradient(to bottom, #0B1020 0%, #0c1322 55%, #0e1628 100%);
+}
+/* 品牌 Logo（cairo 绘制区，透明底） */
+#qylock-logo {
+    background-color: transparent;
+}
+/* 大时钟：品牌文字色 + 更宽字距 */
+#qylock-clock {
+    color: #e6e9ef;
+    font-size: 96px;
+    font-weight: 200;
+    letter-spacing: 4px;
+}
+/* 日期：次要色 */
+#qylock-date {
+    color: #9aa3b2;
+    font-size: 16px;
+    letter-spacing: 3px;
+}
+/* 品牌标语 */
+#qylock-slogan {
+    color: #9aa3b2;
+    font-size: 14px;
+    font-weight: 300;
+    letter-spacing: 6px;
+}
+/* 密码框：面板底 + 品牌橙 focus */
+#qylock-pass {
+    background-color: rgba(17, 23, 36, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.10);
+    border-radius: 10px;
+    color: #e6e9ef;
+    caret-color: #E95420;
+    min-width: 320px;
+    min-height: 44px;
+    padding: 0 14px;
+    font-size: 15px;
+}
+#qylock-pass:focus {
+    background-color: rgba(17, 23, 36, 0.88);
+    border-color: #E95420;
+    box-shadow: 0 0 0 1px rgba(233, 84, 32, 0.25);
+}
+#qylock-pass:placeholder {
+    color: rgba(154, 163, 178, 0.8);
+}
+/* 解锁按钮：品牌橙大按钮 */
+.qy-lock-btn {
+    background-image: none;
+    background-color: #E95420;
+    border: none;
+    border-radius: 10px;
+    color: #ffffff;
+    min-height: 44px;
+    padding: 0 26px;
+    font-size: 15px;
+    font-weight: 600;
+    transition: background-color 150ms ease, box-shadow 150ms ease;
+}
+.qy-lock-btn:hover {
+    background-color: #ff6b3d;
+    box-shadow: 0 2px 14px rgba(233, 84, 32, 0.35);
+}
+.qy-lock-btn:active {
+    background-color: #c9441a;
+}
+
+/* ---------- 欢迎页品牌化 ---------- */
+#qywelcome-win {
+    background-color: #0B1020;
+    background-image: linear-gradient(to bottom, #0B1020 0%, #0d1526 100%);
+}
+/* 内容卡片：面板色 + 细边框 */
+.qy-welcome-card {
+    background-color: #111724;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 22px;
+}
+/* 品牌字标：白字 + 橙下划线 */
+.qy-welcome-logo {
+    color: #e6e9ef;
+    letter-spacing: 3px;
+    border-bottom: 2px solid #E95420;
+    padding: 0 14px 8px 14px;
+}
+/* 标题 */
+.qy-welcome-title {
+    color: #e6e9ef;
+}
+/* 标语 */
+.qy-welcome-slogan {
+    color: #9aa3b2;
+    font-size: 12px;
+    font-weight: 300;
+    letter-spacing: 4px;
+}
+/* 提示文字 */
+.qy-welcome-hint {
+    color: #9aa3b2;
+    font-size: 12px;
+}
+/* 完成配置按钮：品牌橙 */
+.qy-welcome-btn {
+    background-image: none;
+    background-color: #E95420;
+    border: none;
+    border-radius: 8px;
+    color: #ffffff;
+    padding: 8px 22px;
+    min-height: 36px;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background-color 150ms ease, box-shadow 150ms ease;
+}
+.qy-welcome-btn:hover {
+    background-color: #ff6b3d;
+    box-shadow: 0 2px 12px rgba(233, 84, 32, 0.35);
+}
+.qy-welcome-btn:active {
+    background-color: #c9441a;
+}
+/* 系统信息区：深蓝底卡片，与欢迎卡片区分层次 */
+.qy-welcome-info {
+    background-color: #0B1020;
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    padding: 10px 12px;
+}
+.qy-welcome-info-row {
+    font-size: 12px;
+    color: #9aa3b2;
 }

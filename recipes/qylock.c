@@ -82,6 +82,58 @@ static gboolean auto_unlock(gpointer p) {
     return G_SOURCE_REMOVE;
 }
 
+/* 品牌 Logo 绘制：白色山脊基线（岫）+ 橙色涟漪（澜）+ 橙色上升三角（自由）。
+ * 与 docs/brand/lanxiu-logo.svg 同构，仅作视觉装饰，不参与输入/焦点。 */
+static gboolean on_logo_draw(GtkWidget *w, cairo_t *cr, gpointer ud) {
+    (void)ud;
+    int W = gtk_widget_get_allocated_width(w);
+    int H = gtk_widget_get_allocated_height(w);
+    if (W < 4 || H < 4) return FALSE;
+    /* 逻辑坐标 100×64，等比居中缩放 */
+    double scale = MIN((double)W / 100.0, (double)H / 64.0);
+    double ox = (W - 100.0 * scale) / 2.0;
+    double oy = (H - 64.0 * scale) / 2.0;
+
+    cairo_save(cr);
+    cairo_translate(cr, ox, oy);
+    cairo_scale(cr, scale, scale);
+    cairo_set_line_cap(cr, CAIRO_LINE_CAP_ROUND);
+    cairo_set_line_join(cr, CAIRO_LINE_JOIN_ROUND);
+
+    /* 山脊基线（岫）— 白色 #e6e9ef */
+    cairo_set_source_rgb(cr, 0.902, 0.914, 0.937);
+    cairo_set_line_width(cr, 5.0);
+    cairo_move_to(cr, 4, 46);
+    cairo_line_to(cr, 26, 34);
+    cairo_line_to(cr, 40, 42);
+    cairo_line_to(cr, 76, 26);
+    cairo_stroke(cr);
+
+    /* 两道涟漪（澜）— 品牌橙 #E95420 */
+    cairo_set_source_rgb(cr, 0.914, 0.329, 0.125);
+    cairo_set_line_width(cr, 4.5);
+    cairo_move_to(cr, 16, 22);
+    cairo_curve_to(cr, 24, 15, 32, 15, 40, 22);
+    cairo_curve_to(cr, 48, 29, 56, 29, 64, 22);
+    cairo_stroke(cr);
+    cairo_set_line_width(cr, 3.5);
+    cairo_move_to(cr, 8, 30);
+    cairo_curve_to(cr, 16, 23, 24, 23, 32, 30);
+    cairo_curve_to(cr, 40, 37, 48, 37, 56, 30);
+    cairo_stroke(cr);
+
+    /* 中央上升三角（自由）— 品牌橙 #E95420 */
+    cairo_set_line_width(cr, 4.5);
+    cairo_move_to(cr, 50, 2);
+    cairo_line_to(cr, 41, 20);
+    cairo_line_to(cr, 59, 20);
+    cairo_close_path(cr);
+    cairo_stroke(cr);
+
+    cairo_restore(cr);
+    return FALSE;
+}
+
 static void build_ui(void) {
     qy_load_theme();
     GtkWidget *win = gtk_window_new(GTK_WINDOW_TOPLEVEL);
@@ -89,11 +141,19 @@ static void build_ui(void) {
     gtk_window_set_default_size(GTK_WINDOW(win), 1280, 800);
     gtk_window_fullscreen(GTK_WINDOW(win));
     gtk_widget_set_name(win, "qylock-win");
+    qy_add_class(win, "qy-lock-screen");
 
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 8);
     gtk_widget_set_valign(vbox, GTK_ALIGN_CENTER);
     gtk_widget_set_halign(vbox, GTK_ALIGN_CENTER);
     gtk_container_add(GTK_CONTAINER(win), vbox);
+
+    /* 品牌 Logo（山脊 + 涟漪 + 上升三角，cairo 绘制，无焦点） */
+    GtkWidget *logo = gtk_drawing_area_new();
+    gtk_widget_set_size_request(logo, 180, 110);
+    gtk_widget_set_name(logo, "qylock-logo");
+    g_signal_connect(logo, "draw", G_CALLBACK(on_logo_draw), NULL);
+    gtk_box_pack_start(GTK_BOX(vbox), logo, FALSE, FALSE, 0);
 
     /* 大时钟 */
     clock_label = gtk_label_new("--:--:--");
@@ -105,15 +165,22 @@ static void build_ui(void) {
     gtk_widget_set_name(date_label, "qylock-date");
     gtk_box_pack_start(GTK_BOX(vbox), date_label, FALSE, FALSE, 0);
 
+    /* 品牌标语（仅视觉） */
+    GtkWidget *slogan = gtk_label_new("自由如澜 · 坚固如岫");
+    gtk_widget_set_name(slogan, "qylock-slogan");
+    gtk_box_pack_start(GTK_BOX(vbox), slogan, FALSE, FALSE, 6);
+
     /* 解锁行: 密码输入 + 解锁按钮 */
     GtkWidget *row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
     pass_entry = gtk_entry_new();
     gtk_widget_set_name(pass_entry, "qylock-pass");
+    qy_add_class(pass_entry, "qy-search-entry");
     gtk_entry_set_placeholder_text(GTK_ENTRY(pass_entry), TR("输入密码解锁"));
     gtk_entry_set_visibility(GTK_ENTRY(pass_entry), FALSE);
     gtk_widget_set_size_request(pass_entry, 320, 44);
     GtkWidget *btn = gtk_button_new_with_label(TR("解锁"));
     qy_add_class(btn, "qy-btn");
+    qy_add_class(btn, "qy-lock-btn");
     g_signal_connect(btn, "clicked", G_CALLBACK(on_unlock), NULL);
     g_signal_connect(pass_entry, "activate", G_CALLBACK(on_entry_activate), NULL);
     gtk_box_pack_start(GTK_BOX(row), pass_entry, FALSE, FALSE, 0);
