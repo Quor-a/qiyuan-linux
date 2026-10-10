@@ -325,7 +325,7 @@ static void refresh_taskbar(void) {
         gtk_button_set_relief(GTK_BUTTON(b), GTK_RELIEF_NONE);
         add_class(b, "qy-task-pill");
         g_object_set_data(G_OBJECT(b), "qy-win-id", GUINT_TO_POINTER(wins[i].id));
-        GtkWidget *hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+        GtkWidget *hb = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
         gtk_container_add(GTK_CONTAINER(b), hb);
         GdkPixbuf *pb = qy_icon_pixbuf(task_icon_id(wins[i].title), 22, NULL);
         GtkWidget *img = gtk_image_new_from_pixbuf(pb);
@@ -333,7 +333,7 @@ static void refresh_taskbar(void) {
         gtk_box_pack_start(GTK_BOX(hb), img, FALSE, FALSE, 0);
         GtkWidget *tl = gtk_label_new(wins[i].title);
         add_class(tl, "qy-task-label");
-        gtk_box_pack_start(GTK_BOX(hb), tl, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(hb), tl, FALSE, FALSE, 4);
 
         /* 右侧小关闭按钮：始终可见（release 235 起不再 hover 才显示），
          * 点击写 /tmp/xdg/qy-winop 让 weston 关闭对应窗口。 */
@@ -345,7 +345,7 @@ static void refresh_taskbar(void) {
         g_object_unref(cpb);
         gtk_widget_set_no_show_all(close, FALSE);
         gtk_widget_set_visible(close, TRUE);
-        gtk_box_pack_start(GTK_BOX(hb), close, FALSE, FALSE, 0);
+        gtk_box_pack_start(GTK_BOX(hb), close, FALSE, FALSE, 2);
         g_signal_connect(close, "clicked", G_CALLBACK(on_task_close_clicked),
                        GUINT_TO_POINTER(wins[i].id));
 

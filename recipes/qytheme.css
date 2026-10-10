@@ -885,3 +885,39 @@ treeview.view:hover {
     font-size: 12px;
     padding: 2px 10px;
 }
+
+/* ---------- release 236 HeaderBar 标题样式 ---------- */
+/* 追加覆盖：供 qytheme.c 的 GtkHeaderBar 及接入主题的应用使用 */
+headerbar {
+    background-color: #141a24;
+    border: none;
+    border-bottom: 1px solid rgba(255,255,255,0.07);
+    min-height: 40px;
+    padding: 0 8px;
+}
+headerbar title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #e6e9ef;
+}
+headerbar button {
+    border: none;
+    background: transparent;
+    border-radius: 8px;
+    min-width: 28px;
+    min-height: 28px;
+}
+headerbar button:hover {
+    background-color: rgba(255,255,255,0.10);
+}
+headerbar button.close:hover {
+    background-color: #c9441a;
+    color: #ffffff;
+}
+
+/* ---------- release 236 任务 pill 收紧内边距 ----------
+ * 关闭按钮常显后收紧 pill 内边距，抵消按钮宽度、避免 pill 过宽。
+ * 与内部 pack padding（图标↔标题 4px、标题↔关闭 2px）配合。 */
+.qy-task-pill {
+    padding: 2px 4px;
+}

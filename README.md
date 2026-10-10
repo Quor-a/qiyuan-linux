@@ -2429,3 +2429,10 @@ ngs-about-v2.png`。
 - **文件管理器**：GtkIconView 网格 8px 间距（item_padding 4 / spacing / column / row 8）
 - **任务栏**：pill 关闭按钮改为始终可见（删除 enter/leave 切换，避免 hover 闪烁），轻样式透明底 hover 白底
 - 审计字符归零；构建产物 `qydesktop 0.1.0-235`
+
+### UI 改版第 16 轮：设置页分组标题+HeaderBar样式+任务pill间距（v0.1.0-236，2026-10 实测）
+
+- **设置页**：37 个页面加分组标题（`.qy-settings-group` + qyl10n zh/en 翻译），语言页已有标题跳过、驱动页无列表跳过
+- **HeaderBar 样式**：headerbar #141a24 底 + 底边 1px、title 14px/600、按钮 28×28（close hover 红）
+- **任务栏**：pill padding 2×4 收紧，图标↔标题 4px / 标题↔关闭 2px
+- 审计字符归零；构建产物 `qydesktop 0.1.0-236`

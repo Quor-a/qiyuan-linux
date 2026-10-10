@@ -125,6 +125,15 @@ static GtkWidget *row(const char *k, const char *v) {
     return h;
 }
 
+/* 设置页分组标题: 在 row 列表开头插入一个加粗小标题（qy-settings-group） */
+static GtkWidget *settings_group(GtkBox *box, const char *title) {
+    GtkWidget *l = gtk_label_new(title);
+    qy_add_class(l, "qy-settings-group");
+    gtk_widget_set_halign(l, GTK_ALIGN_START);
+    gtk_box_pack_start(box, l, FALSE, FALSE, 0);
+    return l;
+}
+
 /* 从设置启动其他应用 */
 static void launch_app(GtkButton *b, gpointer cmd) {
     char buf[128];
@@ -1794,6 +1803,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     /* 关于本机 */
     GtkWidget *v1 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
     gtk_container_set_border_width(GTK_CONTAINER(v1), 14);
+    settings_group(GTK_BOX(v1), TR("关于设置"));
     struct utsname u;
     uname(&u);
     struct sysinfo si;
@@ -1851,6 +1861,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     /* 显示 */
     GtkWidget *v2 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
     gtk_container_set_border_width(GTK_CONTAINER(v2), 14);
+    settings_group(GTK_BOX(v2), TR("显示设置"));
     gtk_box_pack_start(GTK_BOX(v2), row(TR("合成器"), "weston 14.0.2"), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v2), row(TR("后端"), "DRM (bochs-drm / pixman)"), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v2), row(TR("壁纸"), TR("程序化生成 · 自动轮换")), FALSE, FALSE, 0);
@@ -1905,6 +1916,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     /* 字体 */
     GtkWidget *v3 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
     gtk_container_set_border_width(GTK_CONTAINER(v3), 14);
+    settings_group(GTK_BOX(v3), TR("字体设置"));
     gtk_box_pack_start(GTK_BOX(v3), row(TR("西文字体"), "DejaVu Sans 2.37"), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v3), row(TR("中文字体"), "Noto Sans CJK"), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v3), row(TR("字体回退"), "fontconfig"), FALSE, FALSE, 0);
@@ -1913,6 +1925,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     /* 服务 */
     GtkWidget *v4 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
     gtk_container_set_border_width(GTK_CONTAINER(v4), 14);
+    settings_group(GTK_BOX(v4), TR("服务设置"));
     gtk_box_pack_start(GTK_BOX(v4), row(TR("1 号进程"), "qyinit"), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v4), row(TR("会话管理"), "seatd"), FALSE, FALSE, 0);
     gtk_box_pack_start(GTK_BOX(v4), row(TR("设备管理"), "eudev"), FALSE, FALSE, 0);
@@ -1922,6 +1935,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     /* 声音 (ALSA amixer Master) */
     GtkWidget *v5 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
     gtk_container_set_border_width(GTK_CONTAINER(v5), 14);
+    settings_group(GTK_BOX(v5), TR("声音设置"));
     GtkWidget *vol = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 0, 100, 1);
     gtk_scale_set_draw_value(GTK_SCALE(vol), TRUE);
     gtk_box_pack_start(GTK_BOX(v5), gtk_label_new(TR("输出音量 (Master)")), FALSE, FALSE, 0);
@@ -1932,6 +1946,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     /* 显示: 亮度 (backlight 探测) */
     GtkWidget *v6 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
     gtk_container_set_border_width(GTK_CONTAINER(v6), 14);
+    settings_group(GTK_BOX(v6), TR("亮度设置"));
     GtkWidget *br = gtk_scale_new_with_range(GTK_ORIENTATION_HORIZONTAL, 1, 100, 1);
     gtk_scale_set_draw_value(GTK_SCALE(br), TRUE);
     gtk_box_pack_start(GTK_BOX(v6), gtk_label_new(TR("屏幕亮度")), FALSE, FALSE, 0);
@@ -1970,6 +1985,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     /* 日期时间（每秒刷新） */
     GtkWidget *vdt = gtk_box_new(GTK_ORIENTATION_VERTICAL, 10);
     gtk_container_set_border_width(GTK_CONTAINER(vdt), 16);
+    settings_group(GTK_BOX(vdt), TR("日期时间设置"));
     GtkWidget *dt_label = gtk_label_new(NULL);
     gtk_widget_set_halign(dt_label, GTK_ALIGN_START);
     gtk_label_set_xalign(GTK_LABEL(dt_label), 0.0);
@@ -2081,6 +2097,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     /* 存储页: df -kP 磁盘占用（挂载点/容量/已用/进度条） */
     {
         GtkWidget *vst = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        settings_group(GTK_BOX(vst), TR("存储设置"));
         GtkWidget *tip = gtk_label_new(TR("磁盘占用（df 实时数据）"));
         gtk_widget_set_halign(tip, GTK_ALIGN_START);
         qy_add_class(tip, "qy-settings-curlang");
@@ -2123,6 +2140,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         static const char *idle_choices[] = { "从不", "1 分钟", "5 分钟",
                                                "10 分钟", "30 分钟", "1 小时" };
         GtkWidget *vpo = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
+        settings_group(GTK_BOX(vpo), TR("电源设置"));
         GtkWidget *tip = gtk_label_new(TR("屏幕熄灭时间（合成器空闲超时）"));
         gtk_widget_set_halign(tip, GTK_ALIGN_START);
         qy_add_class(tip, "qy-settings-curlang");
@@ -2176,6 +2194,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     {
         GtkWidget *vnet = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vnet), 14);
+        settings_group(GTK_BOX(vnet), TR("网络设置"));
         char main_if[64] = "eth0";
         char rline[256];
         FILE *rf = popen("ip route show default 2>/dev/null", "r");
@@ -2278,6 +2297,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         };
         GtkWidget *vpr = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vpr), 14);
+        settings_group(GTK_BOX(vpr), TR("隐私设置"));
         gtk_box_pack_start(GTK_BOX(vpr), row(TR("允许应用访问"), "（写 /etc/qyperm.conf）"), FALSE, FALSE, 0);
         g_perm_loading = 1;
         for (int i = 0; i < 6; i++) {
@@ -2322,6 +2342,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         };
         GtkWidget *vap = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vap), 14);
+        settings_group(GTK_BOX(vap), TR("应用程序设置"));
         GtkWidget *tip = gtk_label_new(TR("已安装应用（点击启动）"));
         gtk_widget_set_halign(tip, GTK_ALIGN_START);
         qy_add_class(tip, "qy-settings-curlang");
@@ -2368,6 +2389,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     {
         GtkWidget *vfo = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vfo), 14);
+        settings_group(GTK_BOX(vfo), TR("专注设置"));
         gtk_box_pack_start(GTK_BOX(vfo), row(TR("专注助手"), TR("免打扰时屏蔽通知弹窗")), FALSE, FALSE, 0);
         GtkWidget *fo_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
         GtkWidget *fo_l = gtk_label_new(TR("免打扰模式"));
@@ -2405,6 +2427,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         };
         GtkWidget *vno = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vno), 14);
+        settings_group(GTK_BOX(vno), TR("通知设置"));
         GtkWidget *tip = gtk_label_new(TR("哪些应用可以发送通知"));
         gtk_widget_set_halign(tip, GTK_ALIGN_START);
         qy_add_class(tip, "qy-settings-curlang");
@@ -2460,6 +2483,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     {
         GtkWidget *vfw = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vfw), 14);
+        settings_group(GTK_BOX(vfw), TR("防火墙设置"));
         int rules = -1;
         FILE *it = popen("iptables -L -n 2>/dev/null | grep -vc '^Chain\\|^$\\|^target'", "r");
         if (it) {
@@ -2568,6 +2592,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     {
         GtkWidget *vpx = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vpx), 14);
+        settings_group(GTK_BOX(vpx), TR("代理设置"));
         gtk_box_pack_start(GTK_BOX(vpx), row(TR("代理服务器"), TR("写入 /etc/environment，重启应用生效")), FALSE, FALSE, 0);
         GtkWidget *px_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
         GtkWidget *px_l = gtk_label_new(TR("代理地址"));
@@ -2592,6 +2617,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     {
         GtkWidget *vdev = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vdev), 14);
+        settings_group(GTK_BOX(vdev), TR("设备设置"));
         GtkWidget *tip = gtk_label_new(TR("USB 与输入设备"));
         gtk_widget_set_halign(tip, GTK_ALIGN_START);
         qy_add_class(tip, "qy-settings-curlang");
@@ -2674,6 +2700,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         static const char *multi_labels[] = { "分屏", "窗口贴靠", "虚拟桌面" };
         GtkWidget *vmt = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vmt), 14);
+        settings_group(GTK_BOX(vmt), TR("多任务设置"));
         GtkWidget *tip = gtk_label_new(TR("多任务处理"));
         gtk_widget_set_halign(tip, GTK_ALIGN_START);
         qy_add_class(tip, "qy-settings-curlang");
@@ -2729,6 +2756,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         static const char *ap_labels[] = { "打开文件管理器", "每次询问", "不操作" };
         GtkWidget *vap2 = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vap2), 14);
+        settings_group(GTK_BOX(vap2), TR("自动播放设置"));
         GtkWidget *tip = gtk_label_new(TR("自动播放"));
         gtk_widget_set_halign(tip, GTK_ALIGN_START);
         qy_add_class(tip, "qy-settings-curlang");
@@ -2812,6 +2840,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     {
         GtkWidget *vms = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vms), 14);
+        settings_group(GTK_BOX(vms), TR("鼠标设置"));
         gtk_box_pack_start(GTK_BOX(vms), row(TR("鼠标"), TR("设置写入 /etc/qymouse.conf")), FALSE, FALSE, 0);
         /* 主按键 */
         GtkWidget *mb_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
@@ -2866,6 +2895,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     {
         GtkWidget *vnr = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vnr), 14);
+        settings_group(GTK_BOX(vnr), TR("网络重置设置"));
         gtk_box_pack_start(GTK_BOX(vnr), row(TR("网络重置"), TR("恢复网卡出厂设置（危险）")), FALSE, FALSE, 0);
         GtkWidget *nr_btn = gtk_button_new_with_label(TR("重置网络"));
         qy_add_class(nr_btn, "qy-btn");
@@ -2882,6 +2912,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     {
         GtkWidget *vd = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vd), 14);
+        settings_group(GTK_BOX(vd), TR("多显示器设置"));
         gtk_box_pack_start(GTK_BOX(vd), row(TR("检测到的显示器"), "Virtual-1 (1280x800)"), FALSE, FALSE, 0);
         GtkWidget *dl_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
         GtkWidget *dl_l = gtk_label_new(TR("多显示器模式"));
@@ -2907,6 +2938,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     {
         GtkWidget *vbt = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vbt), 14);
+        settings_group(GTK_BOX(vbt), TR("蓝牙设置"));
         GtkWidget *bt_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
         GtkWidget *bt_l = gtk_label_new(TR("蓝牙"));
         gtk_widget_set_size_request(bt_l, 180, -1);
@@ -2967,6 +2999,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     {
         GtkWidget *vtp = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vtp), 14);
+        settings_group(GTK_BOX(vtp), TR("触摸板设置"));
         GtkWidget *tp_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
         GtkWidget *tp_l = gtk_label_new(TR("启用触摸板"));
         gtk_widget_set_size_request(tp_l, 180, -1);
@@ -3023,6 +3056,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     {
         GtkWidget *vg = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vg), 14);
+        settings_group(GTK_BOX(vg), TR("图形设置"));
         gtk_box_pack_start(GTK_BOX(vg), row(TR("显卡"), TR("未检测到独立显卡")), FALSE, FALSE, 0);
         GtkWidget *gfx_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
         GtkWidget *gfx_l = gtk_label_new(TR("图形模式"));
@@ -3052,6 +3086,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     {
         GtkWidget *vrd = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vrd), 14);
+        settings_group(GTK_BOX(vrd), TR("远程桌面设置"));
         gtk_box_pack_start(GTK_BOX(vrd), row(TR("远程桌面"), TR("允许远程连接到这台电脑")), FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vrd), row(TR("端口"), "3389"), FALSE, FALSE, 0);
         GtkWidget *rdp_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
@@ -3093,6 +3128,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     {
         GtkWidget *vpj = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vpj), 14);
+        settings_group(GTK_BOX(vpj), TR("投影设置"));
         gtk_box_pack_start(GTK_BOX(vpj), row(TR("投影"), TR("选择第二屏幕的投影模式")), FALSE, FALSE, 0);
         GtkWidget *pj_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
         GtkWidget *pj_l = gtk_label_new(TR("投影模式"));
@@ -3125,6 +3161,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     {
         GtkWidget *vhd = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vhd), 14);
+        settings_group(GTK_BOX(vhd), TR("HD Color 设置"));
         gtk_box_pack_start(GTK_BOX(vhd), row(TR("HD Color"), TR("高动态范围颜色与显示配置文件")), FALSE, FALSE, 0);
         GtkWidget *hdr_row = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 8);
         GtkWidget *hdr_l = gtk_label_new(TR("HDR 视频"));
@@ -3181,6 +3218,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     {
         GtkWidget *vpr = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vpr), 14);
+        settings_group(GTK_BOX(vpr), TR("打印机设置"));
         gtk_box_pack_start(GTK_BOX(vpr), row(TR("打印机和扫描仪"), TR("管理打印机")), FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vpr), row(TR("打印机"), TR("未检测到打印机")), FALSE, FALSE, 0);
         gtk_box_pack_start(GTK_BOX(vpr), row(TR("默认打印机"), TR("无")), FALSE, FALSE, 0);
@@ -3199,6 +3237,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     {
         GtkWidget *vmt = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vmt), 14);
+        settings_group(GTK_BOX(vmt), TR("流量计费设置"));
         gtk_box_pack_start(GTK_BOX(vmt), row(TR("按流量计费的连接"), TR("限制后台数据下载")), FALSE, FALSE, 0);
         /* 数据用量: /proc/net/dev 累加 rx+tx */
         double total_b = 0;
@@ -3265,6 +3304,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     {
         GtkWidget *vin = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vin), 14);
+        settings_group(GTK_BOX(vin), TR("输入设置"));
         gtk_box_pack_start(GTK_BOX(vin), row(TR("键盘"), TR("输入法与键盘布局")), FALSE, FALSE, 0);
         gchar *content = NULL;
         gsize len = 0;
@@ -3323,6 +3363,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     {
         GtkWidget *vpn = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vpn), 14);
+        settings_group(GTK_BOX(vpn), TR("笔和Ink设置"));
         gtk_box_pack_start(GTK_BOX(vpn), row(TR("笔和Ink"), TR("手写笔设置")), FALSE, FALSE, 0);
         g_pen_loading = 1;
         static const char *pen_keys[] = { "pen", "ignore_touch" };
@@ -3375,6 +3416,7 @@ static void activate(GtkApplication *app, gpointer ud) {
         };
         GtkWidget *vst = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vst), 14);
+        settings_group(GTK_BOX(vst), TR("启动项设置"));
         GtkWidget *tip = gtk_label_new(TR("哪些应用开机自动启动"));
         gtk_widget_set_halign(tip, GTK_ALIGN_START);
         qy_add_class(tip, "qy-settings-curlang");
@@ -3426,6 +3468,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     {
         GtkWidget *vwf = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vwf), 14);
+        settings_group(GTK_BOX(vwf), TR("WiFi 设置"));
         gtk_box_pack_start(GTK_BOX(vwf), row(TR("WiFi"), TR("无线网络连接")), FALSE, FALSE, 0);
         /* 检测无线网卡 */
         char wlan[64] = "";
@@ -3526,6 +3569,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     {
         GtkWidget *vwb = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vwb), 14);
+        settings_group(GTK_BOX(vwb), TR("窗口行为设置"));
         gtk_box_pack_start(GTK_BOX(vwb), row(TR("窗口行为"), TR("窗口拖动与贴靠设置")), FALSE, FALSE, 0);
         g_win_loading = 1;
         static const char *win_keys[] = { "drag", "snap" };
@@ -3592,6 +3636,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     {
         GtkWidget *vwl = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vwl), 14);
+        settings_group(GTK_BOX(vwl), TR("壁纸设置"));
         gtk_box_pack_start(GTK_BOX(vwl), row(TR("壁纸"), TR("桌面背景图片")), FALSE, FALSE, 0);
         /* 当前壁纸 */
         gchar *cur_wall = g_strdup("qiyuan.png");
@@ -3673,6 +3718,7 @@ static void activate(GtkApplication *app, gpointer ud) {
     {
         GtkWidget *vth = gtk_box_new(GTK_ORIENTATION_VERTICAL, 6);
         gtk_container_set_border_width(GTK_CONTAINER(vth), 14);
+        settings_group(GTK_BOX(vth), TR("主题色设置"));
         gtk_box_pack_start(GTK_BOX(vth), row(TR("主题色"), TR("设置界面强调色")), FALSE, FALSE, 0);
         /* 当前主题色 */
         gchar *cur_accent = g_strdup("orange");
