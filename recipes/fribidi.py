@@ -29,7 +29,9 @@ compression = "gz"
 
 def build(ctx):
     ctx.run("rm -rf build && mkdir -p build")
-    ctx.run("cd build && meson setup .. --prefix=/usr -Dtests=false -Ddocs=false")
+    cf = ctx.meson_cross_file()
+    x = f"--cross-file={cf}" if cf else ""
+    ctx.run(f"cd build && meson setup .. --prefix=/usr {x} -Dtests=false -Ddocs=false")
 
 
 def package(ctx):

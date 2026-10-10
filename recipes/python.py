@@ -33,8 +33,16 @@ def build(ctx):
     # configure 传 --with-openssl-rpath=auto：让 _ssl/_hashlib 直接 rpath 到
     # sysroot openssl，不靠运行时 LD_LIBRARY_PATH
     ctx.env("LD_LIBRARY_PATH", "{0}/usr/lib:{0}/lib".format(ctx.sysroot))
-    ctx.run("./configure" + " " .join(ctx.configure_args()) + " --prefix=/usr --enable-shared --with-system-expat "
-            "--with-openssl-rpath=auto --with-ensurepip=yes")
+    if ctx.configure_args():
+        # 交叉时 getaddrinfo 运行时探测必然失败（aarch64 二进制跑不起来），
+        # 用缓存变量直接确认支持（Linux glibc 一定有）
+        ctx.env("ac_cv_func_getaddrinfo", "yes")
+        ctx.env("ac_cv_buggy_getaddrinfo", "no")
+        ctx.env("ac_cv_file__dev_ptmx", "yes")
+        ctx.env("ac_cv_file__dev_ptc", "no")
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --enable-shared --with-system-expat "
+            "--with-openssl-rpath=auto --with-ensurepip=yes "
+            + ("--with-build-python=/home/agentuser/.local/share/uv/python/cpython-3.13.15-linux-x86_64-gnu/bin/python3.13 " if ctx.configure_args() else ""))
     ctx.run("make")
 
 

@@ -69,9 +69,20 @@ class BuildContext:
             from . import crosstool as CT
             ce = CT.CrossEnv(cross,
                              sysroot=paths.get("sysroot_path"))
+            self._cross_env = ce
             self.env_extra.update(ce.env())
             self._log(f"[交叉] host={cross.host} "
                       f"CC={self.env_extra.get('CC', '?')}")
+
+    def meson_cross_file(self) -> str:
+        """把 meson 交叉文件写进源码目录并返回相对文件名（原生构建返回空串）。"""
+        ce = getattr(self, "_cross_env", None)
+        if ce is None:
+            return ""
+        p = self.srcdir / "qy-cross.ini"
+        p.write_text(ce.meson_cross_file())
+        self.log(f"[交叉] meson cross file -> {p}")
+        return str(p)
 
     def log(self, msg: str) -> None:
         """配方里输出一行说明。

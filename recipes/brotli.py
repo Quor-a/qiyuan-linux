@@ -29,7 +29,7 @@ compression = "gz"
 
 def build(ctx):
     ctx.run("mkdir -p build")
-    ctx.run("cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr")
+    ctx.run("cd build && cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib")
 
 
 def package(ctx):

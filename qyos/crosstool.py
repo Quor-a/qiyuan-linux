@@ -178,6 +178,34 @@ class CrossEnv:
     build_sysroot: Path | None = None  # 构建期工具的根目录
     extra: dict = field(default_factory=dict)
 
+    def meson_cross_file(self) -> str:
+        """生成 meson 交叉编译文件内容（配方写入 build 目录后传 --cross-file）。"""
+        t = self.triple_obj
+        pre = tool_prefix(t.host)
+        cpu = "aarch64" if "aarch64" in t.host else "x86_64"
+        lines = [
+            "[binaries]",
+            f"c = '{pre}gcc'",
+            f"cpp = '{pre}g++'",
+            f"ar = '{pre}ar'",
+            f"strip = '{pre}strip'",
+            f"pkg-config = 'pkgconf'",
+            "",
+            "[host_machine]",
+            "system = 'linux'",
+            f"cpu_family = '{cpu}'",
+            f"cpu = '{cpu}'",
+            "endian = 'little'",
+            "",
+            "[built-in options]",
+        ]
+        if self.sysroot:
+            lines.append(f"c_args = ['--sysroot={self.sysroot}']")
+            lines.append(f"cpp_args = ['--sysroot={self.sysroot}']")
+            lines.append(f"c_link_args = ['--sysroot={self.sysroot}']")
+            lines.append(f"cpp_link_args = ['--sysroot={self.sysroot}']")
+        return "\n".join(lines) + "\n"
+
     def env(self) -> dict:
         t = self.triple_obj
         e = {}

@@ -25,7 +25,8 @@ def build(ctx):
     # meson 必须 out-of-tree：源码目录里构建会污染源码树，
     # 且重新配置时旧产物会干扰依赖判定
     ctx.run("rm -rf build && mkdir -p build")
-    ctx.run("cd build && meson setup .. --prefix=/usr --prefix=/usr --sysconfdir=/etc --localstatedir=/var -Dsystemd=disabled -Dlaunchd=disabled")
+    ctx.run("cd build && meson setup .. --prefix=/usr --sysconfdir=/etc --localstatedir=/var -Dsystemd=disabled -Dlaunchd=disabled") if not ctx.configure_args() else ctx.run(
+        "cd build && meson setup .. " + f"--cross-file={ctx.meson_cross_file()} " + "--prefix=/usr --sysconfdir=/etc --localstatedir=/var -Dsystemd=disabled -Dlaunchd=disabled")
 
 
 def package(ctx):

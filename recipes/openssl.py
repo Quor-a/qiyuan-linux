@@ -33,9 +33,10 @@ def build(ctx):
     # 交叉时必须显式 --target=linux-aarch64 且 CC 只给一次
     # （它内部还会把 CROSS_COMPILE 拼到 CC 前面，重复前缀 = 找不到命令）。
     if ctx.configure_args():
-        ctx.run("./Configure linux-aarch64 --prefix=/usr "
-                "--openssldir=/etc/ssl --libdir=lib shared zlib-dynamic "
-                "CC=aarch64-lanxiu-linux-gnu-gcc")
+        cc = ctx.env_extra.get("CC", "aarch64-qiyuan-linux-gnu-gcc")
+        ctx.run(f"./Configure linux-aarch64 --prefix=/usr "
+                f"--openssldir=/etc/ssl --libdir=lib shared zlib-dynamic "
+                f"CC={cc}")
     else:
         ctx.run("./config --prefix=/usr --openssldir=/etc/ssl "
                 "--libdir=lib shared zlib-dynamic")

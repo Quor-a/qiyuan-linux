@@ -24,7 +24,7 @@ compression = "xz"
 
 
 def build(ctx):
-    ctx.run("./configure" + " " .join(ctx.configure_args()) + " --prefix=/usr --enable-hashes=strong,glibc "
+    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr --enable-hashes=strong,glibc "
             "--enable-obsolete-api=glibc --disable-static "
             "--disable-failure-tokens")
     ctx.run("make")

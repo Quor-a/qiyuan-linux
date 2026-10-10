@@ -39,8 +39,10 @@ compression = "gz"
 
 
 def build(ctx):
+    cf = ctx.meson_cross_file()
+    x = f"--cross-file={cf}" if cf else ""
     ctx.run("mkdir -p build && cd build && meson setup .. --prefix=/usr --buildtype=release "
-            "-Ddocs=disabled -Dexamples=false -Dpamlocking=false "
+            f"{x} -Ddocs=disabled -Dexamples=false -Dpamlocking=false "
             "-Dselinux=disabled -Dlogind=disabled -Daudit=disabled")
     ctx.run("cd build && ninja")
 
