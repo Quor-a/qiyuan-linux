@@ -467,6 +467,11 @@ static GtkWidget *desktop_icon(QyIconId iid, const char *css,
                                const char *label, const char *cmdline) {
     GtkWidget *btn = gtk_button_new();
     gtk_button_set_relief(GTK_BUTTON(btn), GTK_RELIEF_NONE);
+    /* release 242: 桌面图标仅供鼠标点击，不参与键盘焦点/默认激活。
+     * 若保持可聚焦，桌面窗口获得键盘焦点后 gtk_window_activate_focus 会
+     * 自动“点击”默认聚焦的“主文件夹”图标 → qyfiles 随桌面自启动，
+     * 窗口堆叠覆盖顶栏 logo 与左侧 Dock，导致开始菜单无法打开。 */
+    gtk_widget_set_can_focus(btn, FALSE);
     add_class(btn, "qy-desktop-icon");
     GtkWidget *v = gtk_box_new(GTK_ORIENTATION_VERTICAL, 4);
     gtk_container_add(GTK_CONTAINER(btn), v);
@@ -1230,10 +1235,11 @@ static void build_desktop(void) {
                   desktop_icon(QY_ICON_IMAGE, "c-view", TR("图片查看"), "qyview"), x, y + dy * 6);
 
     gtk_widget_show_all(win);
-    /* weston 输入焦点修复（release 238）：桌面窗口显示后主动 present 并获取焦点，
-     * 确保 VNC/sendkey 的键盘输入（含 Escape 关闭菜单）能到达桌面壳层。 */
+    /* weston 输入焦点修复（release 238）：桌面窗口显示后主动 present 获取键盘焦点，
+     * 确保 VNC/sendkey 的键盘输入（含 Escape 关闭菜单）能到达桌面壳层。
+     * release 242：不再调用 gtk_window_activate_focus —— 它会激活默认聚焦的
+     * 桌面图标（“主文件夹”），导致 qyfiles 随桌面自启动覆盖顶栏/左侧 Dock。 */
     gtk_window_present(GTK_WINDOW(win));
-    gtk_window_activate_focus(GTK_WINDOW(win));
 }
 
 /* ---------- 入口 ---------- */

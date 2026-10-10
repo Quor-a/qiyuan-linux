@@ -46,8 +46,8 @@ if [ -n "$AU" ] && getent passwd "$AU" >/dev/null; then
 else
     /usr/bin/qydesktop > /dev/console 2>&1 &
 fi
-weston-terminal > /dev/console 2>&1 &
-/usr/bin/qymon > /dev/console 2>&1 &
+# release 242: 不再随桌面自启 weston-terminal / qymon —— 这些窗口在 Wayland 下
+# 默认堆叠在顶栏/左侧 Dock 之上，遮挡 logo 与开始菜单。改为从开始菜单/Dock 手动打开。
 # 桌面已起 → 停开机动画 (qyboot 淡出退出)
 pkill -TERM qyboot 2>/dev/null
 sleep 3

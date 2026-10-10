@@ -2457,3 +2457,8 @@ ngs-about-v2.png`。
 
 - seatd/udev 输入设备就绪处理；qynotifd 快捷键链路修复
 - weston.ini 壁纸/启动器图标路径改 lanxiu
+
+### 修复 qyfiles 自启动覆盖 + USB 键盘输入（v0.1.0-242）
+
+- qyfiles 不再随桌面自启动，桌面保持干净（开始菜单可经 logo 打开）
+- QEMU 侧 USB 键盘（usb-kbd）支持
