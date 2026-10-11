@@ -27,7 +27,7 @@ def build(ctx):
     # meson 必须 out-of-tree：源码目录里构建会污染源码树，
     # 且重新配置时旧产物会干扰依赖判定
     ctx.run("rm -rf build && mkdir -p build")
-    ctx.run("cd build && LLVMSRCDIR= PKG_CONFIG_PATH=/usr/lib/llvm-18/lib/pkgconfig:$PKG_CONFIG_PATH meson setup .. --prefix=/usr -Dgallium-drivers=swrast -Dvulkan-drivers= -Dgbm=enabled -Dglvnd=false -Dllvm=enabled -Dplatforms=x11,wayland -Ddri3=enabled -Dglx-direct=true -Degl=enabled " + x + "")
+    ctx.run("cd build && LLVMSRCDIR= PKG_CONFIG_PATH=/usr/lib/llvm-18/lib/pkgconfig:$PKG_CONFIG_PATH meson setup .. --prefix=/usr -Dgallium-drivers=swrast -Dvulkan-drivers= -Dgbm=enabled -Dglvnd=false -Dllvm=disabled -Dplatforms=x11,wayland -Ddri3=enabled -Dglx-direct=true -Degl=enabled " + x + "")
 
 
 def package(ctx):
