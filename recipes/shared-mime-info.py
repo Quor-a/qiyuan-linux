@@ -23,15 +23,10 @@ compression = "gz"
 
 def build(ctx):
     cf = ctx.meson_cross_file()
-    x = (f" --cross-file={cf} --native-file={cf.replace('qy-cross.ini', 'qy-native.ini')}" if cf else "")
-    S = ctx.sysroot
+    nf = cf.replace('qy-cross.ini', 'qy-native.ini') if cf else ""
+    x = (f" --cross-file={cf} --native-file={nf}" if cf else "")
     ctx.run("rm -rf build && mkdir -p build")
-    ctx.run(
-        "cd build && export PATH=$PATH:{0}/usr/bin; export PKG_CONFIG_PATH={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; "
-        "export PKG_CONFIG_SYSROOT_DIR={0}; export PKG_CONFIG_LIBDIR={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; "
-        "export LD_LIBRARY_PATH={0}/usr/lib/x86_64-linux-gnu:{0}/usr/lib:{0}/lib; "
-        "meson setup .. --prefix=/usr -Dupdate-mimedb=false" + x .format(S)
-    )
+    ctx.run("cd build && meson setup .. --prefix=/usr -Dupdate-mimedb=false" + x)
 
 
 def package(ctx):
@@ -45,11 +40,14 @@ def package(ctx):
         "DESTDIR={1} ninja install".format(S, ctx.destdir)
     )
     # 生成编译版 MIME 数据库（GIO 内容嗅探依赖它；缺了会导致 gdk-pixbuf 无法识别 PNG）
-    # 注意：update-mime-database 在 DESTDIR 安装里会被 strip 掉动态链接环境，
-    # 且本包 -Dupdate-mimedb=false 不装它——直接用构建树里刚编出来的那个
-    # （相对路径基于源码目录，构建树在其下的 build/）。
-    ctx.run(
-        "LD_LIBRARY_PATH={0}/usr/lib/x86_64-linux-gnu:{0}/usr/lib:{0}/lib "
-        "$LD_LIBRARY_PATH build/src/update-mime-database {1}/usr/share/mime".format(
-            S, ctx.destdir)
-    )
+    # 交叉时 update-mime-database 是 aarch64 二进制无法在宿主跑——
+    # 改用宿主原生 update-mime-database（若有）或跳过（装到目标机后首次启动再生成）
+    cf = getattr(ctx, 'meson_cross_file', lambda: '')()
+    if cf:
+        ctx.log("[交叉] 跳过 update-mime-database（目标架构二进制宿主不可跑；装后由 qyinit 补生成）")
+    else:
+        ctx.run(
+            "LD_LIBRARY_PATH={0}/usr/lib/x86_64-linux-gnu:{0}/usr/lib:{0}/lib "
+            "$LD_LIBRARY_PATH build/src/update-mime-database {1}/usr/share/mime".format(
+                S, ctx.destdir)
+        )

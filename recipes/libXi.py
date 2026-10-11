@@ -28,7 +28,9 @@ compression = "gz"
 
 
 def build(ctx):
-    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr")
+    # 交叉时 malloc(0) 运行时测试无法执行——内联 xorg 官方交叉姿势
+    cv = "--enable-malloc0returnsnull=yes"
+    ctx.run("./configure " + cv + " " + " ".join(ctx.configure_args()) + " --prefix=/usr")
     ctx.run("make")
 
 

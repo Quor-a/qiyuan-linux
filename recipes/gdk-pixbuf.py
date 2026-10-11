@@ -22,12 +22,10 @@ compression = "xz"
 
 def build(ctx):
     cf = ctx.meson_cross_file()
-    x = (f" --cross-file={cf} --native-file={cf.replace('qy-cross.ini', 'qy-native.ini')}" if cf else "")
-    ctx.env("LDFLAGS", (ctx.env("LDFLAGS") or "") + " -lm")
-    ctx.run("export PATH=$PATH:{0}/usr/bin; export PYTHONPATH={0}/usr/lib/x86_64-linux-gnu/gobject-introspection; export PKG_CONFIG_PATH={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; export LD_LIBRARY_PATH={0}/usr/lib/x86_64-linux-gnu:{0}/usr/lib:{0}/lib; meson setup build --prefix=/usr -Ddocs=false -Dintrospection=enabled -Dman=false -Dinstalled_tests=false -Dbuiltin_loaders=all -Drelocatable=false" + x .format(ctx.sysroot))
-    # builtin_loaders=none：PNG/GIF 等全部编译成动态 loader 模块并由 loaders.cache 注册。
-    # 内置（builtin）模式下 loader 只在库初始化时静态注册，chroot/容器里常因
-    # 资源路径与缓存缺失而识别不了 PNG（GTK 图标直接 assertion 崩）。
+    nf = cf.replace('qy-cross.ini', 'qy-native.ini') if cf else ""
+    x = (f" --cross-file={cf} --native-file={nf}" if cf else "")
+    ctx.run("rm -rf build && mkdir -p build")
+    ctx.run("cd build && meson setup .. --prefix=/usr " + "-Ddocs=false -Dintrospection=disabled -Dman=false -Dinstalled_tests=false -Dbuiltin_loaders=all -Drelocatable=false" + x)
 
 
 def package(ctx):
