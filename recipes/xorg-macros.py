@@ -22,6 +22,8 @@ compression = "xz"
 
 
 def build(ctx):
+    # 老 X 协议包的 config.sub/guess 不认识 qiyuan/aarch64 三元组——用宿主新版覆盖
+    ctx.run("cp /usr/share/misc/config.sub config.sub 2>/dev/null || true; cp /usr/share/misc/config.guess config.guess 2>/dev/null || true")
     ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr")
     ctx.run("make")
 

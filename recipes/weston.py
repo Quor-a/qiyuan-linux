@@ -42,7 +42,7 @@ def build(ctx):
     _sh.copy(Path(__file__).parent.parent / "qypatches" / "patch-weston-taskbar-client.py", Path(ctx.srcdir) / "patch-weston-taskbar-client.py")
     ctx.run("python3 patch-weston-taskbar-client.py")
     ctx.run("rm -rf build && mkdir -p build")
-    ctx.run("cd build && meson setup .. --prefix=/usr "
+    ctx.run("cd build && meson setup .. --prefix=/usr -Drenderer-gl=false "
             "-Dbackend-drm=true -Dbackend-headless=true -Dbackend-drm-screencast-vaapi=false -Dbackend-pipewire=false -Dbackend-rdp=false "
             "-Dpipewire=false -Dremoting=false -Dsystemd=false -Dbackend-vnc=false -Dcolor-management-lcms=false "
             "-Dxwayland=false -Dshell-desktop=true -Dshell-fullscreen=true "

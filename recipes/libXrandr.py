@@ -28,7 +28,12 @@ compression = "gz"
 
 
 def build(ctx):
-    ctx.run("./configure " + " ".join(ctx.configure_args()) + " --prefix=/usr")
+    # 交叉时 malloc(0) 运行时测试无法执行——glibc 下结论固定，内联缓存变量钉死
+    cv = "--enable-malloc0returnsnull=yes"
+    # 交叉时 malloc(0) 等运行时测试无法执行——glibc 下结论固定，用缓存变量钉死
+    ctx.env("ac_cv_func_malloc_0_nonnull", "yes")
+    ctx.env("ac_cv_func_realloc_0_nonnull", "yes")
+    ctx.run("./configure " + cv + " " + " ".join(ctx.configure_args()) + " --prefix=/usr")
     ctx.run("make")
 
 

@@ -25,9 +25,11 @@ compression = "gz"
 
 
 def build(ctx):
-    ctx.run("cmake -G Ninja -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release .")
+    tc = ctx.write_cmake_toolchain()
+    x = f"-DCMAKE_TOOLCHAIN_FILE={tc}" if tc else ""
+    ctx.run("cmake -G Ninja -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DENABLE_OPT=0 " + x + " .")
     ctx.run("ninja")
 
 
 def package(ctx):
-    ctx.run("ninja install")
+    ctx.run("DESTDIR={} ninja install".format(ctx.destdir))
