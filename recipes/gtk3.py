@@ -27,7 +27,7 @@ def build(ctx):
     # meson 必须 out-of-tree：源码目录里构建会污染源码树，
     # 且重新配置时旧产物会干扰依赖判定
     ctx.run("rm -rf build && mkdir -p build")
-    ctx.run("export PATH=$PATH:{0}/usr/bin; export PKG_CONFIG_PATH={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; export LD_LIBRARY_PATH={0}/usr/lib/x86_64-linux-gnu:{0}/usr/lib:{0}/lib; cd build && meson setup .. --prefix=/usr -Dbroadway_backend=false -Dgtk_doc=false -Dman=false -Dwayland_backend=true -Dx11_backend=false -Ddemos=false -Dintrospection=true '-Dc_args=-Wno-error=array-bounds -Dwerror=false'".format(ctx.sysroot))
+    ctx.run("export PATH=$PATH:{0}/usr/bin; export PKG_CONFIG_PATH={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; export LD_LIBRARY_PATH={0}/usr/lib/x86_64-linux-gnu:{0}/usr/lib:{0}/lib; cd build && meson setup .. --prefix=/usr -Dbroadway_backend=false -Dgtk_doc=false -Dman=false -Dwayland_backend=true -Dx11_backend=false -Ddemos=false -Dintrospection=false -Dtests=false '-Dc_args=-Wno-error=array-bounds -Dwerror=false'".format(ctx.sysroot) + x)
 
 
 def package(ctx):

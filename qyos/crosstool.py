@@ -196,6 +196,11 @@ class CrossEnv:
             # 构建机脚本解释器（生成器脚本 shebang 常裸 python3）
             "python3 = '/usr/bin/python3'\n"
             "python = '/usr/bin/python3'\n"
+            # glib 构建期工具（gnome.compile_resources 等用）——宿主原生 2.84
+            "glib-compile-resources = '/usr/local/bin/glib-compile-resources'\n"
+            "glib-compile-schemas = '/usr/local/bin/glib-compile-schemas'\n"
+            "glib-genmarshal = '/usr/local/bin/glib-genmarshal'\n"
+            "glib-mkenums = '/usr/local/bin/glib-mkenums'\n"
         )
 
     def meson_cross_file(self) -> str:
