@@ -22,6 +22,8 @@ compression = "gz"
 
 
 def build(ctx):
+    cf = ctx.meson_cross_file()
+    x = (f" --cross-file={cf} --native-file={cf.replace('qy-cross.ini', 'qy-native.ini')}" if cf else "")
     # meson 必须 out-of-tree：源码目录里构建会污染源码树，
     # 且重新配置时旧产物会干扰依赖判定
     ctx.run("rm -rf build && mkdir -p build")
@@ -29,7 +31,7 @@ def build(ctx):
     # 该路径会被烙进 libxkbcommon.so，装到目标系统后必然找不到键盘数据。
     # 必须显式钉死为 /usr/share/X11/xkb。
     ctx.run("cd build && meson setup .. --prefix=/usr --prefix=/usr -Denable-docs=false -Denable-x11=false "
-            "-Dxkb-config-root=/usr/share/X11/xkb -Dx-locale-root=/usr/share/X11/locale")
+            "-Dxkb-config-root=/usr/share/X11/xkb -Dx-locale-root=/usr/share/X11/locale" + x)
 
 
 def package(ctx):

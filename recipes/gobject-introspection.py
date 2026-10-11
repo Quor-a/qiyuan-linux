@@ -23,10 +23,12 @@ compression = "gz"
 
 
 def build(ctx):
+    cf = ctx.meson_cross_file()
+    x = (f" --cross-file={cf} --native-file={cf.replace('qy-cross.ini', 'qy-native.ini')}" if cf else "")
     # meson 必须 out-of-tree：源码目录里构建会污染源码树，
     # 且重新配置时旧产物会干扰依赖判定
     ctx.run("rm -rf build && mkdir -p build")
-    ctx.run("cd build && meson setup .. --prefix=/usr -Ddoctool=disabled -Dpython=python3.12 --buildtype=release")
+    ctx.run("cd build && meson setup .. --prefix=/usr -Ddoctool=disabled -Dpython=python3.12 --buildtype=release " + x + "")
 
 
 def package(ctx):

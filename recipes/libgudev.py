@@ -23,9 +23,11 @@ compression = "gz"
 
 
 def build(ctx):
+    cf = ctx.meson_cross_file()
+    x = (f" --cross-file={cf} --native-file={cf.replace('qy-cross.ini', 'qy-native.ini')}" if cf else "")
     ctx.run("rm -rf build && mkdir -p build")
     ctx.run("cd build && meson setup .. --prefix=/usr "
-            "-Dtests=false -Dvapi=false -Dintrospection=false")
+            "-Dtests=false -Dvapi=false -Dintrospection=false" + x)
 
 
 def package(ctx):

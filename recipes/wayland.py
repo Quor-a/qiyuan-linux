@@ -24,8 +24,12 @@ compression = "gz"
 def build(ctx):
     # meson 必须 out-of-tree：源码目录里构建会污染源码树，
     # 且重新配置时旧产物会干扰依赖判定
+    cf = ctx.meson_cross_file()
+    x = f"--cross-file={cf}" if cf else ""
+    nf = cf.replace("qy-cross.ini", "qy-native.ini") if cf else ""
+    n = f"--native-file={nf}" if cf else ""
     ctx.run("rm -rf build && mkdir -p build")
-    ctx.run("cd build && meson setup .. --prefix=/usr --prefix=/usr -Ddocumentation=false")
+    ctx.run("cd build && meson setup .. --prefix=/usr -Ddocumentation=false " + x + " " + n)
 
 
 def package(ctx):

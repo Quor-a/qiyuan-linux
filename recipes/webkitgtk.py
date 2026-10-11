@@ -35,7 +35,7 @@ compression = "xz"
 
 def build(ctx):
     sysroot = ctx.sysroot
-    env = ("export PATH={0}/usr/bin:$PATH; "
+    env = ("export PATH=$PATH:{0}/usr/bin; "
            "export PKG_CONFIG_PATH={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; "
            "export LD_LIBRARY_PATH={0}/usr/lib/x86_64-linux-gnu:{0}/usr/lib:{0}/lib; "
            ).format(sysroot)
@@ -55,7 +55,7 @@ def build(ctx):
 
 def package(ctx):
     sysroot = ctx.sysroot
-    env = ("export PATH={0}/usr/bin:$PATH; "
+    env = ("export PATH=$PATH:{0}/usr/bin; "
            "export LD_LIBRARY_PATH={0}/usr/lib/x86_64-linux-gnu:{0}/usr/lib:{0}/lib; "
            ).format(sysroot)
     ctx.run(env + "ninja")

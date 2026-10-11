@@ -81,7 +81,11 @@ class BuildContext:
             return ""
         p = self.srcdir / "qy-cross.ini"
         p.write_text(ce.meson_cross_file())
-        self.log(f"[交叉] meson cross file -> {p}")
+        # 同时写构建机 native file：构建期工具（wayland-scanner 等）
+        # 必须用宿主原生版本，pkg-config 也要查宿主而非 sysroot
+        n = self.srcdir / "qy-native.ini"
+        n.write_text(ce.meson_native_file())
+        self.log(f"[交叉] meson cross file -> {p} (native -> {n})")
         return str(p)
 
     def log(self, msg: str) -> None:

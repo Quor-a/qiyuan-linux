@@ -178,6 +178,26 @@ class CrossEnv:
     build_sysroot: Path | None = None  # 构建期工具的根目录
     extra: dict = field(default_factory=dict)
 
+    def meson_native_file(self) -> str:
+        """生成 meson 构建机（native）描述文件。
+
+        交叉构建时 meson 的 pkg-config 默认只查目标 sysroot，
+        构建期代码生成工具（wayland-scanner 等）必须用宿主原生版本——
+        native file 把构建机工具链和 pkg-config 显式指回宿主。
+        """
+        return (
+            "[binaries]\n"
+            "c = 'gcc'\n"
+            "cpp = 'g++'\n"
+            "ar = 'ar'\n"
+            "strip = 'strip'\n"
+            "pkgconfig = 'pkg-config'\n"
+            "wayland-scanner = '/usr/bin/wayland-scanner'\n"
+            # 构建机脚本解释器（生成器脚本 shebang 常裸 python3）
+            "python3 = '/usr/bin/python3'\n"
+            "python = '/usr/bin/python3'\n"
+        )
+
     def meson_cross_file(self) -> str:
         """生成 meson 交叉编译文件内容（配方写入 build 目录后传 --cross-file）。"""
         t = self.triple_obj
@@ -189,7 +209,9 @@ class CrossEnv:
             f"cpp = '{pre}g++'",
             f"ar = '{pre}ar'",
             f"strip = '{pre}strip'",
-            f"pkg-config = 'pkgconf'",
+            # 必须绝对路径指宿主 pkgconf：配方常把 sysroot/usr/bin 前插 PATH，
+            # 裸名会命中 target 的 aarch64 pkgconf（宿主无法执行）
+            f"pkg-config = '{shutil.which('pkgconf') or shutil.which('pkg-config')}'",
             "",
             "[host_machine]",
             "system = 'linux'",
@@ -204,6 +226,11 @@ class CrossEnv:
             lines.append(f"cpp_args = ['--sysroot={self.sysroot}']")
             lines.append(f"c_link_args = ['--sysroot={self.sysroot}']")
             lines.append(f"cpp_link_args = ['--sysroot={self.sysroot}']")
+            # 交叉产物宿主无法直接跑（binfmt 无对应 loader）——
+            # 让 meson 用编译+运行分离的 sanity check（须在 [properties] 段）
+            lines.append("")
+            lines.append("[properties]")
+            lines.append("needs_exe_wrapper = true")
         return "\n".join(lines) + "\n"
 
     def env(self) -> dict:
@@ -346,6 +373,9 @@ def meson_cross_file(t: Triple, sysroot: Path | None = None) -> str:
         f"strip = '{pre}strip'",
         f"pkgconfig = '{sysroot}/usr/bin/pkg-config'" if sysroot
         else "pkgconfig = 'pkg-config'",
+        # 构建机原生代码生成工具——交叉时必须用宿主版本
+        # （wayland-scanner 生成协议 C 源，产物要在构建机上跑）
+        "wayland-scanner = '/usr/bin/wayland-scanner'",
         "",
         "[host_machine]",
         "system = 'linux'",
@@ -357,6 +387,9 @@ def meson_cross_file(t: Triple, sysroot: Path | None = None) -> str:
     if sysroot:
         L += ["[properties]",
               f"sys_root = '{sysroot}'",
+              # 交叉产物宿主无法直接跑（binfmt 无对应 loader）——让 meson
+              # 用编译+运行分离的 sanity check，不要试图执行目标二进制
+              "needs_exe_wrapper = true",
               ""]
     return "\n".join(L)
 

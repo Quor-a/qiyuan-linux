@@ -28,8 +28,10 @@ compression = "gz"
 
 
 def build(ctx):
+    cf = ctx.meson_cross_file()
+    x = (f" --cross-file={cf} --native-file={cf.replace('qy-cross.ini', 'qy-native.ini')}" if cf else "")
     ctx.run("rm -rf build && mkdir -p build")
-    ctx.run("export PATH={0}/usr/bin:$PATH; export PKG_CONFIG_PATH={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; export LD_LIBRARY_PATH={0}/usr/lib/x86_64-linux-gnu:{0}/usr/lib:{0}/lib; cd build && meson setup .. --prefix=/usr -Dtests=disabled -Dglib=enabled".format(ctx.sysroot))
+    ctx.run("export PATH=$PATH:{0}/usr/bin; export PKG_CONFIG_PATH={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; export LD_LIBRARY_PATH={0}/usr/lib/x86_64-linux-gnu:{0}/usr/lib:{0}/lib; cd build && meson setup .. --prefix=/usr -Dtests=disabled -Dglib=enabled".format(ctx.sysroot) + x)
 
 
 def package(ctx):

@@ -22,24 +22,26 @@ compression = "gz"
 
 
 def build(ctx):
+    cf = ctx.meson_cross_file()
+    x = (f" --cross-file={cf} --native-file={cf.replace('qy-cross.ini', 'qy-native.ini')}" if cf else "")
     S = ctx.sysroot
     ctx.run("rm -rf build && mkdir -p build")
     ctx.run(
-        "cd build && export PATH={0}/usr/bin:$PATH; export PKG_CONFIG_PATH={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; "
+        "cd build && export PATH=$PATH:{0}/usr/bin; export PKG_CONFIG_PATH={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; "
         "export PKG_CONFIG_SYSROOT_DIR={0}; export PKG_CONFIG_LIBDIR={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; "
         "export LD_LIBRARY_PATH={0}/usr/lib/x86_64-linux-gnu:{0}/usr/lib:{0}/lib; "
-        "meson setup .. --prefix=/usr -Dupdate-mimedb=false".format(S)
+        "meson setup .. --prefix=/usr -Dupdate-mimedb=false" + x .format(S)
     )
 
 
 def package(ctx):
     S = ctx.sysroot
     ctx.run(
-        "cd build && export PATH={0}/usr/bin:$PATH; export LD_LIBRARY_PATH={0}/usr/lib/x86_64-linux-gnu:{0}/usr/lib:{0}/lib; "
+        "cd build && export PATH=$PATH:{0}/usr/bin; export LD_LIBRARY_PATH={0}/usr/lib/x86_64-linux-gnu:{0}/usr/lib:{0}/lib; "
         "ninja".format(S)
     )
     ctx.run(
-        "cd build && export PATH={0}/usr/bin:$PATH; export LD_LIBRARY_PATH={0}/usr/lib/x86_64-linux-gnu:{0}/usr/lib:{0}/lib; "
+        "cd build && export PATH=$PATH:{0}/usr/bin; export LD_LIBRARY_PATH={0}/usr/lib/x86_64-linux-gnu:{0}/usr/lib:{0}/lib; "
         "DESTDIR={1} ninja install".format(S, ctx.destdir)
     )
     # 生成编译版 MIME 数据库（GIO 内容嗅探依赖它；缺了会导致 gdk-pixbuf 无法识别 PNG）

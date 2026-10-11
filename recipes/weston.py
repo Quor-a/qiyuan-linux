@@ -31,6 +31,8 @@ from pathlib import Path
 
 
 def build(ctx):
+    cf = ctx.meson_cross_file()
+    x = (f" --cross-file={cf} --native-file={cf.replace('qy-cross.ini', 'qy-native.ini')}" if cf else "")
     # 澜岫补丁: 顶栏时钟支持 clock-format-string (自定义 strftime, 用于中文日期)
     import shutil as _sh
     _sh.copy(Path(__file__).parent.parent / "qypatches" / "patch-weston-clock.py", Path(ctx.srcdir) / "patch-weston-clock.py")
@@ -46,7 +48,7 @@ def build(ctx):
             "-Dxwayland=false -Dshell-desktop=true -Dshell-fullscreen=true "
             "-Dimage-webp=false -Dimage-jpeg=true -Ddemo-clients=false "
             "-Dsimple-clients= -Dresize-pool=false -Dtests=false "
-            "-Dbackend-default=drm")
+            "-Dbackend-default=drm" + x)
 
 
 def package(ctx):

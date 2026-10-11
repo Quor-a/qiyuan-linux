@@ -108,7 +108,7 @@ def build(ctx):
     shutil.copy(Path(__file__).parent / "qytheme.h", Path(ctx.srcdir) / "qytheme.h")
     shutil.copy(Path(__file__).parent / "weston.ini", Path(ctx.srcdir) / "weston.ini")
     ctx.run(
-        "export PATH={0}/usr/bin:$PATH; export PKG_CONFIG_PATH={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; "
+        "export PATH=$PATH:{0}/usr/bin; export PKG_CONFIG_PATH={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; "
         "export PKG_CONFIG_SYSROOT_DIR={0}; export PKG_CONFIG_LIBDIR={0}/usr/lib/pkgconfig:{0}/usr/lib/x86_64-linux-gnu/pkgconfig:{0}/usr/share/pkgconfig; "
         "export LD_LIBRARY_PATH={0}/usr/lib/x86_64-linux-gnu:{0}/usr/lib:{0}/lib; "
         "gcc qydesktop.c qyicon.c qytheme.c qyl10n.c -o qydesktop $(pkg-config --cflags --libs gtk+-3.0) -O2 -ljpeg -lmount && "
